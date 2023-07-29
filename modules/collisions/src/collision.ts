@@ -1,4 +1,5 @@
-import { vec3 } from '../../vectors/src/vec3'
+import { vec3 } from '@luz/vectors'
+
 import { RigidBody } from './rigid-body'
 
 export interface Collision {

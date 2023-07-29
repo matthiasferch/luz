@@ -1,6 +1,7 @@
+import { vec3 } from '@luz/vectors'
+
 import { Collision } from '../collision'
 import { Cuboid } from '../colliders/cuboid'
-import { vec3 } from '../../../vectors/src/vec3'
 import { Transform } from '../transform'
 
 const { min } = Math

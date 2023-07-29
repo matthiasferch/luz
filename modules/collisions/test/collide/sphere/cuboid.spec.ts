@@ -1,7 +1,8 @@
 import { expect } from 'chai'
 import 'mocha'
 
-import { vec3 } from '../../../vectors/src/vec3'
+import { vec3 } from '@luz/vectors'
+
 import { Sphere } from '../../src/colliders/sphere'
 import { Transform } from '../../src/transform'
 import { Cuboid } from '../../src/colliders/cuboid'

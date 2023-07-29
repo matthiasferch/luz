@@ -1,8 +1,9 @@
 import { expect } from 'chai'
 import 'mocha'
 
+import { vec3 } from '@luz/vectors'
+
 import { Ray } from '../../src/colliders/ray'
-import { vec3 } from '../../../vectors/src/vec3'
 import { Transform } from '../../src/transform'
 
 const { origin } = Transform

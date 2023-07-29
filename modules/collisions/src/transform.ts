@@ -1,7 +1,4 @@
-import { mat3 } from '../../vectors/src/mat3'
-import { mat4 } from '../../vectors/src/mat4'
-import { quat } from '../../vectors/src/quat'
-import { vec3 } from '../../vectors/src/vec3'
+import { mat3, mat4, quat, vec3 } from '@luz/vectors'
 
 export class Transform {
 

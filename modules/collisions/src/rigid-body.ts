@@ -1,4 +1,4 @@
-import { vec3 } from '../../vectors/src/vec3'
+import { vec3 } from '@luz/vectors'
 
 import { Collider } from './collider'
 import { Transform } from './transform'

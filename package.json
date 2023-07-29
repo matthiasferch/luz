@@ -1,0 +1,17 @@
+{
+  "name": "luz",
+  "private": true,
+  "version": "1.0.0",
+  "author": "Matthias Ferch",
+  "scripts": {
+    "build:collisions": "cd modules/collisions && npm run build",
+    "build:utilities": "cd modules/utilities && npm run build",
+    "build:vectors": "cd modules/vectors && npm run build",
+    "build:all": "npm-run-all -s build:collisions build:utilities build:vectors"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "webpack": "^5.58.2",
+    "webpack-cli": "^4.9.1"
+  }
+}

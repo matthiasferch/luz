@@ -1,3 +1,5 @@
+import { vec3 } from '@luz/vectors'
+
 import { collideCuboidWithCuboid } from '../collisions/cuboid'
 import { collidePlaneWithCuboid } from '../collisions/plane'
 import { Collider } from '../collider'
@@ -8,7 +10,6 @@ import { Plane } from './plane'
 import { Ray } from './ray'
 import { Sphere } from './sphere'
 import { Transform } from '../transform'
-import { vec3 } from '../../../vectors/src/vec3'
 
 const { min, max } = Math
 

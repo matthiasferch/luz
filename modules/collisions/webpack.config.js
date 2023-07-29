@@ -16,7 +16,7 @@ module.exports = {
     extensions: ['.ts']
   },
   output: {
-		library: 'collision',
+		library: 'collisions',
 		libraryTarget: 'umd',
     filename: 'index.js',
     path: path.resolve(__dirname, 'dist')

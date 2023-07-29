@@ -1,9 +1,9 @@
 import { expect } from 'chai'
 import 'mocha'
 
-import { Pool } from '../src/pool'
+import { vec3 } from '@luz/vectors'
 
-import { vec3 } from '../../vectors/src/vec3'
+import { Pool } from '../src/pool'
 
 const initialSize = 20
 const batchSize = 10

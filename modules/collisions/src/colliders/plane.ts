@@ -1,3 +1,5 @@
+import { vec4 } from '@luz/vectors'
+
 import { collidePlaneWithCuboid, collidePlaneWithSphere } from '../collisions/plane'
 import { Collider } from '../collider'
 import { collideRayWithPlane } from '../collisions/ray'
@@ -6,7 +8,6 @@ import { Cuboid } from './cuboid'
 import { Ray } from './ray'
 import { Sphere } from './sphere'
 import { Transform } from '../transform'
-import { vec4 } from '../../../vectors/src/vec4'
 
 export class Plane extends Collider {
 
