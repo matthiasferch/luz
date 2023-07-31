@@ -9,7 +9,7 @@ export class World {
 
   private collisions: Required<Collision>[] = []
 
-  private gravity = new vec3([0, -9.81, 0])
+  private readonly gravity = new vec3([0, -9.81, 0])
 
   update(deltaTime: number) {
     this.applyGravity()
@@ -29,18 +29,22 @@ export class World {
   private detectCollisions() {
     this.collisions.length = 0
 
-    this.bodies.forEach((a) => {
-      this.bodies.forEach((b) => {
-        if (a === b) {
+    this.bodies.forEach((b1) => {
+      this.bodies.forEach((b2) => {
+        if (b1 === b2) {
           return
         }
 
-        const collision = a.collider.collide(b.collider, a.transform, b.transform)
+        const collision = b1.collider.collide(
+          b2.collider, 
+          b1.transform, 
+          b2.transform
+        )
 
         if (collision) {
           this.collisions.push({
             ...collision,
-            bodies: [a, b]
+            bodies: [b1, b2]
           })
         }
       })
@@ -49,14 +53,13 @@ export class World {
 
   private resolveCollisions() {
     this.collisions.forEach((collision) => {
-      const a = collision.bodies[0]
-      const b = collision.bodies[1]
+      const [b1, b2] = collision.bodies
 
-      const d = vec3.subtract(b.velocity, a.velocity)
+      const d = vec3.subtract(b2.velocity, b1.velocity)
       const n = vec3.dot(d, collision.normal)
 
-      const m1 = 1.0 / a.mass
-      const m2 = 1.0 / b.mass
+      const m1 = 1.0 / b1.mass
+      const m2 = 1.0 / b2.mass
 
       if (n >= 0) {
         return
@@ -65,8 +68,8 @@ export class World {
       const j = -1.0 * n / (m1 + m2)
       const impulse = vec3.scale(collision.normal, j)
 
-      a.velocity.subtract(vec3.scale(impulse, m1))
-      b.velocity.add(vec3.scale(impulse, m2))
+      b1.velocity.subtract(vec3.scale(impulse, m1))
+      b2.velocity.add(vec3.scale(impulse, m2))
     })
   }
 
