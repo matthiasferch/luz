@@ -5,9 +5,11 @@ export class Transform {
   readonly rotation: quat
   readonly translation: vec3
 
-  readonly modelMatrix: mat4
-  readonly rotationMatrix: mat3
-  readonly inverseTransposeMatrix: mat4
+  readonly direction = new vec3()
+
+  readonly modelMatrix = new mat4()
+  readonly rotationMatrix = new mat3()
+  readonly inverseTransposeMatrix = new mat4()
 
   constructor({
     translation = vec3.zero,
@@ -15,18 +17,21 @@ export class Transform {
   } = {}) {
     this.translation = translation.copy()
     this.rotation = rotation.copy()
-
-    this.modelMatrix = new mat4()
-    this.rotationMatrix = new mat3()
-    this.inverseTransposeMatrix = new mat4()
     
     this.update()
   }
 
   update() {
+    // model matrix
     mat4.construct(this.rotation, this.translation, this.modelMatrix)
 
+    // rotation matrix
     this.modelMatrix.toMat3(this.rotationMatrix)
+    
+    // direction vector
+    this.rotationMatrix.row(2, this.direction).normalize()
+
+    // inverse transpose matrix
     this.modelMatrix.invert(this.inverseTransposeMatrix).transpose()
   }
 
