@@ -1,13 +1,13 @@
 export class State {
 
-  #cullMode = State.CullMode.None
-  #blendMode = State.BlendMode.None
-  #depthTest = State.DepthTest.None
+  private activeCullMode = State.CullMode.None
+  private activeBlendMode = State.BlendMode.None
+  private activeDepthTest = State.DepthTest.None
 
   constructor(private gl: WebGL2RenderingContext) {}
 
   set cullMode(cullMode: State.CullMode) {
-    if (cullMode === this.#cullMode) {
+    if (cullMode === this.activeCullMode) {
       return
     }
 
@@ -27,11 +27,11 @@ export class State {
       }
     }
 
-    this.#cullMode = cullMode
+    this.activeCullMode = cullMode
   }
 
   set blendMode(blendMode: State.BlendMode) {
-    if (blendMode === this.#blendMode) {
+    if (blendMode === this.activeBlendMode) {
       return
     }
 
@@ -51,11 +51,11 @@ export class State {
       }
     }
 
-    this.#blendMode = blendMode
+    this.activeBlendMode = blendMode
   }
 
   set depthTest(depthTest: State.DepthTest) {
-    if (depthTest === this.#depthTest) {
+    if (depthTest === this.activeDepthTest) {
       return
     }
 
@@ -99,12 +99,12 @@ export class State {
       }
     }
 
-    this.#depthTest = depthTest
+    this.activeDepthTest = depthTest
   }
 
 }
 
-export declare module State {
+export module State {
   export enum CullMode {
     None,
   

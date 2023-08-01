@@ -4,7 +4,7 @@ export type Uniform = WebGLActiveInfo & {
   location: WebGLUniformLocation
 }
 
-export declare module Uniform {
+export module Uniform {
   export type Value = number | Float32Array | Texture
 
   export interface Block {

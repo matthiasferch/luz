@@ -23,9 +23,9 @@ export class Programs {
 
     this.gl.linkProgram(program)
 
-    const isLinked = this.gl.getProgramParameter(program, this.gl.LINK_STATUS) as boolean
+    const linked = this.gl.getProgramParameter(program, this.gl.LINK_STATUS) as boolean
 
-    if (!isLinked || !this.gl.isProgram(program)) {
+    if (!linked || !this.gl.isProgram(program)) {
       // tslint:disable-next-line: no-console
       console.error(this.gl.getProgramInfoLog(program))
 

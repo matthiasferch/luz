@@ -5,7 +5,7 @@ export interface Mesh {
   vertexArray: VertexArray
 }
 
-export declare module Mesh {
+export module Mesh {
   export enum Topology {
     Points,
     Lines,

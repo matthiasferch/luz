@@ -1,3 +1,5 @@
+import { Camera, Model, Light } from '@luz/core'
+
 import { State } from './state'
 import { Display } from './display'
 import { Program } from '../types/program'

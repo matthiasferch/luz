@@ -1,5 +1,5 @@
 {
-  "name": "@luz/graphics",
+  "name": "@luz/core",
   "version": "1.0.0",
   "author": "Matthias Ferch",
   "main": "./dist/index.js",
@@ -24,7 +24,7 @@
     "webpack-cli": "^4.9.1"
   },
   "dependencies": {
-    "@luz/core": "file:../core",
+    "@luz/graphics": "file:../graphics",
     "@luz/vectors": "file:../vectors"
   }
 }

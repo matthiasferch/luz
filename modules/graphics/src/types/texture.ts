@@ -13,7 +13,7 @@ export type Texture = WebGLTexture & {
   useMipmaps: boolean
 }
 
-export declare module Texture {
+export module Texture {
   export enum Tiling {
     None,
   

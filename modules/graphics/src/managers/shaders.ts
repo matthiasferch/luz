@@ -20,7 +20,7 @@ export class Shaders {
     }
 
     if (headers?.length > 0) {
-      headers.reverse().forEach(header => {
+      headers.reverse().forEach((header) => {
         source = `${header}\n\n${source}`
       })
     }
