@@ -1,11 +1,11 @@
 import { expect } from 'chai'
 import 'mocha'
 
+import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 
-import { Sphere } from '../../src/colliders/sphere'
-import { Transform } from '../../src/transform'
-import { Ray } from '../../src/colliders/ray'
+import { Sphere } from '../../../src/colliders/sphere'
+import { Ray } from '../../../src/colliders/ray'
 
 const { origin } = Transform
 
