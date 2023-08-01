@@ -1,5 +1,6 @@
+import { Transform } from '@luz/core'
+
 import { Collision } from './collision'
-import { Transform } from './transform'
 
 export abstract class Collider {
 

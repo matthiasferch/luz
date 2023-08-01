@@ -1,11 +1,11 @@
 import { vec3 } from '@luz/vectors'
 
-import { RigidBody } from './rigid-body'
+import { Body } from './body'
 
 export interface Collision {
   normal: vec3
   contact: vec3
   distance: number
 
-  bodies?: RigidBody[]
+  bodies?: Body[]
 }

@@ -1,8 +1,8 @@
+import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 
 import { Collider } from '../collider'
 import { Collision } from '../collision'
-import { Transform } from '../transform'
 import { collideRayWithSphere } from '../collisions/ray'
 import { Ray } from './ray'
 import { collidePlaneWithSphere } from '../collisions/plane'

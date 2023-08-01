@@ -29,13 +29,13 @@ export class Camera extends Transform {
     // model view matrix
     mat4.multiply(this.viewMatrix, this.modelMatrix, this.modelViewMatrix)
 
-    // normal matrix
+    // normal matrix (to transform normals)
     this.modelViewMatrix.toMat3(this.normalMatrix).transpose().invert()
 
     // perspective matrix
     mat4.perspective(this.aperture, this.aspect, this.clipPlanes[0], this.clipPlanes[1], this.projectionMatrix)
 
-    // reconstruction matrix
+    // reconstruction matrix (to reconstruct fragment positions)
     mat4.multiply(this.projectionMatrix, this.viewMatrix, this.reconstructionMatrix).invert()
   }
 

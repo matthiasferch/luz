@@ -3,12 +3,24 @@ import { mat3, mat4, quat, vec3 } from '@luz/vectors'
 export class Transform {
 
   readonly rotation = new quat()
+
   readonly translation = new vec3()
 
+  readonly direction = new vec3()
+
   readonly modelMatrix = new mat4()
+
   readonly rotationMatrix = new mat3()
 
-  readonly directionVector = new vec3()
+  readonly inverseTransposeMatrix = new mat4()
+
+  constructor({
+    translation = vec3.zero,
+    rotation = quat.identity
+  } = {}) {
+    this.translation = translation.copy()
+    this.rotation = rotation.copy()
+  }
 
   update() {
     // model matrix
@@ -17,8 +29,13 @@ export class Transform {
     // rotation matrix
     this.modelMatrix.toMat3(this.rotationMatrix)
 
-    // direction vector
-    this.rotationMatrix.row(2, this.directionVector).normalize()
+    // direction vector (for lighting calculations)
+    this.rotationMatrix.row(2, this.direction).normalize()
+
+    // inverse transpose matrix (to transform plane equations)
+    this.modelMatrix.invert(this.inverseTransposeMatrix).transpose()
   }
+
+  static readonly origin = new Transform()
 
 }

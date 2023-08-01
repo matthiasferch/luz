@@ -1,3 +1,4 @@
+import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 
 import { collideCuboidWithCuboid } from '../collisions/cuboid'
@@ -9,7 +10,6 @@ import { Collision } from '../collision'
 import { Plane } from './plane'
 import { Ray } from './ray'
 import { Sphere } from './sphere'
-import { Transform } from '../transform'
 
 const { min, max } = Math
 

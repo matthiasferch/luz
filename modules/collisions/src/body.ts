@@ -1,9 +1,9 @@
+import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 
 import { Collider } from './collider'
-import { Transform } from './transform'
 
-export interface RigidBody {
+export interface Body {
   mass: number
 
   velocity: vec3

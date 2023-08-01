@@ -1,11 +1,11 @@
 import { vec3 } from '@luz/vectors'
 
-import { RigidBody } from './rigid-body'
+import { Body } from './body'
 import { Collision } from './collision'
 
 export class World {
 
-  private bodies: RigidBody[] = []
+  private bodies: Body[] = []
 
   private collisions: Required<Collision>[] = []
 
