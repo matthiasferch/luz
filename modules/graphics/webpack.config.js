@@ -16,7 +16,7 @@ module.exports = {
     extensions: ['.ts']
   },
   output: {
-		library: 'utilities',
+		library: 'graphics',
 		libraryTarget: 'umd',
     filename: 'index.js',
     path: path.resolve(__dirname, 'dist')

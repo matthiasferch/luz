@@ -1,5 +1,5 @@
 {
-  "name": "@luz/collisions",
+  "name": "@luz/physics",
   "version": "1.0.0",
   "author": "Matthias Ferch",
   "main": "./dist/index.js",
