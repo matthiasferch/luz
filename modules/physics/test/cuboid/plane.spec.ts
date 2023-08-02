@@ -4,8 +4,8 @@ import 'mocha'
 import { Transform } from '@luz/core'
 import { vec3, vec4 } from '@luz/vectors'
 
-import { Cuboid } from '../../../src/colliders/cuboid'
-import { Plane } from '../../../src/colliders/plane'
+import { Cuboid } from '../../src/colliders/cuboid'
+import { Plane } from '../../src/colliders/plane'
 
 const { origin } = Transform
 

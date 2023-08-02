@@ -4,8 +4,8 @@ import 'mocha'
 import { Transform } from '@luz/core'
 import { vec3, vec4 } from '@luz/vectors'
 
-import { Sphere } from '../../../src/colliders/sphere'
-import { Plane } from '../../../src/colliders/plane'
+import { Sphere } from '../../src/colliders/sphere'
+import { Plane } from '../../src/colliders/plane'
 
 const { origin } = Transform
 
