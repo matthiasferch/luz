@@ -2,6 +2,8 @@ import { Epsilon } from './constants'
 
 import { mat2 } from './mat2'
 
+const { abs, sqrt } = Math
+
 export class vec2 extends Float32Array {
 
   constructor(values: number[] = [0.0, 0.0]) {
@@ -60,7 +62,7 @@ export class vec2 extends Float32Array {
   }
 
   get length(): number {
-    return Math.sqrt(this.squaredLength)
+    return sqrt(this.squaredLength)
   }
 
   get squaredLength(): number {
@@ -100,11 +102,11 @@ export class vec2 extends Float32Array {
   }
 
   equals(vector: vec2, threshold = Epsilon): boolean {
-    if (Math.abs(this.x - vector.x) > threshold) {
+    if (abs(this.x - vector.x) > threshold) {
       return false
     }
 
-    if (Math.abs(this.y - vector.y) > threshold) {
+    if (abs(this.y - vector.y) > threshold) {
       return false
     }
 
@@ -200,6 +202,17 @@ export class vec2 extends Float32Array {
     return matrix.transform(this, dest)
   }
 
+  static absolute(vector: vec2, dest: null | vec2 = null): vec2 {
+    if (!dest) {
+      dest = new vec2()
+    }
+
+    dest.x = abs(vector.x)
+    dest.y = abs(vector.y)
+
+    return dest
+  }
+
   static cross(vector: vec2, vector2: vec2, dest: null | vec2 = null): vec2 {
     if (!dest) {
       dest = new vec2()
@@ -216,7 +229,7 @@ export class vec2 extends Float32Array {
   }
 
   static distance(vector: vec2, vector2: vec2): number {
-    return Math.sqrt(this.squaredDistance(vector, vector2))
+    return sqrt(this.squaredDistance(vector, vector2))
   }
 
   static squaredDistance(vector: vec2, vector2: vec2): number {
@@ -234,7 +247,7 @@ export class vec2 extends Float32Array {
     const x = vector.x - vector2.x
     const y = vector.y - vector2.y
 
-    let length = Math.sqrt(x * x + y * y)
+    let length = sqrt(x * x + y * y)
 
     if (length === 0) {
       dest.x = 0
@@ -326,6 +339,50 @@ export class vec2 extends Float32Array {
     }
 
     return vector.normalize(dest)
+  }
+
+  static sum(...vectors: vec2[]): vec2 {
+    const dest = new vec2()
+  
+    for (const vector of vectors) {
+      dest.x += vector.x
+      dest.y += vector.y
+    }
+  
+    return dest
+  }
+
+  static difference(...vectors: vec2[]): vec2 {
+    const dest = new vec2()
+  
+    for (const vector of vectors) {
+      dest.x -= vector.x
+      dest.y -= vector.y
+    }
+  
+    return dest
+  }
+
+  static product(...vectors: vec2[]): vec2 {
+    const dest = new vec2()
+  
+    for (const vector of vectors) {
+      dest.x *= vector.x
+      dest.y *= vector.y
+    }
+  
+    return dest
+  }
+
+  static division(...vectors: vec2[]): vec2 {
+    const dest = new vec2()
+  
+    for (const vector of vectors) {
+      dest.x /= vector.x
+      dest.y /= vector.y
+    }
+  
+    return dest
   }
 
 }

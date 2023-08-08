@@ -1,12 +1,9 @@
 import { expect } from 'chai'
 import 'mocha'
 
-import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 
 import { Ray } from '../../src/colliders/ray'
-
-const { origin } = Transform
 
 describe('Ray', () => {
 
@@ -22,7 +19,7 @@ describe('Ray', () => {
       direction: new vec3([0, 1, 0])
     })
 
-    const collision = ray1.collide(ray2, origin, origin)
+    const collision = ray1.collide(ray2)
 
     expect(collision).to.not.be.null
     expect(collision!.contact).to.deep.equal(new vec3([1, 1, 0]))
@@ -43,7 +40,7 @@ describe('Ray', () => {
       direction: new vec3([1, 0, 0])
     })
 
-    const collisionResult = ray1.collide(ray2, origin, origin)
+    const collisionResult = ray1.collide(ray2)
 
     expect(collisionResult).to.be.null
 

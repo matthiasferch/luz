@@ -244,6 +244,18 @@ export class vec3 extends Float32Array {
     return matrix.transform(this, dest)
   }
 
+  static absolute(vector: vec3, dest: null | vec3 = null): vec3 {
+    if (!dest) {
+      dest = new vec3()
+    }
+
+    dest.x = abs(vector.x)
+    dest.y = abs(vector.y)
+    dest.z = abs(vector.z)
+
+    return dest
+  }
+
   static cross(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
@@ -390,6 +402,54 @@ export class vec3 extends Float32Array {
     }
 
     return vector.normalize(dest)
+  }
+
+  static sum(...vectors: vec3[]): vec3 {
+    const dest = new vec3()
+  
+    for (const vector of vectors) {
+      dest.x += vector.x
+      dest.y += vector.y
+      dest.z += vector.z
+    }
+  
+    return dest
+  }
+
+  static difference(...vectors: vec3[]): vec3 {
+    const dest = new vec3()
+  
+    for (const vector of vectors) {
+      dest.x -= vector.x
+      dest.y -= vector.y
+      dest.z -= vector.z
+    }
+  
+    return dest
+  }
+
+  static product(...vectors: vec3[]): vec3 {
+    const dest = new vec3()
+  
+    for (const vector of vectors) {
+      dest.x *= vector.x
+      dest.y *= vector.y
+      dest.z *= vector.z
+    }
+  
+    return dest
+  }
+
+  static division(...vectors: vec3[]): vec3 {
+    const dest = new vec3()
+  
+    for (const vector of vectors) {
+      dest.x /= vector.x
+      dest.y /= vector.y
+      dest.z /= vector.z
+    }
+  
+    return dest
   }
 
 }

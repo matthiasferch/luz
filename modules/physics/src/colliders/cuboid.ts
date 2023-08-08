@@ -11,61 +11,48 @@ import { Plane } from './plane'
 import { Ray } from './ray'
 import { Sphere } from './sphere'
 
-const { min, max } = Math
-
 export class Cuboid extends Collider {
 
-  readonly minimum: vec3
-  readonly maximum: vec3
+  readonly center: vec3
+  readonly extents: vec3
 
   constructor({
-    minimum = vec3.one,
-    maximum = vec3.one
+    center = vec3.zero,
+    extents = vec3.one
   } = {}) {
     super()
 
-    this.minimum = minimum.copy()
-    this.maximum = maximum.copy()
+    this.center = center.copy()
+    this.extents = extents.copy()
   }
 
-  collide(collider: Collider, t1: Transform, t2: Transform): Collision | null {
+  collide(collider: Collider): Collision | null {
     if (collider instanceof Ray) {
-      return collideRayWithCuboid(collider, this, t1, t2)
+      return collideRayWithCuboid(collider, this)
     }
 
     if (collider instanceof Plane) {
-      return collidePlaneWithCuboid(collider, this, t1, t2)
+      return collidePlaneWithCuboid(collider, this)
     }
 
     if (collider instanceof Sphere) {
-      return collideSphereWithCuboid(collider, this, t1, t2)
+      return collideSphereWithCuboid(collider, this)
     }
 
     if (collider instanceof Cuboid) {
-      return collideCuboidWithCuboid(this, collider, t1, t2)
+      return collideCuboidWithCuboid(this, collider)
     }
 
     return null
   }
 
   transform(transform: Transform) {
-    const { modelMatrix } = transform
+    const { translation, rotationMatrix } = transform
 
-    const minimum = modelMatrix.transformVec3(this.minimum)
-    const maximum = modelMatrix.transformVec3(this.maximum)
+    const center = this.center.copy().add(translation);
+    const extents = rotationMatrix.transform(this.extents)
 
-    return new Cuboid({
-      minimum: new vec3([
-        min(minimum.x, maximum.x),
-        min(minimum.y, maximum.y),
-        min(minimum.z, maximum.z)
-      ]),
-      maximum: new vec3([
-        max(minimum.x, maximum.x),
-        max(minimum.y, maximum.y),
-        max(minimum.z, maximum.z)
-      ])
-    })
+    return new Cuboid({ center, extents })
   }
 
 }

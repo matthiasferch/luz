@@ -73,8 +73,24 @@ export class Meshes {
         mode = this.gl.LINES
         break
 
+      case Mesh.Topology.LineLoop:
+        mode = this.gl.LINE_LOOP
+        break
+
+      case Mesh.Topology.LineStrip:
+        mode = this.gl.LINE_STRIP
+        break
+
       case Mesh.Topology.Triangles:
         mode = this.gl.TRIANGLES
+        break
+
+      case Mesh.Topology.TriangleFan:
+        mode = this.gl.TRIANGLE_FAN
+        break
+
+      case Mesh.Topology.TriangleStrip:
+        mode = this.gl.TRIANGLE_STRIP
         break
     }
 

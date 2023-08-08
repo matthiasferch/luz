@@ -5,11 +5,11 @@ import { Collision } from './collision'
 
 export class World {
 
-  private bodies: Body[] = []
+  readonly bodies: Body[] = []
 
-  private collisions: Required<Collision>[] = []
+  readonly collisions: Required<Collision>[] = []
 
-  private readonly gravity = new vec3([0, -9.81, 0])
+  readonly gravity = new vec3([0, -9.81, 0])
 
   update(deltaTime: number) {
     this.applyGravity()
@@ -35,11 +35,7 @@ export class World {
           return
         }
 
-        const collision = b1.collider.collide(
-          b2.collider, 
-          b1.transform, 
-          b2.transform
-        )
+        const collision = b1.collider.collide(b2.collider)
 
         if (collision) {
           this.collisions.push({
@@ -58,12 +54,12 @@ export class World {
       const d = vec3.subtract(b2.velocity, b1.velocity)
       const n = vec3.dot(d, collision.normal)
 
-      const m1 = 1.0 / b1.mass
-      const m2 = 1.0 / b2.mass
-
       if (n >= 0) {
         return
       }
+
+      const m1 = 1.0 / b1.mass
+      const m2 = 1.0 / b2.mass
 
       const j = -1.0 * n / (m1 + m2)
       const impulse = vec3.scale(collision.normal, j)

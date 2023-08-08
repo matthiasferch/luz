@@ -8,7 +8,13 @@ export interface Mesh {
 export module Mesh {
   export enum Topology {
     Points,
+
     Lines,
-    Triangles
+    LineLoop,
+    LineStrip,
+
+    Triangles,
+    TriangleFan,
+    TriangleStrip
   }
 }

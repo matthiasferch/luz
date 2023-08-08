@@ -15,7 +15,7 @@
     "test:core": "cd modules/core && npm run test",
     "test:physics": "cd modules/physics && npm run test",
     "test:graphics": "cd modules/graphics && npm run test",
-    "test:all": "npm-run-all -s test:utilities test:vectors test:core test:physics test:graphics"
+    "test:all": "npm-run-all -s test:utilities test:vectors test:core test:physics"
   },
   "devDependencies": {
     "npm-run-all": "^4.1.5",

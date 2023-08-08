@@ -21,17 +21,17 @@ export class Plane extends Collider {
     this.equation = equation.copy()
   }
 
-  collide(collider: Collider, t1: Transform, t2: Transform): Collision | null {
+  collide(collider: Collider): Collision | null {
     if (collider instanceof Ray) {
-      return collideRayWithPlane(collider, this, t1, t2)
+      return collideRayWithPlane(collider, this)
     }
 
     if (collider instanceof Sphere) {
-      return collidePlaneWithSphere(this, collider, t1, t2)
+      return collidePlaneWithSphere(this, collider)
     }
 
     if (collider instanceof Cuboid) {
-      return collidePlaneWithCuboid(this, collider, t1, t2)
+      return collidePlaneWithCuboid(this, collider)
     }
 
     return null

@@ -23,21 +23,21 @@ export class Ray extends Collider {
     this.direction = direction.copy().normalize()
   }
 
-  collide(collider: Collider, t1: Transform, t2: Transform): Collision | null {
+  collide(collider: Collider): Collision | null {
     if (collider instanceof Ray) {
-      return collideRayWithRay(this, collider, t1, t2)
+      return collideRayWithRay(this, collider)
     }
 
     if (collider instanceof Plane) {
-      return collideRayWithPlane(this, collider, t1, t2)
+      return collideRayWithPlane(this, collider)
     }
 
     if (collider instanceof Sphere) {
-      return collideRayWithSphere(this, collider, t1, t2)
+      return collideRayWithSphere(this, collider)
     }
 
     if (collider instanceof Cuboid) {
-      return collideRayWithCuboid(this, collider, t1, t2)
+      return collideRayWithCuboid(this, collider)
     }
 
     return null

@@ -1,61 +1,37 @@
-import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 
 import { Collision } from '../collision'
 import { Cuboid } from '../colliders/cuboid'
 
-const { min } = Math
+const { min, sign } = Math
 
-export const collideCuboidWithCuboid = (c1: Cuboid, c2: Cuboid, t1: Transform, t2: Transform): Collision | null => {
-  if (
-    c1.maximum.x < c2.minimum.x ||
-    c1.minimum.x > c2.maximum.x ||
-    c1.maximum.y < c2.minimum.y ||
-    c1.minimum.y > c2.maximum.y ||
-    c1.maximum.z < c2.minimum.z ||
-    c1.minimum.z > c2.maximum.z
-  ) {
+export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Collision | null => {
+  const { center: c1, extents: e1 } = cuboid1
+  const { center: c2, extents: e2 } = cuboid2
+
+  const distance = vec3.absolute(vec3.subtract(c2, c1))
+  const overlap = vec3.add(e1, e2).subtract(distance)
+
+  if (overlap.x < 0 || overlap.y < 0 || overlap.z < 0) {
     return null
   }
 
-  const x = min(c1.maximum.x - c2.minimum.x, c2.maximum.x - c1.minimum.x)
-  const y = min(c1.maximum.y - c2.minimum.y, c2.maximum.y - c1.minimum.y)
-  const z = min(c1.maximum.z - c2.minimum.z, c2.maximum.z - c1.minimum.z)
-
-  const center1 = vec3.add(c1.minimum, c1.maximum).scale(0.5)
-  const center2 = vec3.add(c2.minimum, c2.maximum).scale(0.5)
+  const minOverlap = min(overlap.x, overlap.y, overlap.z)
 
   let normal: vec3
 
-  const contact = center1.copy()
+  const contact = c1.copy()
 
-  if (x < y && x < z) {
+  if (overlap.x === minOverlap) {
     normal = vec3.right.copy()
-
-    if (center1.x < center2.x) {
-      contact.x = c1.maximum.x
-    } else {
-      contact.x = c1.minimum.x
-    }
-  } else if (y < z) {
+    contact.x = c1.x + sign(overlap.x) * e1.x
+  } else if (overlap.y === minOverlap) {
     normal = vec3.up.copy()
-
-    if (center1.y < center2.y) {
-      contact.y = c1.maximum.y
-    } else {
-      contact.y = c1.minimum.y
-    }
+    contact.y = c1.y + sign(overlap.y) * e1.y
   } else {
     normal = vec3.forward.copy()
-
-    if (center1.z < center2.z) {
-      contact.z = c1.maximum.z
-    } else {
-      contact.z = c1.minimum.z
-    }
+    contact.z = c1.z + sign(overlap.z) * e1.z
   }
 
-  const distance = -(min(x, y, z))
-
-  return { normal, contact, distance }
+  return { normal, contact, distance: -minOverlap }
 }

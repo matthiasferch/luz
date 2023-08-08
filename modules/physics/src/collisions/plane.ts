@@ -8,7 +8,7 @@ import { Sphere } from '../colliders/sphere'
 
 const { abs } = Math
 
-export const collidePlaneWithSphere = (plane: Plane, sphere: Sphere, t1: Transform, t2: Transform): Collision | null => {
+export const collidePlaneWithSphere = (plane: Plane, sphere: Sphere): Collision | null => {
   const { equation } = plane
 
   const planeNormal = new vec3([equation.x, equation.y, equation.z])
@@ -26,12 +26,9 @@ export const collidePlaneWithSphere = (plane: Plane, sphere: Sphere, t1: Transfo
   return { contact, normal, distance }
 }
 
-export const collidePlaneWithCuboid = (plane: Plane, cuboid: Cuboid, t1: Transform, t2: Transform): Collision | null => {
+export const collidePlaneWithCuboid = (plane: Plane, cuboid: Cuboid): Collision | null => {
   const { equation } = plane
-  const { maximum, minimum } = cuboid
-
-  const center = vec3.add(minimum, maximum).scale(0.5)
-  const extents = vec3.subtract(maximum, minimum).scale(0.5)
+  const { center, extents } = cuboid
 
   const planeNormal = new vec3([equation.x, equation.y, equation.z])
 

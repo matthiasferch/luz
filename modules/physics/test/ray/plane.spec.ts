@@ -1,13 +1,10 @@
 import { expect } from 'chai'
 import 'mocha'
 
-import { Transform } from '@luz/core'
 import { vec3, vec4 } from '@luz/vectors'
 
 import { Plane } from '../../src/colliders/plane'
 import { Ray } from '../../src/colliders/ray'
-
-const { origin } = Transform
 
 describe('Ray', () => {
 
@@ -22,7 +19,7 @@ describe('Ray', () => {
       equation: new vec4([0, 1, 0, 0])
     })
 
-    const collision = ray.collide(plane, origin, origin)
+    const collision = ray.collide(plane)
 
     expect(collision).to.not.be.null
     expect(collision!.contact).to.deep.equal(new vec3([0, 0, 0]))
@@ -42,7 +39,7 @@ describe('Ray', () => {
       equation: new vec4([0, 1, 0, 0])
     })
 
-    const collision = ray.collide(plane, origin, origin)
+    const collision = ray.collide(plane)
 
     expect(collision).to.be.null
 

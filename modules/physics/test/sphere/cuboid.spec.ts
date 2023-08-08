@@ -1,13 +1,10 @@
 import { expect } from 'chai'
 import 'mocha'
 
-import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 
 import { Sphere } from '../../src/colliders/sphere'
 import { Cuboid } from '../../src/colliders/cuboid'
-
-const { origin } = Transform
 
 describe('Sphere', () => {
 
@@ -19,11 +16,11 @@ describe('Sphere', () => {
     })
 
     const cuboid = new Cuboid({
-      minimum: new vec3([-1, -1, -1]),
-      maximum: new vec3([1, 1, 1])
+      center: new vec3([0, 0, 0]),
+      extents: new vec3([1, 1, 1])
     })
 
-    const collision = sphere.collide(cuboid, origin, origin)
+    const collision = sphere.collide(cuboid)
 
     expect(collision).to.not.be.null
     expect(collision!.contact).to.deep.equal(new vec3([1, 0, 0]))
@@ -40,11 +37,11 @@ describe('Sphere', () => {
     })
 
     const cuboid = new Cuboid({
-      minimum: new vec3([-1, -1, -1]),
-      maximum: new vec3([1, 1, 1])
+      center: new vec3([0, 0, 0]),
+      extents: new vec3([1, 1, 1])
     })
 
-    const collision = sphere.collide(cuboid, origin, origin)
+    const collision = sphere.collide(cuboid)
 
     expect(collision).to.be.null
 

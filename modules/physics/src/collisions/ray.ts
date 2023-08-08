@@ -9,7 +9,7 @@ import { Sphere } from '../colliders/sphere'
 
 const { sqrt, min, max } = Math
 
-export const collideRayWithRay = (ray1: Ray, ray2: Ray, t1: Transform, t2: Transform): Collision | null => {
+export const collideRayWithRay = (ray1: Ray, ray2: Ray): Collision | null => {
   const { direction: d1, origin: o1 } = ray1
   const { direction: d2, origin: o2 } = ray2
 
@@ -38,7 +38,7 @@ export const collideRayWithRay = (ray1: Ray, ray2: Ray, t1: Transform, t2: Trans
   return { contact: c1, normal, distance }
 }
 
-export const collideRayWithPlane = (ray: Ray, plane: Plane, t1: Transform, t2: Transform): Collision | null => {
+export const collideRayWithPlane = (ray: Ray, plane: Plane): Collision | null => {
   const { equation } = plane
   const { direction, origin } = ray
 
@@ -61,7 +61,7 @@ export const collideRayWithPlane = (ray: Ray, plane: Plane, t1: Transform, t2: T
   return { contact, normal, distance }
 }
 
-export const collideRayWithSphere = (ray: Ray, sphere: Sphere, t1: Transform, t2: Transform): Collision | null => {
+export const collideRayWithSphere = (ray: Ray, sphere: Sphere): Collision | null => {
   const { direction, origin } = ray
   const { center, radius } = sphere
 
@@ -88,9 +88,12 @@ export const collideRayWithSphere = (ray: Ray, sphere: Sphere, t1: Transform, t2
   return { contact, normal, distance }
 }
 
-export const collideRayWithCuboid = (ray: Ray, cuboid: Cuboid, t1: Transform, t2: Transform): Collision | null => {
+export const collideRayWithCuboid = (ray: Ray, cuboid: Cuboid): Collision | null => {
   const { origin, direction } = ray
-  const { maximum, minimum } = cuboid
+  const { center, extents } = cuboid
+  
+  const maximum = vec3.add(center, extents)
+  const minimum = vec3.subtract(center, extents)
 
   const s1 = vec3.subtract(minimum, origin).divide(direction)
   const s2 = vec3.subtract(maximum, origin).divide(direction)

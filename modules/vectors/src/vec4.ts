@@ -2,6 +2,8 @@ import { Epsilon } from './constants'
 
 import { mat4 } from './mat4'
 
+const { abs, sqrt } = Math
+
 export class vec4 extends Float32Array {
 
   constructor(values: number[] = [0.0, 0.0, 0.0, 1.0]) {
@@ -96,7 +98,7 @@ export class vec4 extends Float32Array {
   }
 
   get length(): number {
-    return Math.sqrt(this.squaredLength)
+    return sqrt(this.squaredLength)
   }
 
   get squaredLength(): number {
@@ -144,19 +146,19 @@ export class vec4 extends Float32Array {
   }
 
   equals(vector: vec4, threshold = Epsilon): boolean {
-    if (Math.abs(this.x - vector.x) > threshold) {
+    if (abs(this.x - vector.x) > threshold) {
       return false
     }
 
-    if (Math.abs(this.y - vector.y) > threshold) {
+    if (abs(this.y - vector.y) > threshold) {
       return false
     }
 
-    if (Math.abs(this.z - vector.z) > threshold) {
+    if (abs(this.z - vector.z) > threshold) {
       return false
     }
 
-    if (Math.abs(this.w - vector.w) > threshold) {
+    if (abs(this.w - vector.w) > threshold) {
       return false
     }
 
@@ -266,6 +268,19 @@ export class vec4 extends Float32Array {
     return matrix.transform(this, dest)
   }
 
+  static absolute(vector: vec4, dest: null | vec4 = null): vec4 {
+    if (!dest) {
+      dest = new vec4()
+    }
+
+    dest.x = abs(vector.x)
+    dest.y = abs(vector.y)
+    dest.z = abs(vector.z)
+    dest.w = abs(vector.w)
+
+    return dest
+  }
+
   static mix(vector: vec4, vector2: vec4, time: number, dest: null | vec4 = null): vec4 {
     if (!dest) {
       dest = new vec4()
@@ -345,6 +360,58 @@ export class vec4 extends Float32Array {
     }
 
     return vector.normalize(dest)
+  }
+
+  static sum(...vectors: vec4[]): vec4 {
+    const dest = new vec4()
+  
+    for (const vector of vectors) {
+      dest.x += vector.x
+      dest.y += vector.y
+      dest.z += vector.z
+      dest.w += vector.w
+    }
+  
+    return dest
+  }
+
+  static difference(...vectors: vec4[]): vec4 {
+    const dest = new vec4()
+  
+    for (const vector of vectors) {
+      dest.x -= vector.x
+      dest.y -= vector.y
+      dest.z -= vector.z
+      dest.w -= vector.w
+    }
+  
+    return dest
+  }
+
+  static product(...vectors: vec4[]): vec4 {
+    const dest = new vec4()
+  
+    for (const vector of vectors) {
+      dest.x *= vector.x
+      dest.y *= vector.y
+      dest.z *= vector.z
+      dest.w *= vector.w
+    }
+  
+    return dest
+  }
+
+  static division(...vectors: vec4[]): vec4 {
+    const dest = new vec4()
+  
+    for (const vector of vectors) {
+      dest.x /= vector.x
+      dest.y /= vector.y
+      dest.z /= vector.z
+      dest.w /= vector.w
+    }
+  
+    return dest
   }
 
 }

@@ -42,26 +42,26 @@ export class Renderer {
   render<T extends {}>(camera: Camera, model: Model, lights: Light[], program: Program, uniforms?: T) {
     if (camera) {
       // camera uniforms
-      this.programs.update(program, {
+      this.programs.update((program), {
         uniforms: this.collectUniformValues(program, { camera })
       })
     }
 
     if (lights) {
       // light uniforms
-      this.programs.update(program, {
+      this.programs.update((program), {
         uniforms: this.collectUniformValues(program, { lights })
       })
     }
 
     // model uniforms
-    this.programs.update(program, {
+    this.programs.update((program), {
       uniforms: this.collectUniformValues(program, { model })
     })
 
     if (uniforms) {
       // additional uniforms
-      this.programs.update(program, {
+      this.programs.update((program), {
         uniforms: this.collectUniformValues(program, uniforms)
       })
     }

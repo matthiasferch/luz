@@ -26,21 +26,21 @@ export class Sphere extends Collider {
     this.radius = radius
   }
 
-  collide(collider: Collider, t1: Transform, t2: Transform): Collision | null {
+  collide(collider: Collider): Collision | null {
     if (collider instanceof Ray) {
-      return collideRayWithSphere(collider, this, t1, t2)
+      return collideRayWithSphere(collider, this)
     }
 
     if (collider instanceof Plane) {
-      return collidePlaneWithSphere(collider, this, t1, t2)
+      return collidePlaneWithSphere(collider, this)
     }
 
     if (collider instanceof Sphere) {
-      return collideSphereWithSphere(this, collider, t1, t2)
+      return collideSphereWithSphere(this, collider)
     }
 
     if (collider instanceof Cuboid) {
-      return collideSphereWithCuboid(this, collider, t1, t2)
+      return collideSphereWithCuboid(this, collider)
     }
 
     return null
