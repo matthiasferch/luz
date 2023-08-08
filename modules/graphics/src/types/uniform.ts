@@ -5,6 +5,7 @@ export type Uniform = WebGLActiveInfo & {
 }
 
 export module Uniform {
+
   export type Value = number | Float32Array | Texture
 
   export interface Block {
@@ -14,4 +15,5 @@ export module Uniform {
   
     offsets: Record<string, number>
   }
+  
 }

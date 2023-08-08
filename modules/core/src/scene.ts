@@ -1,20 +1,12 @@
-import { Light } from './light'
-import { Model } from './model'
+import { Entity } from './entity'
 
 export class Scene {
 
-  readonly models: Record<string, Model> = {}
-
-  readonly lights: Record<string, Light> = {}
+  readonly entities: Record<string, Entity> = {}
 
   update() {
-    // models
-    const models = Object.values(this.models)
-    models.forEach((model) => model.update())
-
-    // lights
-    const lights = Object.values(this.lights)
-    lights.forEach((light) => light.update())
+    const entities = Object.values(this.entities)
+    entities.forEach((entity) => entity.update())
   }
 
 }

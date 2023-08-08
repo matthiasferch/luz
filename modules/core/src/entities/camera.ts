@@ -1,8 +1,10 @@
 import { mat3, mat4, vec2 } from '@luz/vectors'
 
-import { Transform } from './transform'
+import { Entity } from '../entity'
 
-export class Camera extends Transform {
+export class Camera extends Entity {
+
+  type = Entity.Type.Camera
 
   aspect = 1.0
 

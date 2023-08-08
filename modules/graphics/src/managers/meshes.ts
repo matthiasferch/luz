@@ -55,10 +55,10 @@ export class Meshes {
 
     this.gl.bindVertexArray(null)
 
-    return {
+    return new Mesh(
       topology,
       vertexArray
-    }
+    )
   }
 
   render(mesh: Mesh) {

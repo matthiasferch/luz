@@ -1,7 +1,9 @@
-export { Light } from './light'
 export { Scene } from './scene'
-export { Model } from './model'
-export { Camera } from './camera'
+export { Entity } from './entity'
 export { Transform } from './transform'
+
+export { Model } from './entities/model'
+export { Light } from './entities/light'
+export { Camera } from './entities/camera'
 
 

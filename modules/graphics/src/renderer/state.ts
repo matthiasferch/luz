@@ -105,6 +105,7 @@ export class State {
 }
 
 export module State {
+
   export enum CullMode {
     None,
   
@@ -134,4 +135,5 @@ export module State {
     Greater,
     GreaterEqual
   }
+
 }

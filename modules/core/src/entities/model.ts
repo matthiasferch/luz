@@ -1,16 +1,18 @@
 import { vec3 } from '@luz/vectors'
 import { Mesh, Texture } from '@luz/graphics'
 
-import { Transform } from './transform'
+import { Entity } from '../entity'
 
-export class Model extends Transform {
+export class Model extends Entity {
+
+  type = Entity.Type.Model
 
   readonly baseColor = vec3.one.copy()
 
   baseTexture: Texture
 
-  constructor(readonly mesh: Mesh) {
-    super()
-  }
+  mesh: Mesh
+
+  body: Body
 
 }

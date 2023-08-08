@@ -3,8 +3,10 @@ export type Shader = WebGLShader & {
 }
 
 export module Shader {
+
   export enum Stage {
     VertexShader,
     FragmentShader
   }
+  
 }

@@ -1,11 +1,16 @@
 import { VertexArray } from '../types/vertex-array'
 
-export interface Mesh {
-  topology: Mesh.Topology
-  vertexArray: VertexArray
+export class Mesh {
+
+  constructor(
+    readonly topology: Mesh.Topology,
+    readonly vertexArray: VertexArray
+  ) {}
+
 }
 
 export module Mesh {
+
   export enum Topology {
     Points,
 
@@ -17,4 +22,5 @@ export module Mesh {
     TriangleFan,
     TriangleStrip
   }
+
 }

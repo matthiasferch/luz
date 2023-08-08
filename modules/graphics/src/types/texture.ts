@@ -14,6 +14,7 @@ export type Texture = WebGLTexture & {
 }
 
 export module Texture {
+
   export enum Tiling {
     None,
   
@@ -29,5 +30,6 @@ export module Texture {
     Bilinear,
     Trilinear
   }
+  
 }
 

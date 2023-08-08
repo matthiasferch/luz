@@ -1,8 +1,11 @@
 import { mat4, vec3 } from '@luz/vectors'
 
 import { Camera } from './camera'
+import { Entity } from '../entity'
 
 export class Light extends Camera {
+
+  type = Entity.Type.Light
 
   radius = 6.0
 
