@@ -1,13 +1,9 @@
 import { Epsilon } from './constants'
 import { mat3 } from './mat3'
 
-const { abs, sqrt } = Math
+const { min, max, abs, sqrt } = Math
 
 export class vec3 extends Float32Array {
-
-  constructor(values: number[] = [0.0, 0.0, 0.0]) {
-    super(values.slice(0, 3))
-  }
 
   static readonly zero = new vec3([0.0, 0.0, 0.0])
   static readonly one = new vec3([1.0, 1.0, 1.0])
@@ -15,6 +11,12 @@ export class vec3 extends Float32Array {
   static readonly up = new vec3([0.0, 1.0, 0.0])
   static readonly right = new vec3([1.0, 0.0, 0.0])
   static readonly forward = new vec3([0.0, 0.0, 1.0])
+
+  static readonly infinity = new vec3([Infinity, Infinity, Infinity])
+
+  constructor(values: number[] = [0.0, 0.0, 0.0]) {
+    super(values.slice(0, 3))
+  }
 
   get x(): number {
     return this[0]
@@ -85,9 +87,7 @@ export class vec3 extends Float32Array {
   }
 
   get squaredLength(): number {
-    const x = this.x
-    const y = this.y
-    const z = this.z
+    const { x, y, z } = this
 
     return x * x + y * y + z * z
   }
@@ -244,6 +244,26 @@ export class vec3 extends Float32Array {
     return matrix.transform(this, dest)
   }
 
+  toJSON() {
+    const { x, y, z } = this
+
+    return [x, y, z]
+  }
+
+  static axis(index: number) {
+    if (index === 0) {
+      return vec3.right
+    }
+
+    if (index === 1) {
+      return vec3.up
+    }
+
+    if (index === 2) {
+      return vec3.forward
+    }
+  }
+
   static absolute(vector: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
@@ -252,6 +272,30 @@ export class vec3 extends Float32Array {
     dest.x = abs(vector.x)
     dest.y = abs(vector.y)
     dest.z = abs(vector.z)
+
+    return dest
+  }
+
+  static minimum(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+    if (!dest) {
+      dest = new vec3()
+    }
+
+    dest.x = min(vector.x, vector2.x)
+    dest.y = min(vector.y, vector2.y)
+    dest.z = min(vector.z, vector2.z)
+
+    return dest
+  }
+
+  static maximum(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+    if (!dest) {
+      dest = new vec3()
+    }
+
+    dest.x = max(vector.x, vector2.x)
+    dest.y = max(vector.y, vector2.y)
+    dest.z = max(vector.z, vector2.z)
 
     return dest
   }

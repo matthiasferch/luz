@@ -1,6 +1,6 @@
 import { mat3, mat4, vec2 } from '@luz/vectors'
-
 import { Entity } from '../entity'
+
 
 export class Camera extends Entity {
 
@@ -22,8 +22,8 @@ export class Camera extends Entity {
 
   readonly reconstructionMatrix = new mat4()
 
-  update() {
-    super.update()
+  update(deltaTime: number) {
+    super.update(deltaTime)
 
     // view matrix
     this.modelMatrix.invert(this.viewMatrix)
@@ -39,6 +39,12 @@ export class Camera extends Entity {
 
     // reconstruction matrix (to reconstruct fragment positions)
     mat4.multiply(this.projectionMatrix, this.viewMatrix, this.reconstructionMatrix).invert()
+  }
+
+  toJSON() {
+    const { aspect, aperture, clipPlanes } = this
+
+    return { ...super.toJSON(), aspect, aperture, clipPlanes }
   }
 
 }

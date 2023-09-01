@@ -26,13 +26,19 @@ export class Light extends Camera {
     this.biasMatrix.scale(new vec3([0.5, 0.5, 0.5]))
   }
 
-  update() {
-    super.update()
+  update(deltaTime: number) {
+    super.update(deltaTime)
 
     // texture matrix
     this.biasMatrix.copy(this.textureMatrix)
     this.textureMatrix.multiply(this.projectionMatrix)
     this.textureMatrix.multiply(this.viewMatrix)
+  }
+
+  toJSON() {
+    const { radius, falloff, intensity } = this
+
+    return { ...super.toJSON(), radius, falloff, intensity }
   }
 
 }

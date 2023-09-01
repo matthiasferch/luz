@@ -230,7 +230,7 @@ export class Programs {
 
     this.update(program)
 
-    Object.keys(program.uniforms).forEach(name => {
+    Object.keys(program.uniforms).forEach((name) => {
       const uniform = program.uniforms[name]
 
       if (uniform.type === this.gl.SAMPLER_2D) {

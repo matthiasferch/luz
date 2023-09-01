@@ -17,6 +17,6 @@ export { Program } from './types/program'
 export { Attribute } from './types/attribute'
 export { VertexArray } from './types/vertex-array'
 
-export { Mesh } from './interfaces/mesh'
+export { Mesh } from './renderer/mesh'
 
 

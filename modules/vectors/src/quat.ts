@@ -1,5 +1,4 @@
 import { Epsilon } from './constants'
-
 import { mat3 } from './mat3'
 import { mat4 } from './mat4'
 import { vec3 } from './vec3'
@@ -53,10 +52,7 @@ export class quat extends Float32Array {
   }
 
   get pitch(): number {
-    const x = this.x
-    const y = this.y
-    const z = this.z
-    const w = this.w
+    const { x, y, z, w } = this
 
     return Math.atan2(2.0 * (y * z + w * x), w * w - x * x - y * y + z * z)
   }
@@ -66,10 +62,7 @@ export class quat extends Float32Array {
   }
 
   get roll(): number {
-    const x = this.x
-    const y = this.y
-    const z = this.z
-    const w = this.w
+    const { x, y, z, w } = this
 
     return Math.atan2(2.0 * (x * y + w * z), w * w + x * x - y * y - z * z)
   }
@@ -83,10 +76,7 @@ export class quat extends Float32Array {
   }
 
   get squaredLength(): number {
-    const x = this.x
-    const y = this.y
-    const z = this.z
-    const w = this.w
+    const { x, y, z, w } = this
 
     return x * x + y * y + z * z + w * w
   }
@@ -113,9 +103,7 @@ export class quat extends Float32Array {
   }
 
   calculateW(): quat {
-    const x = this.x
-    const y = this.y
-    const z = this.z
+    const { x, y, z } = this
 
     this.w = -Math.sqrt(Math.abs(1.0 - x * x - y * y - z * z))
 
@@ -163,10 +151,7 @@ export class quat extends Float32Array {
       dest = this
     }
 
-    const x = this.x
-    const y = this.y
-    const z = this.z
-    const w = this.w
+    const { x, y, z, w } = this
 
     let length = Math.sqrt(x * x + y * y + z * z + w * w)
 
@@ -245,15 +230,31 @@ export class quat extends Float32Array {
     return dest
   }
 
+  transformVec3(vector: vec3, dest: null | vec3 = null): vec3 {
+    if (!dest) {
+      dest = new vec3()
+    }
+
+    const { x, y, z } = vector
+
+    const v = new quat([x, y, z, 0])
+
+    const q1 = this.multiply(v)
+    const q2 = this.copy().invert()
+
+    const q3 = quat.multiply(q1, q2)
+
+    dest.xyz = [q3.x, q3.y, q3.z]
+
+    return dest
+  }
+
   toMat3(dest: null | mat3 = null): mat3 {
     if (!dest) {
       dest = new mat3()
     }
 
-    const x = this.x
-    const y = this.y
-    const z = this.z
-    const w = this.w
+    const { x, y, z, w } = this
 
     const x2 = x + x
     const y2 = y + y
@@ -291,10 +292,7 @@ export class quat extends Float32Array {
       dest = new mat4()
     }
 
-    const x = this.x
-    const y = this.y
-    const z = this.z
-    const w = this.w
+    const { x, y, z, w } = this
 
     const x2 = x + x
     const y2 = y + y
@@ -333,6 +331,12 @@ export class quat extends Float32Array {
     ])
 
     return dest
+  }
+
+  toJSON() {
+    const { x, y, z, w } = this
+
+    return [x, y, z, w]
   }
 
   static dot(q1: quat, q2: quat): number {

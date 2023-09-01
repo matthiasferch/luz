@@ -1,12 +1,11 @@
 import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
-
 import { Collider } from '../collider'
 import { Collision } from '../collision'
-import { Sphere } from './sphere'
 import { collideRayWithCuboid, collideRayWithPlane, collideRayWithRay, collideRayWithSphere } from '../collisions/ray'
+import { Cuboid } from '../volumes/cuboid'
+import { Sphere } from '../volumes/sphere'
 import { Plane } from './plane'
-import { Cuboid } from './cuboid'
 
 export class Ray extends Collider {
 
@@ -50,6 +49,12 @@ export class Ray extends Collider {
     const direction = rotationMatrix.transform(this.direction)
 
     return new Ray({ origin, direction })
+  }
+
+  toJSON() {
+    const { origin, direction } = this
+
+    return { origin, direction }
   }
 
 }

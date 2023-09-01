@@ -1,45 +1,46 @@
-import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
-
-import { Collision } from '../collision'
-import { Cuboid } from '../colliders/cuboid'
 import { Plane } from '../colliders/plane'
-import { Sphere } from '../colliders/sphere'
+import { Collision } from '../collision'
+import { Cuboid } from '../volumes/cuboid'
+import { Sphere } from '../volumes/sphere'
 
 const { abs } = Math
 
 export const collidePlaneWithSphere = (plane: Plane, sphere: Sphere): Collision | null => {
-  const { equation } = plane
+  const { normal, equation } = plane
+  const { center, radius } = sphere
 
-  const planeNormal = new vec3([equation.x, equation.y, equation.z])
-  const distance = vec3.dot(planeNormal, sphere.center) - equation.w
+  const toCenter = vec3.dot(normal, center) + equation.w
 
-  if (distance < 0) {
+  const distance = abs(toCenter)
+
+  if (distance > radius) {
     return null
   }
 
-  const depth = sphere.radius - distance
-  const normal = planeNormal.copy().negate()
+  const r = radius - distance
+  const n = vec3.scale(normal, r)
 
-  const contact = vec3.subtract(sphere.center, vec3.scale(normal, depth))
+  const contact = (toCenter < 0) ? vec3.subtract(center, n) : vec3.add(center, n)
 
   return { contact, normal, distance }
 }
 
 export const collidePlaneWithCuboid = (plane: Plane, cuboid: Cuboid): Collision | null => {
-  const { equation } = plane
+  const { normal, equation } = plane
   const { center, extents } = cuboid
 
-  const planeNormal = new vec3([equation.x, equation.y, equation.z])
+  const toCenter = vec3.dot(normal, center) - equation.w
 
-  const projection = vec3.dot(planeNormal, extents)
-  const distance = vec3.dot(center, planeNormal) + equation.w - projection
+  const distance = abs(toCenter)
 
-  if (distance > 0) {
+  const projection = abs(normal.x * extents.x) + abs(normal.y * extents.y) + abs(normal.z * extents.z)
+
+  if (distance > projection) {
     return null
   }
 
-  const contact = vec3.subtract(center, vec3.scale(planeNormal, projection))
+  const contact = vec3.subtract(center, vec3.scale(normal, projection))
 
-  return { contact, normal: planeNormal, distance: abs(distance) }
+  return { contact, normal, distance: distance - projection }
 }

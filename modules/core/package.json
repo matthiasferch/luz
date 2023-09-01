@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@luz/graphics": "file:../graphics",
+    "@luz/physics": "file:../physics",
     "@luz/vectors": "file:../vectors"
   }
 }

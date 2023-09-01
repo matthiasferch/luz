@@ -1,6 +1,5 @@
+import { Body } from '@luz/core'
 import { vec3 } from '@luz/vectors'
-
-import { Body } from './body'
 
 export interface Collision {
   normal: vec3

@@ -1,14 +1,9 @@
 import { Epsilon } from './constants'
-
 import { mat4 } from './mat4'
 
-const { abs, sqrt } = Math
+const { min, max, abs, sqrt } = Math
 
 export class vec4 extends Float32Array {
-
-  constructor(values: number[] = [0.0, 0.0, 0.0, 1.0]) {
-    super(values.slice(0, 4))
-  }
 
   static readonly zero = new vec4([0.0, 0.0, 0.0, 1.0])
   static readonly one = new vec4([1.0, 1.0, 1.0, 1.0])
@@ -16,6 +11,12 @@ export class vec4 extends Float32Array {
   static readonly up = new vec4([0.0, 1.0, 0.0, 0.0])
   static readonly right = new vec4([1.0, 0.0, 0.0, 0.0])
   static readonly forward = new vec4([0.0, 0.0, 1.0, 0.0])
+
+  static readonly infinity = new vec4([Infinity, Infinity, Infinity, Infinity])
+
+  constructor(values: number[] = [0.0, 0.0, 0.0, 1.0]) {
+    super(values.slice(0, 4))
+  }
 
   get x(): number {
     return this[0]
@@ -102,10 +103,7 @@ export class vec4 extends Float32Array {
   }
 
   get squaredLength(): number {
-    const x = this.x
-    const y = this.y
-    const z = this.z
-    const w = this.w
+    const { x, y, z, w } = this
 
     return x * x + y * y + z * z + w * w
   }
@@ -268,6 +266,12 @@ export class vec4 extends Float32Array {
     return matrix.transform(this, dest)
   }
 
+  toJSON() {
+    const { x, y, z, w } = this
+
+    return [x, y, z, w]
+  }
+
   static absolute(vector: vec4, dest: null | vec4 = null): vec4 {
     if (!dest) {
       dest = new vec4()
@@ -277,6 +281,32 @@ export class vec4 extends Float32Array {
     dest.y = abs(vector.y)
     dest.z = abs(vector.z)
     dest.w = abs(vector.w)
+
+    return dest
+  }
+
+  static minimum(vector: vec4, vector2: vec4, dest: null | vec4 = null): vec4 {
+    if (!dest) {
+      dest = new vec4()
+    }
+
+    dest.x = min(vector.x, vector2.x)
+    dest.y = min(vector.y, vector2.y)
+    dest.z = min(vector.z, vector2.z)
+    dest.z = min(vector.w, vector2.w)
+
+    return dest
+  }
+
+  static maximum(vector: vec4, vector2: vec4, dest: null | vec4 = null): vec4 {
+    if (!dest) {
+      dest = new vec4()
+    }
+
+    dest.x = max(vector.x, vector2.x)
+    dest.y = max(vector.y, vector2.y)
+    dest.z = max(vector.z, vector2.z)
+    dest.z = max(vector.w, vector2.w)
 
     return dest
   }

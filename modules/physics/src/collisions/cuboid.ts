@@ -1,37 +1,73 @@
-import { vec3 } from '@luz/vectors'
-
+import { Epsilon, quat, vec3 } from '@luz/vectors'
 import { Collision } from '../collision'
-import { Cuboid } from '../colliders/cuboid'
+import { Cuboid } from '../volumes/cuboid'
 
-const { min, sign } = Math
+const { min, max, sign } = Math
 
 export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Collision | null => {
   const { center: c1, extents: e1 } = cuboid1
   const { center: c2, extents: e2 } = cuboid2
 
-  const distance = vec3.absolute(vec3.subtract(c2, c1))
-  const overlap = vec3.add(e1, e2).subtract(distance)
+  let normal: vec3 = null
+  let distance = Infinity
 
-  if (overlap.x < 0 || overlap.y < 0 || overlap.z < 0) {
-    return null
+  const testAxis = (axis: vec3) => {
+    if (axis.length < Epsilon) {
+      return true
+    }
+
+    axis.normalize()
+
+    const x = vec3.absolute(axis)
+
+    const m1 = [
+      vec3.dot(c1, axis) - vec3.dot(e1, x),
+      vec3.dot(c1, axis) + vec3.dot(e1, x)
+    ]
+
+    const m2 = [
+      vec3.dot(c2, axis) - vec3.dot(e2, x),
+      vec3.dot(c2, axis) + vec3.dot(e2, x)
+    ]
+
+    if (m1[1] < m2[0] || m2[1] < m1[0]) {
+      return false
+    }
+
+    const penetration = min(m1[1], m2[1]) - max(m1[0], m2[0])
+
+    if (penetration < distance) {
+      distance = penetration
+      normal = axis
+    }
+
+    return true
   }
 
-  const minOverlap = min(overlap.x, overlap.y, overlap.z)
+  for (let i = 0; i < 3; i++) {
+    for (let j = 0; j < 3; j++) {
+      const axis = vec3.cross(
+        cuboid1.getAxis(i),
+        cuboid2.getAxis(j)
+      )
 
-  let normal: vec3
-
-  const contact = c1.copy()
-
-  if (overlap.x === minOverlap) {
-    normal = vec3.right.copy()
-    contact.x = c1.x + sign(overlap.x) * e1.x
-  } else if (overlap.y === minOverlap) {
-    normal = vec3.up.copy()
-    contact.y = c1.y + sign(overlap.y) * e1.y
-  } else {
-    normal = vec3.forward.copy()
-    contact.z = c1.z + sign(overlap.z) * e1.z
+      if (!testAxis(axis)) {
+        return null
+      }
+    }
   }
 
-  return { normal, contact, distance: -minOverlap }
+  for (let i = 0; i < 3; i++) {
+    if (!testAxis(cuboid1.getAxis(i))) {
+      return null
+    }
+
+    if (!testAxis(cuboid2.getAxis(i))) {
+      return null
+    }
+  }
+
+  const contact = vec3.add(c1, c2).scale(0.5)
+
+  return { normal, contact, distance }
 }

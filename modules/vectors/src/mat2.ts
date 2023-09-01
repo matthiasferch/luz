@@ -1,5 +1,4 @@
 import { Epsilon } from './constants'
-
 import { vec2 } from './vec2'
 
 export class mat2 extends Float32Array {

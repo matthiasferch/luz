@@ -1,4 +1,4 @@
-import { Mesh } from '../interfaces/mesh'
+import { Mesh } from '../renderer/mesh'
 import { IndexBuffer } from '../buffers/index-buffer'
 import { VertexBuffer } from '../buffers/vertex-buffer'
 import { VertexArray } from '../types/vertex-array'

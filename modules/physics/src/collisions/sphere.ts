@@ -1,9 +1,7 @@
-import { Transform } from '@luz/core'
 import { vec3 } from '@luz/vectors'
-
 import { Collision } from '../collision'
-import { Cuboid } from '../colliders/cuboid'
-import { Sphere } from '../colliders/sphere'
+import { Cuboid } from '../volumes/cuboid'
+import { Sphere } from '../volumes/sphere'
 
 const { sqrt, min, max } = Math
 

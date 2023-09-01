@@ -1,17 +1,21 @@
 import { Epsilon } from './constants'
-
 import { mat2 } from './mat2'
 
-const { abs, sqrt } = Math
+const { min, max, abs, sqrt } = Math
 
 export class vec2 extends Float32Array {
+
+  static readonly zero = new vec2([0.0, 0.0])
+  static readonly one = new vec2([1.0, 1.0])
+
+  static readonly up = new vec2([0.0, 1.0])
+  static readonly right = new vec2([1.0, 0.0])
+
+  static readonly infinity = new vec2([Infinity, Infinity])
 
   constructor(values: number[] = [0.0, 0.0]) {
     super(values.slice(0, 2))
   }
-
-  static readonly zero = new vec2([0.0, 0.0])
-  static readonly one = new vec2([1.0, 1.0])
 
   get x(): number {
     return this[0]
@@ -66,8 +70,7 @@ export class vec2 extends Float32Array {
   }
 
   get squaredLength(): number {
-    const x = this.x
-    const y = this.y
+    const { x, y } = this
 
     return x * x + y * y
   }
@@ -202,6 +205,22 @@ export class vec2 extends Float32Array {
     return matrix.transform(this, dest)
   }
 
+  toJSON() {
+    const { x, y } = this
+
+    return [x, y]
+  }
+  
+  axis(index: number) {
+    if (index === 0) {
+      return vec2.right
+    }
+
+    if (index === 1) {
+      return vec2.up
+    }
+  }
+
   static absolute(vector: vec2, dest: null | vec2 = null): vec2 {
     if (!dest) {
       dest = new vec2()
@@ -209,6 +228,28 @@ export class vec2 extends Float32Array {
 
     dest.x = abs(vector.x)
     dest.y = abs(vector.y)
+
+    return dest
+  }
+
+  static minimum(vector: vec2, vector2: vec2, dest: null | vec2 = null): vec2 {
+    if (!dest) {
+      dest = new vec2()
+    }
+
+    dest.x = min(vector.x, vector2.x)
+    dest.y = min(vector.y, vector2.y)
+
+    return dest
+  }
+
+  static maximum(vector: vec2, vector2: vec2, dest: null | vec2 = null): vec2 {
+    if (!dest) {
+      dest = new vec2()
+    }
+
+    dest.x = max(vector.x, vector2.x)
+    dest.y = max(vector.y, vector2.y)
 
     return dest
   }

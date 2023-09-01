@@ -1,15 +1,15 @@
-import { Camera, Model, Light } from '@luz/core'
-
-import { State } from './state'
-import { Display } from './display'
-import { Program } from '../types/program'
-import { Uniform } from '../types/uniform'
+import { Camera, Light, Model, Transform } from '@luz/core'
+import { Buffers } from '../managers/buffers'
 import { Meshes } from '../managers/meshes'
 import { Programs } from '../managers/programs'
 import { Samplers } from '../managers/samplers'
 import { Shaders } from '../managers/shaders'
 import { Textures } from '../managers/textures'
-import { Buffers } from '../managers/buffers'
+import { Program } from '../types/program'
+import { Uniform } from '../types/uniform'
+import { Display } from './display'
+import { State } from './state'
+
 
 export class Renderer {
 
@@ -39,7 +39,7 @@ export class Renderer {
     this.meshes = new Meshes(this.gl)
   }
 
-  render<T extends {}>(camera: Camera, model: Model, lights: Light[], program: Program, uniforms?: T) {
+  render<T extends {}>(camera: Camera, transform: Transform, model: Model, lights: Light[], program: Program, uniforms?: T) {
     if (camera) {
       // camera uniforms
       this.programs.update((program), {
@@ -47,10 +47,10 @@ export class Renderer {
       })
     }
 
-    if (lights) {
-      // light uniforms
+    if (transform) {
+      // transform uniforms
       this.programs.update((program), {
-        uniforms: this.collectUniformValues(program, { lights })
+        uniforms: this.collectUniformValues(program, { transform })
       })
     }
 
@@ -58,6 +58,13 @@ export class Renderer {
     this.programs.update((program), {
       uniforms: this.collectUniformValues(program, { model })
     })
+
+    if (lights) {
+      // light uniforms
+      this.programs.update((program), {
+        uniforms: this.collectUniformValues(program, { lights })
+      })
+    }
 
     if (uniforms) {
       // additional uniforms
@@ -70,11 +77,15 @@ export class Renderer {
   }
 
   private collectUniformValues(program: Program, uniformValues: any) {
-    let collectedUniformValues: Record<string, Uniform.Value> = {}
+    const collectedUniformValues: Record<string, Uniform.Value> = {}
 
     const collectRecursively = (values: any, prefix?: string) => {
+      if (typeof values !== 'object') {
+        return
+      }
+
       Object.entries(values).forEach(([name, value]: [string, any]) => {
-        let uniformName = prefix ? `${prefix}.${name}` : name
+        const uniformName = (prefix) ? `${prefix}.${name}` : name
 
         if (program.uniforms.hasOwnProperty(uniformName)) {
           collectedUniformValues[uniformName] = value

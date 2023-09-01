@@ -1,16 +1,16 @@
 import { Transform } from '@luz/core'
-import { vec3 } from '@luz/vectors'
-
+import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
+import { Plane } from '../colliders/plane'
+import { Ray } from '../colliders/ray'
 import { Collision } from '../collision'
-import { collideRayWithSphere } from '../collisions/ray'
-import { Ray } from './ray'
 import { collidePlaneWithSphere } from '../collisions/plane'
-import { Plane } from './plane'
-import { Cuboid } from './cuboid'
+import { collideRayWithSphere } from '../collisions/ray'
 import { collideSphereWithCuboid, collideSphereWithSphere } from '../collisions/sphere'
+import { Volume } from '../volume'
+import { Cuboid } from './cuboid'
 
-export class Sphere extends Collider {
+export class Sphere extends Volume {
 
   readonly center: vec3
 
@@ -24,6 +24,18 @@ export class Sphere extends Collider {
 
     this.center = center.copy()
     this.radius = radius
+  }
+
+  calculateInertia(mass: number) {
+    const { radius } = this
+
+    const t = (2 / 5) * mass * radius * radius
+
+    return new mat3([
+      t, 0, 0,
+      0, t, 0,
+      0, 0, t
+    ])
   }
 
   collide(collider: Collider): Collision | null {
@@ -52,6 +64,12 @@ export class Sphere extends Collider {
     const center = modelMatrix.transformVec3(this.center)
 
     return new Sphere({ center, radius: this.radius })
+  }
+
+  toJSON() {
+    const { center, radius } = this
+
+    return { center, radius }
   }
 
 }

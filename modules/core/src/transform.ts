@@ -14,6 +14,8 @@ export class Transform {
 
   readonly inverseTransposeMatrix = new mat4()
 
+  static readonly origin = new Transform()
+
   constructor({
     translation = vec3.zero,
     rotation = quat.identity
@@ -22,7 +24,7 @@ export class Transform {
     this.rotation = rotation.copy()
   }
 
-  update() {
+  update(deltaTime: number) {
     // model matrix
     mat4.construct(this.rotation, this.translation, this.modelMatrix)
 
@@ -36,6 +38,10 @@ export class Transform {
     this.modelMatrix.invert(this.inverseTransposeMatrix).transpose()
   }
 
-  static readonly origin = new Transform()
+  toJSON() {
+    const { rotation, translation } = this
+
+    return { rotation, translation }
+  }
 
 }

@@ -1,13 +1,12 @@
 import { Transform } from '@luz/core'
-import { vec4 } from '@luz/vectors'
-
-import { collidePlaneWithCuboid, collidePlaneWithSphere } from '../collisions/plane'
+import { vec3, vec4 } from '@luz/vectors'
 import { Collider } from '../collider'
-import { collideRayWithPlane } from '../collisions/ray'
 import { Collision } from '../collision'
-import { Cuboid } from './cuboid'
+import { collidePlaneWithCuboid, collidePlaneWithSphere } from '../collisions/plane'
+import { collideRayWithPlane } from '../collisions/ray'
+import { Cuboid } from '../volumes/cuboid'
+import { Sphere } from '../volumes/sphere'
 import { Ray } from './ray'
-import { Sphere } from './sphere'
 
 export class Plane extends Collider {
 
@@ -43,6 +42,18 @@ export class Plane extends Collider {
     return new Plane({ 
       equation: inverseTransposeMatrix.transform(this.equation) 
     })
+  }
+
+  get normal() {
+    const { equation } = this
+
+    return new vec3([equation.x, equation.y, equation.z]).normalize()
+  }
+
+  toJSON() {
+    const { equation } = this
+
+    return { equation }
   }
 
 }

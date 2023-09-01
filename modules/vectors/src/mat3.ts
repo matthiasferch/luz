@@ -1,5 +1,4 @@
 import { Epsilon } from './constants'
-
 import { mat4 } from './mat4'
 import { quat } from './quat'
 import { vec3 } from './vec3'

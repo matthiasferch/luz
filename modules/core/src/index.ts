@@ -1,9 +1,11 @@
 export { Scene } from './scene'
 export { Entity } from './entity'
 export { Transform } from './transform'
+export { Component } from './component'
 
-export { Model } from './entities/model'
-export { Light } from './entities/light'
-export { Camera } from './entities/camera'
+export { Body } from './components/body'
+export { Model } from './components/model'
+export { Light } from './components/light'
+export { Camera } from './components/camera'
 
 
