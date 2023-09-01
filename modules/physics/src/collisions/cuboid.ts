@@ -1,8 +1,8 @@
-import { Epsilon, quat, vec3 } from '@luz/vectors'
+import { Epsilon, vec3 } from '@luz/vectors'
 import { Collision } from '../collision'
 import { Cuboid } from '../volumes/cuboid'
 
-const { min, max, sign } = Math
+const { min, max } = Math
 
 export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Collision | null => {
   const { center: c1, extents: e1 } = cuboid1
@@ -34,10 +34,10 @@ export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Colli
       return false
     }
 
-    const penetration = min(m1[1], m2[1]) - max(m1[0], m2[0])
+    const overlap = min(m1[1], m2[1]) - max(m1[0], m2[0])
 
-    if (penetration < distance) {
-      distance = penetration
+    if (overlap < distance) {
+      distance = overlap
       normal = axis
     }
 

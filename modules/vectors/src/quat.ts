@@ -232,21 +232,20 @@ export class quat extends Float32Array {
 
   transformVec3(vector: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
-      dest = new vec3()
+      dest = new vec3();
     }
 
-    const { x, y, z } = vector
+    const { x, y, z } = vector;
 
-    const v = new quat([x, y, z, 0])
+    const q1 = new quat([x, y, z, 0]);
 
-    const q1 = this.multiply(v)
-    const q2 = this.copy().invert()
+    const q2 = this.copy().invert();
+    const q3 = this.copy().multiply(q1)
+    const q4 = q3.copy().multiply(q2);
 
-    const q3 = quat.multiply(q1, q2)
+    dest.xyz = [q4.x, q4.y, q4.z];
 
-    dest.xyz = [q3.x, q3.y, q3.z]
-
-    return dest
+    return dest;
   }
 
   toMat3(dest: null | mat3 = null): mat3 {

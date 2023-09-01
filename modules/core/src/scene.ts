@@ -105,10 +105,10 @@ export class Scene {
       bodies.forEach((body) => {
         const { mass, volume } = body
   
-        const r1 = vec3.subtract(contact, volume.center)
-        const i1 = volume.calculateInertia(mass).invert()
+        const d = vec3.subtract(contact, volume.center)
+        const t = volume.calculateInertia(mass).invert()
   
-        body.angularVelocity.add(i1.transform(vec3.cross(r1, i)))
+        body.angularVelocity.add(t.transform(vec3.cross(d, i)))
       })
     })
   }

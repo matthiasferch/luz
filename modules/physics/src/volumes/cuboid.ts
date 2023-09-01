@@ -11,13 +11,6 @@ import { collideSphereWithCuboid } from '../collisions/sphere'
 import { Volume } from '../volume'
 import { Sphere } from './sphere'
 
-function transformQuat(q: quat, a: vec3): vec3 {
-  const v = new quat([a.x, a.y, a.z, 0])
-  const qInv = q.copy().invert()
-  const transformed = q.multiply(v).multiply(qInv)
-  return new vec3([transformed.x, transformed.y, transformed.z])
-}
-
 export class Cuboid extends Volume {
 
   readonly center: vec3
@@ -25,20 +18,10 @@ export class Cuboid extends Volume {
 
   readonly rotation: quat
 
-  /*axis(index: number) {
+  getAxis(index: number): vec3 {
     const axis = vec3.axis(index)
 
     return this.rotation.transformVec3(axis)
-  }*/
-
-  getAxis(index: number): vec3 {
-    const axis = new vec3([
-      index === 0 ? 1 : 0,
-      index === 1 ? 1 : 0,
-      index === 2 ? 1 : 0
-    ])
-
-    return transformQuat(this.rotation, axis)
   }
 
   constructor({
@@ -60,11 +43,13 @@ export class Cuboid extends Volume {
     const t2 = (1 / 12) * mass * (x * x + z * z)
     const t3 = (1 / 12) * mass * (x * x + y * y)
 
-    return new mat3([
+    const tensor = new mat3([
       t1, 0, 0,
       0, t2, 0,
       0, 0, t3
     ])
+
+    return mat3.multiply(this.rotation.toMat3(), tensor)
   }
 
   collide(collider: Collider): Collision | null {
