@@ -1,16 +1,16 @@
 import { quat, vec3 } from '@luz/vectors'
 import { Component } from './component'
 import { Body } from './components/body'
+import { Camera } from './components/camera'
+import { Light } from './components/light'
 import { Model } from './components/model'
 import { Transform } from './transform'
 
 export class Entity extends Transform {
 
-  readonly type: Entity.Type
-
   components: Record<string, Component> = {}
 
-  // volume: Volume
+  // volume: Volume -- TODO: for visibility determination
 
   get bodies() {
     const components = Object.values(this.components)
@@ -28,10 +28,32 @@ export class Entity extends Transform {
     }) as Model[]
   }
 
+  get cameras() {
+    const components = Object.values(this.components)
+
+    return components.filter(({ type }) => {
+      return type === Component.Type.Camera
+    }) as Camera[]
+  }
+
+  get lights() {
+    const components = Object.values(this.components)
+
+    return components.filter(({ type }) => {
+      return type === Component.Type.Light
+    }) as Light[]
+  }
+
   update(deltaTime: number) {
     super.update(deltaTime)
 
     this.integrateVelocities(deltaTime)
+
+    const components = Object.values(this.components)
+
+    components.forEach((component) => {
+      component.update(this, deltaTime)
+    })
   }
 
   private integrateVelocities(deltaTime: number) {
@@ -49,7 +71,7 @@ export class Entity extends Transform {
       // TODO: add torque to angular velocity!
 
       const axis = vec3.normalize(angularVelocity)
-      const angle = angularVelocity.length * deltaTime // * -0.025
+      const angle = angularVelocity.length * deltaTime
 
       this.rotation.multiply(quat.fromAxisAngle(axis, angle))
 
@@ -59,18 +81,9 @@ export class Entity extends Transform {
   }
 
   toJSON() {
-    const { type, components } = this
+    const { components } = this
 
-    return { ...super.toJSON(), type, components }
-  }
-
-}
-
-export module Entity {
-
-  export enum Type {
-    Light = 'light',
-    Camera = 'camera'
+    return { ...super.toJSON(), components }
   }
 
 }

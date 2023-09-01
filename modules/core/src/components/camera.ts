@@ -1,10 +1,10 @@
 import { mat3, mat4, vec2 } from '@luz/vectors'
-import { Entity } from '../entity'
+import { Component } from '../component'
+import { Transform } from '../transform'
 
+export class Camera extends Component {
 
-export class Camera extends Entity {
-
-  type = Entity.Type.Camera
+  type = Component.Type.Camera
 
   aspect = 1.0
 
@@ -22,14 +22,14 @@ export class Camera extends Entity {
 
   readonly reconstructionMatrix = new mat4()
 
-  update(deltaTime: number) {
-    super.update(deltaTime)
+  update(transform: Transform, deltaTime: number) {
+    const { modelMatrix } = transform
 
     // view matrix
-    this.modelMatrix.invert(this.viewMatrix)
+    modelMatrix.invert(this.viewMatrix)
 
     // model view matrix
-    mat4.multiply(this.viewMatrix, this.modelMatrix, this.modelViewMatrix)
+    mat4.multiply(this.viewMatrix, modelMatrix, this.modelViewMatrix)
 
     // normal matrix (to transform normals)
     this.modelViewMatrix.toMat3(this.normalMatrix).transpose().invert()

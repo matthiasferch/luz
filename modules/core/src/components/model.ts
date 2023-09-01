@@ -1,6 +1,7 @@
 import { Mesh, Texture } from '@luz/graphics'
 import { vec3 } from '@luz/vectors'
 import { Component } from '../component'
+import { Transform } from '../transform'
 
 export class Model extends Component {
 
@@ -11,6 +12,8 @@ export class Model extends Component {
   baseTexture: Texture
 
   mesh: Mesh
+
+  update(transform: Transform, deltaTime: number) {}
 
   toJSON() {
     const { baseColor } = this

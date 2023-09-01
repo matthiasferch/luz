@@ -1,6 +1,7 @@
 import { Volume } from '@luz/physics'
 import { vec3 } from '@luz/vectors'
 import { Component } from '../component'
+import { Transform } from '../transform'
 
 export class Body extends Component {
 
@@ -29,6 +30,8 @@ export class Body extends Component {
     this.linearVelocity = vec3.zero.copy()
     this.angularVelocity = vec3.zero.copy()
   }
+
+  update(transform: Transform, deltaTime: number) {}
 
   toJSON() {
     const { mass, volume, force, torque, linearVelocity, angularVelocity } = this
