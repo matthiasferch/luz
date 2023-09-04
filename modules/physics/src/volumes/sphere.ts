@@ -14,6 +14,8 @@ export class Sphere extends Volume {
 
   readonly center: vec3
 
+  readonly inertia: mat3
+
   radius: number
 
   constructor({
@@ -24,18 +26,22 @@ export class Sphere extends Volume {
 
     this.center = center.copy()
     this.radius = radius
+
+    this.inertia = new mat3()
   }
 
-  calculateInertia(mass: number) {
+  calculateInertia(mass: number, transform: Transform) {
     const { radius } = this
 
     const t = (2 / 5) * mass * radius * radius
 
-    return new mat3([
+    this.inertia.set([
       t, 0, 0,
       0, t, 0,
       0, 0, t
     ])
+
+    this.inertia.invert()
   }
 
   collide(collider: Collider): Collision | null {

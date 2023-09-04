@@ -1,6 +1,5 @@
 import { Collision } from '@luz/physics'
 import { vec3 } from '@luz/vectors'
-import { Component } from './component'
 import { Body } from './components/body'
 import { Entity } from './entity'
 
@@ -15,13 +14,9 @@ export class Scene {
   update(deltaTime: number) {
     const entities = Object.values(this.entities)
 
-    const components = entities.reduce((components: Component[], entity) => {
-      return [...components, ...Object.values(entity.components)]
+    const bodies = entities.reduce((bodies: Body[], entity) => {
+      return [...bodies, ...entity.bodies]
     }, [])
-
-    const bodies = components.filter(({ type }) => {
-      return type === Component.Type.Body
-    }) as Body[]
 
     // bodies
     this.updateBodies(bodies)
@@ -32,7 +27,7 @@ export class Scene {
     })
   }
 
-  private updateBodies(bodies: Body[]) {
+  private updateBodies(bodies: Body[]) {    
     this.applyGravity(bodies)
 
     this.detectCollisions(bodies)
@@ -103,12 +98,12 @@ export class Scene {
       b2.linearVelocity.add(vec3.scale(f, m2))
 
       bodies.forEach((body) => {
-        const { mass, volume } = body
+        const { volume } = body
+        const { center, inertia } = volume
   
-        const d = vec3.subtract(contact, volume.center)
-        const t = volume.calculateInertia(mass).invert()
+        const d = vec3.subtract(contact, center)
   
-        body.angularVelocity.add(t.transform(vec3.cross(d, i)))
+        body.angularVelocity.add(inertia.transform(vec3.cross(d, i)))
       })
     })
   }

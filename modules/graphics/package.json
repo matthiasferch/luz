@@ -6,7 +6,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register test/**/*.spec.ts",
-    "build": "webpack",
+    "build": "rimraf ./dist && webpack",
     "watch": "webpack --watch"
   },
   "devDependencies": {
@@ -17,6 +17,7 @@
     "chai": "^4.3.4",
     "eslint": "^8.0.1",
     "mocha": "^9.1.3",
+    "rimraf": "^5.0.1",
     "ts-loader": "^9.2.6",
     "ts-node": "^10.3.0",
     "typescript": "^4.4.4",

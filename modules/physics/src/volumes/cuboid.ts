@@ -16,10 +16,13 @@ export class Cuboid extends Volume {
   readonly center: vec3
   readonly extents: vec3
 
+  readonly axes: vec3[]
+  readonly inertia: mat3
+
   readonly rotation: quat
 
   getAxis(index: number): vec3 {
-    const axis = vec3.axis(index)
+    const axis = vec3.axes[index]
 
     return this.rotation.transformVec3(axis)
   }
@@ -34,22 +37,36 @@ export class Cuboid extends Volume {
     this.center = center.copy()
     this.extents = extents.copy()
     this.rotation = rotation.copy()
+    
+    this.axes = []
+
+    vec3.axes.forEach((axis) => {
+      this.axes.push(axis.copy())
+    })
+
+    this.inertia = new mat3()
   }
 
-  calculateInertia(mass: number) {
+  calculateInertia(mass: number, transform: Transform) {
+    const { rotation, rotationMatrix } = transform
+
+    vec3.axes.forEach((axis, index) => {
+      this.axes[index] = this.rotation.transformVec3(axis)
+    })
+
     const { x, y, z } = this.extents
 
     const t1 = (1 / 12) * mass * (y * y + z * z)
     const t2 = (1 / 12) * mass * (x * x + z * z)
     const t3 = (1 / 12) * mass * (x * x + y * y)
 
-    const tensor = new mat3([
+    this.inertia.set([
       t1, 0, 0,
       0, t2, 0,
       0, 0, t3
     ])
 
-    return mat3.multiply(this.rotation.toMat3(), tensor)
+    this.inertia.multiply(rotationMatrix).invert()
   }
 
   collide(collider: Collider): Collision | null {
@@ -73,7 +90,7 @@ export class Cuboid extends Volume {
   }
 
   transform(transform: Transform) {
-    const { vertices } = this
+    // const { vertices } = this
     const { modelMatrix } = transform
 
     /*const transformedVertices = vertices.map((vertex) => {

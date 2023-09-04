@@ -32,6 +32,10 @@ export class Body extends Component {
   }
 
   update(transform: Transform, deltaTime: number) {
+    const { mass, volume } = this
+
+    volume.calculateInertia(mass, transform)
+
     this.integrateLinearVelocity(transform, deltaTime)
     this.integrateAngularVelocity(transform, deltaTime)
   }
@@ -53,9 +57,9 @@ export class Body extends Component {
   }
 
   private integrateAngularVelocity(transform: Transform, deltaTime: number) {
-    const inertia = this.volume.calculateInertia(this.mass)
+    const { inertia } = this.volume
 
-    const acceleration = inertia.invert().transform(this.torque)
+    const acceleration = inertia.transform(this.torque)
 
     this.angularVelocity.add(acceleration.scale(deltaTime));
 

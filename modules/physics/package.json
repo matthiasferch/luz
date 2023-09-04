@@ -6,7 +6,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "test": "mocha -r ts-node/register test/**/*.spec.ts",
-    "build": "webpack",
+    "build": "rimraf ./dist && webpack",
     "watch": "webpack --watch"
   },
   "devDependencies": {

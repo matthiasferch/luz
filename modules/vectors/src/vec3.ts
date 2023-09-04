@@ -12,6 +12,8 @@ export class vec3 extends Float32Array {
   static readonly right = new vec3([1.0, 0.0, 0.0])
   static readonly forward = new vec3([0.0, 0.0, 1.0])
 
+  static readonly axes = [vec3.right, vec3.up, vec3.forward]
+
   static readonly infinity = new vec3([Infinity, Infinity, Infinity])
 
   constructor(values: number[] = [0.0, 0.0, 0.0]) {
@@ -248,20 +250,6 @@ export class vec3 extends Float32Array {
     const { x, y, z } = this
 
     return [x, y, z]
-  }
-
-  static axis(index: number) {
-    if (index === 0) {
-      return vec3.right
-    }
-
-    if (index === 1) {
-      return vec3.up
-    }
-
-    if (index === 2) {
-      return vec3.forward
-    }
   }
 
   static absolute(vector: vec3, dest: null | vec3 = null): vec3 {
