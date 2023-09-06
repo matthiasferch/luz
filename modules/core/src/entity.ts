@@ -5,6 +5,8 @@ import { Light } from './components/light'
 import { Model } from './components/model'
 import { Transform } from './transform'
 
+const { Type, Timestep } = Component
+
 export class Entity extends Transform {
 
   readonly components: Record<string, Component> = {}
@@ -12,27 +14,39 @@ export class Entity extends Transform {
   // volume: Volume -- TODO: for visibility determination
 
   get bodies() {
-    return this.componentsOfType<Body>(Component.Type.Body)
+    return this.withType<Body>(Type.Body)
   }
 
   get models() {
-    return this.componentsOfType<Model>(Component.Type.Model)
+    return this.withType<Model>(Type.Model)
   }
 
   get cameras() {
-    return this.componentsOfType<Camera>(Component.Type.Camera)
+    return this.withType<Camera>(Type.Camera)
   }
 
   get lights() {
-    return this.componentsOfType<Light>(Component.Type.Light)
+    return this.withType<Light>(Type.Light)
+  }
+
+  get fixedTimestep() {
+    return this.withTimestep(Timestep.Fixed)
+  }
+
+  get variableTimestep() {
+    return this.withTimestep(Timestep.Variable)
   }
 
   update(deltaTime: number) {
     super.update(deltaTime)
 
-    const components = Object.values(this.components)
+    this.variableTimestep.forEach((component) => {
+      component.update(this, deltaTime)
+    })
+  }
 
-    components.forEach((component) => {
+  fixedUpdate(deltaTime: number) {
+    this.fixedTimestep.forEach((component) => {
       component.update(this, deltaTime)
     })
   }
@@ -43,12 +57,20 @@ export class Entity extends Transform {
     return { ...super.toJSON(), components }
   }
 
-  private componentsOfType<T>(type: Component.Type) {
+  private withType<T>(type: Component.Type) {
     const components = Object.values(this.components)
 
     return components.filter((component) => {
       return component.type === type
     }) as T[]
+  }
+
+  private withTimestep(timestep: Component.Timestep) {
+    const components = Object.values(this.components)
+
+    return components.filter((component) => {
+      return component.timestep === timestep
+    })
   }
 
 }

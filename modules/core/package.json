@@ -23,10 +23,5 @@
     "typescript": "^4.4.4",
     "webpack": "^5.58.2",
     "webpack-cli": "^4.9.1"
-  },
-  "dependencies": {
-    "@luz/graphics": "file:../graphics",
-    "@luz/physics": "file:../physics",
-    "@luz/vectors": "file:../vectors"
   }
 }

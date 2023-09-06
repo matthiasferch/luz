@@ -9,6 +9,8 @@ import { Plane } from './plane'
 
 export class Ray extends Collider {
 
+  type = Collider.Type.Ray
+
   readonly origin: vec3
   readonly direction: vec3
 
@@ -23,23 +25,22 @@ export class Ray extends Collider {
   }
 
   collide(collider: Collider): Collision | null {
-    if (collider instanceof Ray) {
-      return collideRayWithRay(this, collider)
-    }
+    switch (collider.type) {
+      case Collider.Type.Ray:
+        return collideRayWithRay(this, collider as Ray)
 
-    if (collider instanceof Plane) {
-      return collideRayWithPlane(this, collider)
-    }
+      case Collider.Type.Plane:
+        return collideRayWithPlane(this, collider as Plane)
 
-    if (collider instanceof Sphere) {
-      return collideRayWithSphere(this, collider)
-    }
+      case Collider.Type.Sphere:
+        return collideRayWithSphere(this, collider as Sphere)
 
-    if (collider instanceof Cuboid) {
-      return collideRayWithCuboid(this, collider)
-    }
+      case Collider.Type.Cuboid:
+        return collideRayWithCuboid(this, collider as Cuboid)
 
-    return null
+      default:
+        return null
+    }
   }
 
   transform(transform: Transform) {

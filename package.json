@@ -9,7 +9,7 @@
     "build:core": "cd modules/core && npm run build",
     "build:physics": "cd modules/physics && npm run build",
     "build:graphics": "cd modules/graphics && npm run build",
-    "build:all": "npm-run-all -s build:utilities build:vectors build:core build:physics build:graphics",
+    "build:all": "npm-run-all -s build:utilities build:vectors build:physics build:graphics build:core",
     "test:utilities": "cd modules/utilities && npm run build",
     "test:vectors": "cd modules/vectors && npm run test",
     "test:core": "cd modules/core && npm run test",

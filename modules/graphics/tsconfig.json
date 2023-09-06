@@ -8,8 +8,16 @@
 	"compilerOptions": {
 		"target": "es6",
 		"outDir": "./dist/",
-		"module": "commonjs",
+		"module": "esnext",
 		"sourceMap": true,
-		"declaration": true
+		"declaration": true,
+		"paths": {
+			"@luz/core": [
+				"../core/dist/index.d.ts"
+			],
+			"@luz/vectors": [
+				"../vectors/dist/index.d.ts"
+			]
+		}
 	}
 }

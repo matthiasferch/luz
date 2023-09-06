@@ -1,4 +1,4 @@
-import { Collision } from '@luz/physics'
+import { Collision, CollisionDispatcher } from '@luz/physics'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
 import { Entity } from './entity'
@@ -11,26 +11,46 @@ export class Scene {
 
   readonly collisions: Required<Collision>[] = []
 
+  private collisionDispatcher: CollisionDispatcher
+
+  private elapsedTime: number = 0
+
+  private readonly timestep: number = 1000 / 60
+
+  constructor() {
+    this.collisionDispatcher = new CollisionDispatcher()
+  }
+
   update(deltaTime: number) {
     const entities = Object.values(this.entities)
 
-    const bodies = entities.reduce((bodies: Body[], entity) => {
-      return [...bodies, ...entity.bodies]
-    }, [])
+    this.elapsedTime += deltaTime
 
-    // bodies
-    this.updateBodies(bodies)
+    while (this.elapsedTime >= this.timestep) {
+      const bodies = entities.reduce((bodies: Body[], entity) => {
+        return [...bodies, ...entity.bodies]
+      }, [])
 
-    // entities
+      this.updatePhysics(bodies)
+
+      // fixed update
+      entities.forEach((entity) => {
+        entity.fixedUpdate(this.timestep)
+      })
+
+      this.elapsedTime -= this.timestep
+    }
+
+    // variable update
     entities.forEach((entity) => {
       entity.update(deltaTime)
     })
   }
 
-  private updateBodies(bodies: Body[]) {    
+  private updatePhysics(bodies: Body[]) {
     this.applyGravity(bodies)
-
     this.detectCollisions(bodies)
+
     this.resolveCollisions()
   }
 
@@ -52,7 +72,9 @@ export class Scene {
         const { volume: c1 } = b1
         const { volume: c2 } = b2
 
-        const collision = c1.collide(c2)
+        // const collision = c1.collide(c2)
+
+        const collision = this.collisionDispatcher.dispatch(c1, c2)
 
         if (collision) {
           this.collisions.push({
@@ -65,7 +87,7 @@ export class Scene {
   }
 
   private resolveCollisions() {
-    const friction = 0.1
+    const friction = 0.9
     const restitution = 0.2
 
     this.collisions.forEach(({ bodies, contact, normal }) => {
@@ -100,9 +122,9 @@ export class Scene {
       bodies.forEach((body) => {
         const { volume } = body
         const { center, inertia } = volume
-  
+
         const d = vec3.subtract(contact, center)
-  
+
         body.angularVelocity.add(inertia.transform(vec3.cross(d, i)))
       })
     })

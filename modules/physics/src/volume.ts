@@ -11,3 +11,4 @@ export abstract class Volume extends Collider {
   abstract calculateInertia(mass: number, transform: Transform): void
 
 }
+

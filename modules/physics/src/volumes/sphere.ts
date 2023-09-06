@@ -12,6 +12,8 @@ import { Cuboid } from './cuboid'
 
 export class Sphere extends Volume {
 
+  type = Collider.Type.Sphere
+
   readonly center: vec3
 
   readonly inertia: mat3
@@ -45,23 +47,22 @@ export class Sphere extends Volume {
   }
 
   collide(collider: Collider): Collision | null {
-    if (collider instanceof Ray) {
-      return collideRayWithSphere(collider, this)
-    }
+    switch (collider.type) {
+      case Collider.Type.Ray:
+        return collideRayWithSphere(collider as Ray, this)
 
-    if (collider instanceof Plane) {
-      return collidePlaneWithSphere(collider, this)
-    }
+      case Collider.Type.Plane:
+        return collidePlaneWithSphere(collider as Plane, this)
 
-    if (collider instanceof Sphere) {
-      return collideSphereWithSphere(this, collider)
-    }
+      case Collider.Type.Sphere:
+        return collideSphereWithSphere(this, collider as Sphere)
 
-    if (collider instanceof Cuboid) {
-      return collideSphereWithCuboid(this, collider)
-    }
+      case Collider.Type.Cuboid:
+        return collideSphereWithCuboid(this, collider as Cuboid)
 
-    return null
+      default:
+        return null
+    }
   }
 
   transform(transform: Transform) {

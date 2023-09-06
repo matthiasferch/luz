@@ -391,6 +391,20 @@ export class mat3 extends Float32Array {
     return dest
   }
 
+  static transform(matrix: mat3, vector: vec3, dest: null | vec3 = null): vec3 {
+    if (!dest) {
+      dest = new vec3()
+    }
+
+    const { x, y, z } = vector
+
+    dest.x = x * matrix[0] + y * matrix[3] + z * matrix[6]
+    dest.y = x * matrix[1] + y * matrix[4] + z * matrix[7]
+    dest.z = x * matrix[2] + y * matrix[5] + z * matrix[8]
+
+    return dest
+  }
+
   static multiply(m1: mat3, m2: mat3, dest: null | mat3 = null): mat3 {
     if (!dest) {
       dest = new mat3()

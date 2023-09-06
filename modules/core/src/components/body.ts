@@ -1,11 +1,13 @@
 import { Volume } from '@luz/physics'
-import { mat3, quat, vec3 } from '@luz/vectors'
+import { quat, vec3 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
 
 export class Body extends Component {
 
-  readonly type = Component.Type.Body
+  type = Component.Type.Body
+
+  timestep = Component.Timestep.Fixed
 
   mass: number
 

@@ -7,6 +7,8 @@ export class Model extends Component {
 
   type = Component.Type.Model
 
+  timestep = Component.Timestep.Variable
+
   baseColor = vec3.one
 
   baseTexture: Texture

@@ -13,6 +13,8 @@ import { Sphere } from './sphere'
 
 export class Cuboid extends Volume {
 
+  type = Collider.Type.Cuboid
+
   readonly center: vec3
   readonly extents: vec3
 
@@ -37,7 +39,7 @@ export class Cuboid extends Volume {
     this.center = center.copy()
     this.extents = extents.copy()
     this.rotation = rotation.copy()
-    
+
     this.axes = []
 
     vec3.axes.forEach((axis) => {
@@ -48,7 +50,7 @@ export class Cuboid extends Volume {
   }
 
   calculateInertia(mass: number, transform: Transform) {
-    const { rotation, rotationMatrix } = transform
+    const { rotationMatrix } = transform
 
     vec3.axes.forEach((axis, index) => {
       this.axes[index] = this.rotation.transformVec3(axis)
@@ -70,23 +72,22 @@ export class Cuboid extends Volume {
   }
 
   collide(collider: Collider): Collision | null {
-    if (collider instanceof Ray) {
-      return collideRayWithCuboid(collider, this)
-    }
+    switch (collider.type) {
+      case Collider.Type.Ray:
+        return collideRayWithCuboid(collider as Ray, this)
 
-    if (collider instanceof Plane) {
-      return collidePlaneWithCuboid(collider, this)
-    }
+      case Collider.Type.Plane:
+        return collidePlaneWithCuboid(collider as Plane, this)
 
-    if (collider instanceof Sphere) {
-      return collideSphereWithCuboid(collider, this)
-    }
+      case Collider.Type.Sphere:
+        return collideSphereWithCuboid(collider as Sphere, this)
 
-    if (collider instanceof Cuboid) {
-      return collideCuboidWithCuboid(this, collider)
-    }
+      case Collider.Type.Cuboid:
+        return collideCuboidWithCuboid(this, collider as Cuboid)
 
-    return null
+      default:
+        return null
+    }
   }
 
   transform(transform: Transform) {

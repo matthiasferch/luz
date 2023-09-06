@@ -8,7 +8,7 @@
 	"compilerOptions": {
 		"target": "es6",
 		"outDir": "./dist/",
-		"module": "commonjs",
+		"module": "esnext",
 		"sourceMap": true,
 		"declaration": true
 	}

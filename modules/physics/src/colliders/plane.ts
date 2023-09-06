@@ -10,6 +10,8 @@ import { Ray } from './ray'
 
 export class Plane extends Collider {
 
+  type = Collider.Type.Plane
+
   readonly equation: vec4
 
   constructor({
@@ -21,26 +23,26 @@ export class Plane extends Collider {
   }
 
   collide(collider: Collider): Collision | null {
-    if (collider instanceof Ray) {
-      return collideRayWithPlane(collider, this)
-    }
+    switch (collider.type) {
+      case Collider.Type.Ray:
+        return collideRayWithPlane(collider as Ray, this)
 
-    if (collider instanceof Sphere) {
-      return collidePlaneWithSphere(this, collider)
-    }
+      case Collider.Type.Sphere:
+        return collidePlaneWithSphere(this, collider as Sphere)
 
-    if (collider instanceof Cuboid) {
-      return collidePlaneWithCuboid(this, collider)
-    }
+      case Collider.Type.Cuboid:
+        return collidePlaneWithCuboid(this, collider as Cuboid)
 
-    return null
+      default:
+        return null
+    }
   }
 
   transform(transform: Transform) {
     const { inverseTransposeMatrix } = transform
 
-    return new Plane({ 
-      equation: inverseTransposeMatrix.transform(this.equation) 
+    return new Plane({
+      equation: inverseTransposeMatrix.transform(this.equation)
     })
   }
 

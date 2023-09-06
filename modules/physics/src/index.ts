@@ -7,3 +7,5 @@ export { Plane } from './colliders/plane'
 
 export { Sphere } from './volumes/sphere'
 export { Cuboid } from './volumes/cuboid'
+
+export { CollisionDispatcher } from './dispatchers/collision'

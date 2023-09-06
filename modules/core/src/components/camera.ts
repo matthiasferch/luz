@@ -6,6 +6,8 @@ export class Camera extends Component {
 
   type = Component.Type.Camera
 
+  timestep = Component.Timestep.Variable
+
   aspect = 1.0
 
   aperture = 90.0
