@@ -23,8 +23,7 @@ export class Cuboid extends Volume {
 
   constructor({
     center = vec3.zero,
-    extents = vec3.one,
-    rotation = quat.identity
+    extents = vec3.one
   } = {}) {
     super()
 
@@ -34,7 +33,7 @@ export class Cuboid extends Volume {
     this.axes = []
 
     vec3.axes.forEach((axis) => {
-      this.axes.push(rotation.transformVec3(axis))
+      this.axes.push(axis.copy())
     })
 
     this.inertia = new mat3()
@@ -78,33 +77,18 @@ export class Cuboid extends Volume {
   }
 
   transform(transform: Transform) {
-    // const { vertices } = this
-    const { translation } = transform
+    const { translation, rotation } = transform
 
-    /*const transformedVertices = vertices.map((vertex) => {
-      return modelMatrix.transformVec3(vertex)
-    })
-
-    const minimum = transformedVertices.reduce(
-      (final, vertex) => vec3.minimum(final, vertex),
-      vec3.infinity.copy()
-    )
-
-    const maximum = transformedVertices.reduce(
-      (final, vertex) => vec3.maximum(final, vertex),
-      vec3.infinity.copy().negate()
-    )
-
-    return new Cuboid({
-      center: vec3.add(minimum, maximum).scale(0.5),
-      extents: vec3.subtract(maximum, minimum).scale(0.5)
-    })*/
-
-    return new Cuboid({
+    const cuboid = new Cuboid({
       center: vec3.add(translation, this.center),
-      extents: this.extents.copy(),
-      rotation: transform.rotation
+      extents: this.extents.copy()
     })
+
+    vec3.axes.forEach((axis, index) => {
+      rotation.transformVec3(axis, cuboid.axes[index])
+    })
+
+    return cuboid
   }
 
   get vertices() {
