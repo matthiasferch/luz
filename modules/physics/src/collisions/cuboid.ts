@@ -46,11 +46,9 @@ export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Colli
 
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
-      console.log(cuboid1.getAxis(i).xyz, cuboid1.axes[i].xyz)
-      console.log(cuboid2.getAxis(j).xyz, cuboid2.axes[j].xyz)
       const axis = vec3.cross(
-        cuboid1.getAxis(i),
-        cuboid2.getAxis(j)
+        cuboid1.axes[i],
+        cuboid2.axes[j]
       )
 
       if (!testAxis(axis)) {
@@ -60,11 +58,11 @@ export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Colli
   }
 
   for (let i = 0; i < 3; i++) {
-    if (!testAxis(cuboid1.getAxis(i))) {
+    if (!testAxis(cuboid1.axes[i])) {
       return null
     }
 
-    if (!testAxis(cuboid2.getAxis(i))) {
+    if (!testAxis(cuboid2.axes[i])) {
       return null
     }
   }

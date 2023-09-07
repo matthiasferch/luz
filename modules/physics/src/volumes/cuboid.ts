@@ -21,14 +21,6 @@ export class Cuboid extends Volume {
   readonly axes: vec3[]
   readonly inertia: mat3
 
-  readonly rotation: quat
-
-  getAxis(index: number): vec3 {
-    const axis = vec3.axes[index]
-
-    return this.rotation.transformVec3(axis)
-  }
-
   constructor({
     center = vec3.zero,
     extents = vec3.one,
@@ -38,12 +30,11 @@ export class Cuboid extends Volume {
 
     this.center = center.copy()
     this.extents = extents.copy()
-    this.rotation = rotation.copy()
 
     this.axes = []
 
     vec3.axes.forEach((axis) => {
-      this.axes.push(axis.copy())
+      this.axes.push(rotation.transformVec3(axis))
     })
 
     this.inertia = new mat3()
@@ -51,10 +42,6 @@ export class Cuboid extends Volume {
 
   calculateInertia(mass: number, transform: Transform) {
     const { rotationMatrix } = transform
-
-    vec3.axes.forEach((axis, index) => {
-      this.axes[index] = this.rotation.transformVec3(axis)
-    })
 
     const { x, y, z } = this.extents
 
@@ -92,7 +79,7 @@ export class Cuboid extends Volume {
 
   transform(transform: Transform) {
     // const { vertices } = this
-    const { modelMatrix } = transform
+    const { translation } = transform
 
     /*const transformedVertices = vertices.map((vertex) => {
       return modelMatrix.transformVec3(vertex)
@@ -114,9 +101,9 @@ export class Cuboid extends Volume {
     })*/
 
     return new Cuboid({
-      center: modelMatrix.transformVec3(this.center),
+      center: vec3.add(translation, this.center),
       extents: this.extents.copy(),
-      rotation: transform.rotation.copy()
+      rotation: transform.rotation
     })
   }
 
