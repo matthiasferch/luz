@@ -1,33 +1,31 @@
 import { Transform } from '@luz/core'
-import { mat3, quat, vec3 } from '@luz/vectors'
+import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
-import { Plane } from '../colliders/plane'
-import { Ray } from '../colliders/ray'
-import { Collision } from '../collision'
-import { collideCuboidWithCuboid } from '../collisions/cuboid'
-import { collidePlaneWithCuboid } from '../collisions/plane'
-import { collideRayWithCuboid } from '../collisions/ray'
-import { collideSphereWithCuboid } from '../collisions/sphere'
 import { Volume } from '../volume'
-import { Sphere } from './sphere'
 
 export class Cuboid extends Volume {
 
   type = Collider.Type.Cuboid
 
+  readonly origin: vec3
+
   readonly center: vec3
+
   readonly extents: vec3
 
   readonly axes: vec3[]
+
   readonly inertia: mat3
 
   constructor({
-    center = vec3.zero,
+    origin = vec3.zero,
     extents = vec3.one
   } = {}) {
     super()
 
-    this.center = center.copy()
+    this.origin = origin.copy()
+    this.center = origin.copy()
+
     this.extents = extents.copy()
 
     this.axes = []
@@ -37,6 +35,16 @@ export class Cuboid extends Volume {
     })
 
     this.inertia = new mat3()
+  }
+
+  transform(transform: Transform) {
+    const { translation, rotation } = transform
+
+    vec3.add(this.origin, translation, this.center)
+
+    vec3.axes.forEach((axis, index) => {
+      rotation.transformVec3(axis, this.axes[index])
+    })
   }
 
   calculateInertia(mass: number, transform: Transform) {
@@ -55,40 +63,6 @@ export class Cuboid extends Volume {
     ])
 
     this.inertia.multiply(rotationMatrix).invert()
-  }
-
-  collide(collider: Collider): Collision | null {
-    switch (collider.type) {
-      case Collider.Type.Ray:
-        return collideRayWithCuboid(collider as Ray, this)
-
-      case Collider.Type.Plane:
-        return collidePlaneWithCuboid(collider as Plane, this)
-
-      case Collider.Type.Sphere:
-        return collideSphereWithCuboid(collider as Sphere, this)
-
-      case Collider.Type.Cuboid:
-        return collideCuboidWithCuboid(this, collider as Cuboid)
-
-      default:
-        return null
-    }
-  }
-
-  transform(transform: Transform) {
-    const { translation, rotation } = transform
-
-    const cuboid = new Cuboid({
-      center: vec3.add(translation, this.center),
-      extents: this.extents.copy()
-    })
-
-    vec3.axes.forEach((axis, index) => {
-      rotation.transformVec3(axis, cuboid.axes[index])
-    })
-
-    return cuboid
   }
 
   get vertices() {

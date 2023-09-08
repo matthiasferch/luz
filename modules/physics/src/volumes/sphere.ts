@@ -1,18 +1,13 @@
 import { Transform } from '@luz/core'
 import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
-import { Plane } from '../colliders/plane'
-import { Ray } from '../colliders/ray'
-import { Collision } from '../collision'
-import { collidePlaneWithSphere } from '../collisions/plane'
-import { collideRayWithSphere } from '../collisions/ray'
-import { collideSphereWithCuboid, collideSphereWithSphere } from '../collisions/sphere'
 import { Volume } from '../volume'
-import { Cuboid } from './cuboid'
 
 export class Sphere extends Volume {
 
   type = Collider.Type.Sphere
+
+  readonly origin: vec3
 
   readonly center: vec3
 
@@ -21,15 +16,23 @@ export class Sphere extends Volume {
   radius: number
 
   constructor({
-    center = vec3.zero,
+    origin = vec3.zero,
     radius = 1.0
   }) {
     super()
 
-    this.center = center.copy()
+    this.origin = origin.copy()
+    this.center = origin.copy()
+
     this.radius = radius
 
     this.inertia = new mat3()
+  }
+
+  transform(transform: Transform) {
+    const { translation } = transform
+
+    vec3.add(this.origin, translation, this.center)
   }
 
   calculateInertia(mass: number, transform: Transform) {
@@ -44,33 +47,6 @@ export class Sphere extends Volume {
     ])
 
     this.inertia.invert()
-  }
-
-  collide(collider: Collider): Collision | null {
-    switch (collider.type) {
-      case Collider.Type.Ray:
-        return collideRayWithSphere(collider as Ray, this)
-
-      case Collider.Type.Plane:
-        return collidePlaneWithSphere(collider as Plane, this)
-
-      case Collider.Type.Sphere:
-        return collideSphereWithSphere(this, collider as Sphere)
-
-      case Collider.Type.Cuboid:
-        return collideSphereWithCuboid(this, collider as Cuboid)
-
-      default:
-        return null
-    }
-  }
-
-  transform(transform: Transform) {
-    const { modelMatrix } = transform
-
-    const center = modelMatrix.transformVec3(this.center)
-
-    return new Sphere({ center, radius: this.radius })
   }
 
   toJSON() {

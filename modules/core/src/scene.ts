@@ -26,6 +26,13 @@ export class Scene {
 
     this.elapsedTime += deltaTime
 
+    // prepare bodies
+    entities.forEach((entity) => {
+      entity.bodies.forEach((body) => {
+        body.prepare(entity)
+      })
+    })
+
     while (this.elapsedTime >= this.timestep) {
       const bodies = entities.reduce((bodies: Body[], entity) => {
         return [...bodies, ...entity.bodies]
@@ -51,7 +58,7 @@ export class Scene {
     this.applyGravity(bodies)
     this.detectCollisions(bodies)
 
-    this.resolveCollisions()
+    this.resolveCollisions(0.9, 0.2)
   }
 
   private applyGravity(bodies: Body[]) {
@@ -69,12 +76,7 @@ export class Scene {
           return
         }
 
-        const { volume: c1 } = b1
-        const { volume: c2 } = b2
-
-        // const collision = c1.collide(c2)
-
-        const collision = this.collisionDispatcher.dispatch(c1, c2)
+        const collision = this.collide(b1, b2)
 
         if (collision) {
           this.collisions.push({
@@ -86,10 +88,7 @@ export class Scene {
     })
   }
 
-  private resolveCollisions() {
-    const friction = 0.9
-    const restitution = 0.2
-
+  private resolveCollisions(friction: number, restitution: number) {
     this.collisions.forEach(({ bodies, contact, normal }) => {
       const [b1, b2] = bodies
 
@@ -121,13 +120,20 @@ export class Scene {
 
       bodies.forEach((body) => {
         const { volume } = body
-        const { center, inertia } = volume
+        const { center } = volume
 
         const d = vec3.subtract(contact, center)
 
-        body.angularVelocity.add(inertia.transform(vec3.cross(d, i)))
+        body.angularVelocity.add(vec3.cross(d, i))
       })
     })
+  }
+
+  private collide(b1: Body, b2: Body) {
+    const { volume: c1 } = b1
+    const { volume: c2 } = b2
+
+    return this.collisionDispatcher.dispatch(c1, c2)
   }
 
   toJSON() {

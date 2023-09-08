@@ -33,6 +33,12 @@ export class Body extends Component {
     this.angularVelocity = vec3.zero.copy()
   }
 
+  prepare(transform: Transform) {
+    const { volume } = this
+
+    volume.transform(transform)
+  }
+
   update(transform: Transform, deltaTime: number) {
     const { mass, volume } = this
 
