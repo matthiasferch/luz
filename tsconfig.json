@@ -1,0 +1,16 @@
+{
+	"include": [
+		"./src/**/*"
+	],
+	"exclude": [
+		"./**/*.spec.ts"
+	],
+	"compilerOptions": {
+		"target": "es6",
+		"outDir": "./dist/",
+		"module": "esnext",
+		"sourceMap": true,
+		"declaration": true,
+		"moduleResolution": "node"
+	}
+}
