@@ -1,3 +1,4 @@
+import { Serialized } from '../../utilities'
 import { mat3, mat4, vec2 } from '../../vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
@@ -8,10 +9,13 @@ export class Camera extends Component {
 
   readonly timestep = Component.Timestep.Variable
 
+  @Serialized
   aspect = 1.0
 
+  @Serialized
   aperture = 90.0
 
+  @Serialized
   readonly clipPlanes = new vec2([1.0, 100.0])
 
   readonly viewMatrix = new mat4()
@@ -41,12 +45,6 @@ export class Camera extends Component {
 
     // reconstruction matrix (to reconstruct fragment positions)
     mat4.multiply(this.projectionMatrix, this.viewMatrix, this.reconstructionMatrix).invert()
-  }
-
-  toJSON() {
-    const { aspect, aperture, clipPlanes } = this
-
-    return { ...super.toJSON(), aspect, aperture, clipPlanes }
   }
 
 }

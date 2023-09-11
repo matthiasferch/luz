@@ -1,3 +1,4 @@
+import { Serialized } from '../utilities'
 import { Component } from './component'
 import { Body } from './components/body'
 import { Camera } from './components/camera'
@@ -9,6 +10,7 @@ const { Type, Timestep } = Component
 
 export class Entity extends Transform {
 
+  @Serialized
   readonly components: Record<string, Component> = {}
 
   // volume: Volume -- TODO: for visibility determination
@@ -49,12 +51,6 @@ export class Entity extends Transform {
     this.fixedTimestep.forEach((component) => {
       component.update(this, deltaTime)
     })
-  }
-
-  toJSON() {
-    const { components } = this
-
-    return { ...super.toJSON(), components }
   }
 
   private withType<T>(type: Component.Type) {

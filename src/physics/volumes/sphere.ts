@@ -1,4 +1,5 @@
 import { Transform } from '../../core'
+import { Serialized } from '../../utilities'
 import { vec3 } from '../../vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
@@ -7,6 +8,7 @@ export class Sphere extends Volume {
 
   readonly type = Collider.Type.Sphere
 
+  @Serialized
   readonly radius: number
 
   constructor({
@@ -36,12 +38,6 @@ export class Sphere extends Volume {
     ])
 
     this.inertia.invert()
-  }
-
-  toJSON() {
-    const { radius } = this
-
-    return { ...super.toJSON(), radius }
   }
 
 }

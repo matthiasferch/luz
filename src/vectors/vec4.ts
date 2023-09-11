@@ -220,10 +220,14 @@ export class vec4 extends Float32Array {
     return matrix.transform(this, dest)
   }
 
-  toJSON() {
+  serialize() {
     const { x, y, z, w } = this
 
     return [x, y, z, w]
+  }
+  
+  static deserialize(values: number[]) {
+    return new vec4(values)
   }
 
   static absolute(vector: vec4, dest: null | vec4 = null): vec4 {

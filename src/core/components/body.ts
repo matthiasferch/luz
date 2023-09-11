@@ -1,5 +1,6 @@
 import { Volume } from '../../physics'
-import { vec3, quat } from '../../vectors'
+import { Serialized } from '../../utilities'
+import { quat, vec3 } from '../../vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
 
@@ -9,8 +10,10 @@ export class Body extends Component {
 
   readonly timestep = Component.Timestep.Fixed
 
+  @Serialized
   mass: number
 
+  @Serialized
   volume: Volume
 
   readonly force: vec3
@@ -46,12 +49,6 @@ export class Body extends Component {
 
     this.integrateLinearVelocity(transform, deltaTime)
     this.integrateAngularVelocity(transform, deltaTime)
-  }
-
-  toJSON() {
-    const { mass, volume, force, torque, linearVelocity, angularVelocity } = this
-
-    return { ...super.toJSON(), mass, volume, force, torque, linearVelocity, angularVelocity }
   }
 
   private integrateLinearVelocity(transform: Transform, deltaTime: number) {

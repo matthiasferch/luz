@@ -11,6 +11,8 @@
 		"module": "esnext",
 		"sourceMap": true,
 		"declaration": true,
-		"moduleResolution": "node"
+		"moduleResolution": "node",
+		"emitDecoratorMetadata": true,
+		"experimentalDecorators": true
 	}
 }

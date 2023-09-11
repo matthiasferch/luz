@@ -1,3 +1,4 @@
+import { Serialized } from '../../utilities'
 import { vec3 } from '../../vectors'
 import { Collider } from '../collider'
 
@@ -5,8 +6,10 @@ export class Plane extends Collider {
 
   type = Collider.Type.Plane
 
+  @Serialized
   readonly normal: Readonly<vec3>
 
+  @Serialized
   readonly distance: number
 
   constructor({
@@ -18,12 +21,6 @@ export class Plane extends Collider {
     this.normal = normal.copy()
 
     this.distance = distance
-  }
-
-  toJSON() {
-    const { normal, distance } = this
-
-    return { normal, distance }
   }
 
 }

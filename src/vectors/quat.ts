@@ -332,10 +332,14 @@ export class quat extends Float32Array {
     return dest
   }
 
-  toJSON() {
+  serialize() {
     const { x, y, z, w } = this
 
     return [x, y, z, w]
+  }
+  
+  static deserialize(values: number[]) {
+    return new quat(values)
   }
 
   static dot(q1: quat, q2: quat): number {

@@ -1,3 +1,4 @@
+import { Serialized } from '../../utilities'
 import { mat4, vec3 } from '../../vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
@@ -7,12 +8,16 @@ export class Light extends Camera {
 
   readonly type = Component.Type.Light
 
+  @Serialized
   radius = 6.0
 
+  @Serialized
   falloff = 10.0
 
+  @Serialized
   intensity = 1.0
 
+  @Serialized
   readonly color = vec3.one.copy()
 
   readonly translation = new vec3()
@@ -43,12 +48,6 @@ export class Light extends Camera {
 
     this.textureMatrix.multiply(this.projectionMatrix)
     this.textureMatrix.multiply(this.viewMatrix)
-  }
-
-  toJSON() {
-    const { radius, falloff, intensity } = this
-
-    return { ...super.toJSON(), radius, falloff, intensity }
   }
 
 }

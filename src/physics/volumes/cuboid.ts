@@ -1,4 +1,5 @@
 import { Transform } from '../../core'
+import { Serialized } from '../../utilities'
 import { vec3 } from '../../vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
@@ -7,6 +8,7 @@ export class Cuboid extends Volume {
 
   readonly type = Collider.Type.Cuboid
 
+  @Serialized
   readonly extents: Readonly<vec3>
 
   readonly axes: vec3[]
@@ -52,12 +54,6 @@ export class Cuboid extends Volume {
     ])
 
     this.inertia.multiply(rotationMatrix).invert()
-  }
-
-  toJSON() {
-    const { extents } = this
-
-    return { ...super.toJSON(), extents }
   }
 
 }

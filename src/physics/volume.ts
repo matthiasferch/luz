@@ -1,14 +1,16 @@
 import { Transform } from '../core'
+import { Serialized } from '../utilities'
 import { mat3, vec3 } from '../vectors'
 import { Collider } from './collider'
 
 export abstract class Volume extends Collider {
 
+  @Serialized
+  readonly origin: Readonly<vec3>
+
   readonly center: vec3
 
   readonly inertia: mat3
-
-  protected readonly origin: vec3
 
   constructor({
     origin = vec3.zero
@@ -21,10 +23,13 @@ export abstract class Volume extends Collider {
     this.inertia = new mat3()
   }
 
-  toJSON() {
+  serialize() {
     const { origin } = this
 
-    return { origin }
+    return {
+      ...super.serialize(),
+      origin: origin.serialize()
+    }
   }
 
   abstract transform(transform: Transform): void

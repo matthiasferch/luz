@@ -1,9 +1,17 @@
+import { Serialized, Serializable } from '../utilities'
 import { mat3, mat4, quat, vec3 } from '../vectors'
 
-export class Transform {
+export interface SerializedTransform {
+  rotation: number[]
+  translation: number[]
+}
 
+export class Transform extends Serializable {
+
+  @Serialized
   readonly rotation = new quat()
 
+  @Serialized
   readonly translation = new vec3()
 
   readonly direction = new vec3()
@@ -14,12 +22,14 @@ export class Transform {
 
   readonly inverseTransposeMatrix = new mat4()
 
-  static readonly origin = new Transform()
+  static readonly origin: Readonly<Transform> = new Transform()
 
   constructor({
     translation = vec3.zero,
     rotation = quat.identity
   } = {}) {
+    super()
+
     this.translation = translation.copy()
     this.rotation = rotation.copy()
   }
@@ -36,12 +46,6 @@ export class Transform {
 
     // inverse transpose matrix (to transform plane equations)
     this.modelMatrix.invert(this.inverseTransposeMatrix).transpose()
-  }
-
-  toJSON() {
-    const { rotation, translation } = this
-
-    return { rotation, translation }
   }
 
 }

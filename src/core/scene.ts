@@ -1,12 +1,15 @@
 import { Collision, CollisionDispatcher } from '../physics'
+import { Serialized, Serializable } from '../utilities'
 import { vec3 } from '../vectors'
 import { Body } from './components/body'
 import { Entity } from './entity'
 
-export class Scene {
+export class Scene extends Serializable {
 
+  @Serialized
   readonly gravity: vec3
 
+  @Serialized
   readonly entities: Record<string, Entity> = {}
 
   readonly collisions: Required<Collision>[] = []
@@ -18,6 +21,8 @@ export class Scene {
   private readonly timestep: number = 1000 / 60
 
   constructor() {
+    super()
+
     this.gravity = new vec3([0, -9.81, 0])
 
     this.collisionDispatcher = new CollisionDispatcher()
@@ -136,12 +141,6 @@ export class Scene {
     const { volume: c2 } = b2
 
     return this.collisionDispatcher.dispatch(c1, c2)
-  }
-
-  toJSON() {
-    const { gravity, entities } = this
-
-    return { gravity, entities }
   }
 
 }

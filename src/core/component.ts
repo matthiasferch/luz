@@ -1,18 +1,14 @@
+import { Serialized, Serializable } from '../utilities'
 import { Transform } from './transform'
 
-export abstract class Component {
+export abstract class Component extends Serializable {
 
+  @Serialized
   abstract readonly type: Component.Type
 
   abstract readonly timestep: Component.Timestep
 
   abstract update(transform: Transform, deltaTime: number): void
-
-  toJSON() {
-    const { type } = this
-
-    return { type }
-  }
 
 }
 
