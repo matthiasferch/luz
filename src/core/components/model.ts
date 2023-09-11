@@ -17,9 +17,9 @@ export class Model extends Component {
   }> = {}
 
   @Serialized
-  readonly baseColor = vec3.one
+  readonly color = vec3.one
 
-  baseTexture: Texture
+  texture: Texture
 
   mesh: Mesh
 
