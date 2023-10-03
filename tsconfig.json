@@ -2,8 +2,8 @@
 	"compilerOptions": {
 		"target": "es6",
 		"module": "esnext",
-		"sourceMap": true,
-		"declaration": true,
+		// "sourceMap": true,
+		// "declaration": true,
 		"moduleResolution": "node",
 		"emitDecoratorMetadata": true,
 		"experimentalDecorators": true

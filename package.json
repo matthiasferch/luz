@@ -8,5 +8,5 @@
     "build": "rimraf ./dist && webpack",
     "watch": "webpack --watch"
   },
-  "workspaces": ["./modules/*", "./demos/*"]
+  "workspaces": ["./modules/*"]
 }
