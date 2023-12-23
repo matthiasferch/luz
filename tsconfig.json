@@ -1,10 +1,16 @@
 {
 	"compilerOptions": {
-		"target": "es6",
+		// target
+		"target": "esnext",
+
+		// module
 		"module": "esnext",
-		// "sourceMap": true,
-		// "declaration": true,
-		"moduleResolution": "node",
+		"moduleResolution": "bundler",
+
+		// declarations
+		"declaration": true,
+
+		// decorators
 		"emitDecoratorMetadata": true,
 		"experimentalDecorators": true
 	}

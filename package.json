@@ -1,11 +1,12 @@
 {
   "name": "luz",
-  "main": "dist/luz.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "author": "Matthias Ferch",
   "scripts": {
     "test": "mocha -r ts-node/register test/**/*.spec.ts",
-    "build": "rimraf ./dist && webpack",
+    "clean": "rimraf ./dist",
+    "build": "npm run clean && webpack",
     "watch": "webpack --watch"
   },
   "workspaces": ["./modules/*"]

@@ -20,7 +20,7 @@ module.exports = {
   output: {
     library: 'luz',
     libraryTarget: 'umd',
-    filename: 'luz.js',
+    filename: 'index.js',
     path: path.resolve(__dirname, 'dist'),
     globalObject: 'this',
     clean: true
