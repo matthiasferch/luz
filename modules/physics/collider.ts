@@ -1,4 +1,4 @@
-import { Serialized, Serializable } from "../../utilities"
+import { Serialized, Serializable } from "../utilities"
 
 export abstract class Collider extends Serializable {
 

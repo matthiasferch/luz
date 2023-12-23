@@ -15,7 +15,7 @@ export function Serialized(target: Object, propertyKey: string) {
 export class Serializable {
 
   serialize() {
-    const isObject = (value: any) => {
+    const isPlainObject = (value: any) => {
       return typeof value === 'object' && value.constructor === Object
     }
 
@@ -38,7 +38,7 @@ export class Serializable {
 
           return item
         })
-      } else if (value && isObject(value)) {
+      } else if (value && isPlainObject(value)) {
         data[prop] = {}
 
         for (const key in value) {

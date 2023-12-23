@@ -1,16 +1,11 @@
 {
 	"compilerOptions": {
-		// target
 		"target": "esnext",
-
-		// module
 		"module": "esnext",
 		"moduleResolution": "bundler",
-
-		// declarations
+		"outDir": "./dist",
 		"declaration": true,
-
-		// decorators
+		"declarationDir": "./dist",
 		"emitDecoratorMetadata": true,
 		"experimentalDecorators": true
 	}

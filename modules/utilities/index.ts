@@ -1,3 +1,3 @@
-export { Pool } from './src/pool'
-export { Dispatcher } from './src/dispatcher'
-export { Serialized, Serializable } from './src/serializable'
+export { Pool } from './pool'
+export { Dispatcher } from './dispatcher'
+export { Serialized, Serializable } from './serializable'

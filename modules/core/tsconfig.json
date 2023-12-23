@@ -1,13 +1,13 @@
 {
 	"extends": "../../tsconfig.json",
 	"include": [
-		"./src/**/*"
-, "index.ts"	],
+		"index.ts"
+	],
 	"exclude": [
 		"./**/*.spec.ts"
 	],
 	"compilerOptions": {
 		"outDir": "./dist",
-    "declarationDir": "./dist",
+		"declarationDir": "./dist",
 	}
 }
