@@ -1,18 +1,21 @@
-import { Collision, CollisionDispatcher } from '@luz/physics'
+import { Collider, CollisionDispatcher, Sphere } from '@luz/physics'
 import { Serializable, Serialized } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
 import { Entity } from './entity'
+import { CollisionManifold } from '@luz/physics/collision'
 
 export class Scene extends Serializable {
-
   @Serialized
   readonly gravity: vec3
 
   @Serialized
   readonly entities: Record<string, Entity> = {}
 
-  readonly collisions: Required<Collision>[] = []
+  @Serialized
+  readonly colliders: Record<string, Collider> = {}
+
+  readonly collisionManifolds: CollisionManifold[] = []
 
   private collisionDispatcher: CollisionDispatcher
 
@@ -33,10 +36,10 @@ export class Scene extends Serializable {
 
     this.elapsedTime += deltaTime
 
-    // prepare bodies
+    // transform bodies
     entities.forEach((entity) => {
       entity.bodies.forEach((body) => {
-        body.prepare(entity)
+        body.transform(entity)
       })
     })
 
@@ -65,7 +68,7 @@ export class Scene extends Serializable {
     this.applyGravity(bodies)
     this.detectCollisions(bodies)
 
-    this.resolveCollisions(0.9, 0.2)
+    this.resolveCollisions(0.0, 0.4)
   }
 
   private applyGravity(bodies: Body[]) {
@@ -75,20 +78,34 @@ export class Scene extends Serializable {
   }
 
   private detectCollisions(bodies: Body[]) {
-    this.collisions.length = 0
+    this.collisionManifolds.length = 0 // Reset the collisions array for each frame
 
     bodies.forEach((b1) => {
       bodies.forEach((b2) => {
-        if (b1 === b2) {
-          return
+        if (b1 === b2) return // Skip self-collision
+
+        // Get the collision manifold from the dispatcher
+        const collisions = this.collisionDispatcher.dispatch(b1.volume, b2.volume)
+
+        if (collisions && collisions.length > 0) {
+          this.collisionManifolds.push({
+            bodies: [b1, b2],
+            collisions
+          })
         }
+      })
+    })
 
-        const collision = this.collide(b1, b2)
+    bodies.forEach((body) => {
+      const colliders = Object.values(this.colliders)
 
-        if (collision) {
-          this.collisions.push({
-            ...collision,
-            bodies: [b1, b2]
+      colliders.forEach((collider) => {
+        const collisions = this.collisionDispatcher.dispatch(body.volume, collider)
+
+        if (collisions && collisions.length > 0) {
+          this.collisionManifolds.push({
+            bodies: [body, null],
+            collisions
           })
         }
       })
@@ -96,51 +113,97 @@ export class Scene extends Serializable {
   }
 
   private resolveCollisions(friction: number, restitution: number) {
-    this.collisions.forEach(({ bodies, contact, normal }) => {
-      const [b1, b2] = bodies
+    this.collisionManifolds.forEach(({ bodies, collisions }) => {
+      const [b1, b2] = bodies // b1 is dynamic, b2 could be null (static geometry)
 
-      const v = vec3.subtract(b2.linearVelocity, b1.linearVelocity)
+      collisions.forEach(({ contact, normal, distance }) => {
+        const r1 = vec3.subtract(contact, b1.volume.center) // Vector from b1's center of mass to contact point
 
-      const n = vec3.dot(v, normal)
+        // Calculate relative velocity at the contact point
+        const relativeVelocity = vec3.subtract(
+          b2
+            ? vec3.add(b2.linearVelocity, vec3.cross(b2.angularVelocity, vec3.subtract(contact, b2.volume.center)))
+            : vec3.zero,
+          vec3.add(b1.linearVelocity, vec3.cross(b1.angularVelocity, r1))
+        )
 
-      if (n >= 0) {
-        return
-      }
+        // Decompose relative velocity into normal and tangential components
+        const velocityAlongNormal = vec3.dot(relativeVelocity, normal)
 
-      const r = -(1.0 + restitution) * n
+        if (b2 && velocityAlongNormal > 0) {
+          return // Bodies are moving apart, no need to resolve the collision
+        }
 
-      const m1 = 1.0 / b1.mass
-      const m2 = 1.0 / b2.mass
+        const tangent = vec3.subtract(relativeVelocity, vec3.scale(normal, velocityAlongNormal))
+        const tangentLength = tangent.length
+        const tangentDirection = tangentLength > 0 ? tangent.normalize() : vec3.zero
 
-      const m = m1 + m2
+        // Calculate restitution impulse (only along the normal direction)
+        const impulseScalar = -(1.0 + restitution) * velocityAlongNormal
 
-      const i = vec3.scale(normal, r / m)
+        const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
+        const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
 
-      b1.linearVelocity.subtract(vec3.scale(i, m1))
-      b2.linearVelocity.add(vec3.scale(i, m2))
+        const totalInverseMass = inverseMass1 + inverseMass2
 
-      const t = vec3.subtract(v, vec3.scale(normal, n))
-      const f = vec3.scale(t, -(m1 + m2) * friction)
+        if (totalInverseMass === 0) {
+          return // No response needed if both bodies are static
+        }
 
-      b1.linearVelocity.subtract(vec3.scale(f, m1))
-      b2.linearVelocity.add(vec3.scale(f, m2))
+        // Calculate impulse for the normal direction
+        const normalImpulse = vec3.scale(normal, impulseScalar / totalInverseMass)
 
-      bodies.forEach((body) => {
-        const { volume } = body
-        const { center } = volume
+        // Apply linear impulse to b1 (if dynamic)
+        if (inverseMass1 > 0) {
+          b1.linearVelocity.subtract(vec3.scale(normalImpulse, inverseMass1))
+        }
 
-        const d = vec3.subtract(contact, center)
+        // Apply the linear impulse to b2 (if dynamic)
+        if (b2 && inverseMass2 > 0) {
+          b2.linearVelocity.add(vec3.scale(normalImpulse, inverseMass2))
+        }
 
-        body.angularVelocity.add(vec3.cross(d, i))
+        // --- Simplified Rolling Without Slipping ---
+
+        // Apply friction impulse to reduce sliding and create rolling
+        if (b1.volume instanceof Sphere && tangentLength > 0) {
+          const frictionImpulseScalar = Math.min(friction * impulseScalar, tangentLength / totalInverseMass)
+          const frictionImpulse = vec3.scale(tangentDirection, frictionImpulseScalar)
+
+          if (inverseMass1 > 0) {
+            b1.linearVelocity.subtract(vec3.scale(frictionImpulse, inverseMass1))
+          }
+
+          if (b2 && inverseMass2 > 0) {
+            b2.linearVelocity.add(vec3.scale(frictionImpulse, inverseMass2))
+          }
+
+          // Calculate the angular velocity based on linear velocity for rolling without slipping
+          const sphereRadius = b1.volume.radius // Assuming b1 is a sphere
+          const linearVelocity = b1.linearVelocity.length
+
+          // Apply angular velocity to match rolling condition: v = r * ω
+          const rollingAngularVelocity = vec3
+            .cross(normal, b1.linearVelocity)
+            .normalize()
+            .scale(linearVelocity / sphereRadius)
+          b1.angularVelocity.set(rollingAngularVelocity)
+        }
+
+        // --- End of Rolling Calculation ---
+
+        // Apply positional correction to prevent sinking/penetration (using distance)
+        const correctionFactor = 0.8 // Tunable correction factor for positional adjustment
+        const correction = vec3.scale(normal, (distance * correctionFactor) / totalInverseMass)
+
+        if (inverseMass1 > 0) {
+          b1.linearCorrection.add(vec3.scale(correction, inverseMass1))
+        }
+
+        if (b2 && inverseMass2 > 0) {
+          b2.linearCorrection.subtract(vec3.scale(correction, inverseMass2)) // Move b2 in the opposite direction
+        }
       })
     })
   }
-
-  private collide(b1: Body, b2: Body) {
-    const { volume: c1 } = b1
-    const { volume: c2 } = b2
-
-    return this.collisionDispatcher.dispatch(c1, c2)
-  }
-
 }

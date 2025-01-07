@@ -148,7 +148,7 @@ export class mat4 extends Float32Array {
     return dest
   }
 
-  invert(dest: null | mat4 = null): null | mat4 {
+  invert(dest: null | mat4 = null): mat4 {
     if (!dest) {
       dest = this
     }
@@ -186,7 +186,7 @@ export class mat4 extends Float32Array {
     let d = d00 * d11 - d01 * d10 + d02 * d09 + d03 * d08 - d04 * d07 + d05 * d06
 
     if (d === 0.0) {
-      return null
+      return dest
     }
 
     d = 1.0 / d

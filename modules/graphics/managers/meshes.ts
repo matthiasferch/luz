@@ -1,19 +1,22 @@
 import { IndexBuffer } from '../buffers/index-buffer'
 import { VertexBuffer } from '../buffers/vertex-buffer'
+import { Material } from '../renderer/material'
 import { Mesh } from '../renderer/mesh'
 import { VertexArray } from '../types/vertex-array'
 
 const vertexSize = 8 // position (xyz) + normal (xyz) + texture coordinates (uv)
 
+type MeshData = {
+  topology: Mesh.Topology
+
+  vertices: number[]
+  indices?: number[]
+}
+
 export class Meshes {
+  constructor(private gl: WebGL2RenderingContext) {}
 
-  constructor(private gl: WebGL2RenderingContext) { }
-
-  create(data: { 
-    topology: string, 
-    vertices: number[], 
-    indices?: number[] 
-  }): Mesh | null {
+  create(data: MeshData, material?: Material): Mesh | null {
     const { topology, vertices } = data
 
     let vertexArray = this.gl.createVertexArray() as VertexArray
@@ -24,7 +27,7 @@ export class Meshes {
 
     vertexArray.vertexCount = vertices.length / vertexSize
 
-    let indexBuffer: IndexBuffer = null
+    let indexBuffer: IndexBuffer | null = null
 
     if (data.indices && data.indices.length > 0) {
       const { indices } = data
@@ -43,7 +46,7 @@ export class Meshes {
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer)
 
-    if (indexBuffer) {
+    if (indexBuffer != null) {
       this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
     }
 
@@ -63,41 +66,38 @@ export class Meshes {
 
     this.gl.bindVertexArray(null)
 
-    return new Mesh(
-      topology as Mesh.Topology,
-      vertexArray
-    )
+    return new Mesh({ topology, vertexArray })
   }
 
   render(mesh: Mesh) {
     let mode: number
 
     switch (mesh.topology) {
-      case Mesh.Topology.Points:
+      case 'points':
         mode = this.gl.POINTS
         break
 
-      case Mesh.Topology.Lines:
+      case 'lines':
         mode = this.gl.LINES
         break
 
-      case Mesh.Topology.LineLoop:
+      case 'lineLoop':
         mode = this.gl.LINE_LOOP
         break
 
-      case Mesh.Topology.LineStrip:
+      case 'lineStrip':
         mode = this.gl.LINE_STRIP
         break
 
-      case Mesh.Topology.Triangles:
+      case 'triangles':
         mode = this.gl.TRIANGLES
         break
 
-      case Mesh.Topology.TriangleFan:
+      case 'triangleFan':
         mode = this.gl.TRIANGLE_FAN
         break
 
-      case Mesh.Topology.TriangleStrip:
+      case 'triangleStrip':
         mode = this.gl.TRIANGLE_STRIP
         break
     }
@@ -112,5 +112,4 @@ export class Meshes {
 
     this.gl.bindVertexArray(null)
   }
-
 }

@@ -5,21 +5,21 @@ import { Buffer } from '../types/buffer'
 import { Texture } from '../types/texture'
 
 export class Buffers {
-
   private buffers: Buffer[] = []
 
   private boundBuffers: Record<number, Buffer> = {}
 
-  constructor(private gl: WebGL2RenderingContext) { }
+  constructor(private gl: WebGL2RenderingContext) {}
 
-  create(target: Buffer.Target.FrameBuffer): FrameBuffer
-  create(target: Buffer.Target.RenderBuffer): RenderBuffer
-  create(target: Buffer.Target.UniformBuffer): UniformBuffer
+  create(target: 'frame'): FrameBuffer
 
-  create(target: Buffer.Target) {
+  create(target: 'render'): RenderBuffer
+
+  create(target: 'uniform', data?: any): UniformBuffer
+
+  create(target: Buffer.Target, data?: any) {
     switch (target) {
-      case Buffer.Target.FrameBuffer:
-
+      case 'frame':
         const frameBuffer = this.gl.createFramebuffer() as FrameBuffer
 
         frameBuffer.target = this.gl.FRAMEBUFFER
@@ -30,8 +30,7 @@ export class Buffers {
 
         return frameBuffer
 
-      case Buffer.Target.RenderBuffer:
-
+      case 'render':
         const renderBuffer = this.gl.createRenderbuffer() as RenderBuffer
 
         renderBuffer.target = this.gl.RENDERBUFFER
@@ -40,12 +39,15 @@ export class Buffers {
 
         return renderBuffer
 
-      case Buffer.Target.UniformBuffer:
-
+      case 'uniform':
         const buffer = this.gl.createBuffer() as UniformBuffer
 
         buffer.target = this.gl.UNIFORM_BUFFER
         buffer.usage = this.gl.DYNAMIC_DRAW
+
+        if (data) {
+          this.update(buffer, data)
+        }
 
         this.buffers.push(buffer)
 
@@ -53,13 +55,13 @@ export class Buffers {
     }
   }
 
-  update(buffer: UniformBuffer, source: any, offset?: number) {
+  update(buffer: UniformBuffer, data: any, offset?: number) {
     this.bind(buffer)
 
     if (offset !== undefined) {
-      this.gl.bufferSubData(buffer.target, offset, source)
+      this.gl.bufferSubData(buffer.target, offset, data)
     } else {
-      this.gl.bufferData(buffer.target, source, buffer.usage)
+      this.gl.bufferData(buffer.target, data, buffer.usage)
     }
   }
 
@@ -106,7 +108,7 @@ export class Buffers {
         const frameBuffer = boundBuffer as FrameBuffer
 
         if (frameBuffer) {
-          Object.values(frameBuffer.attachments).forEach(attachment => {
+          Object.values(frameBuffer.attachments).forEach((attachment) => {
             const texture = attachment as Texture
 
             if (texture.useMipmaps) {
@@ -133,5 +135,4 @@ export class Buffers {
 
     this.boundBuffers[buffer.target] = buffer
   }
-
 }

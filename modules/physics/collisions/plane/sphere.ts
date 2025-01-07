@@ -3,24 +3,30 @@ import { Plane } from '../../colliders/plane'
 import { Collision } from '../../collision'
 import { Sphere } from '../../volumes/sphere'
 
-const { abs } = Math
+export function collidePlaneWithSphere(plane: Plane, sphere: Sphere): Collision[] | null {
+  const { center: sphereCenter, radius } = sphere
+  const { normal, distance: planeDistance } = plane
 
-export const collidePlaneWithSphere = (plane: Plane, sphere: Sphere): Collision | null => {
-  const { normal: n, distance: d } = plane
-  const { center: c, radius: r } = sphere
+  // Step 1: Calculate the signed distance from the sphere center to the plane
+  const distanceFromSphereCenterToPlane = vec3.dot(sphereCenter, normal) - planeDistance
 
-  const s = vec3.dot(n, c) + d
+  // Step 2: Check if the sphere is colliding with the plane (distance < radius)
+  if (Math.abs(distanceFromSphereCenterToPlane) <= radius) {
+    // Step 3: Compute the contact point
+    const contactPoint = vec3.subtract(sphereCenter, vec3.scale(normal, distanceFromSphereCenterToPlane))
 
-  const t = abs(s)
+    // Step 4: Compute the penetration depth (how much the sphere is intersecting the plane)
+    const penetrationDepth = radius - Math.abs(distanceFromSphereCenterToPlane)
 
-  if (t > r) {
-    return null
+    // Return the collision details
+    return [
+      {
+        contact: contactPoint.copy(), // Contact point should be on the plane
+        normal: normal.copy(), // The normal of the collision is the plane's normal
+        distance: penetrationDepth // Penetration depth is how much the sphere overlaps the plane
+      }
+    ]
   }
 
-  const e = r - t
-  const f = vec3.scale(n, e)
-
-  const p = (s < 0) ? vec3.subtract(c, f) : vec3.add(c, f)
-
-  return { contact: p, normal: n, distance: t }
+  return null // No collision
 }

@@ -5,16 +5,12 @@ import { Collider } from '../collider'
 import { Volume } from '../volume'
 
 export class Sphere extends Volume {
-
-  readonly type = Collider.Type.Sphere
+  readonly type: Collider.Type = 'sphere'
 
   @Serialized
   readonly radius: number
 
-  constructor({
-    origin = vec3.zero,
-    radius = 1.0
-  }) {
+  constructor({ origin = vec3.zero, radius = 1.0 }) {
     super({ origin })
 
     this.radius = radius
@@ -26,18 +22,12 @@ export class Sphere extends Volume {
     vec3.add(this.origin, translation, this.center)
   }
 
-  calculateInertia(mass: number, transform: Transform) {
+  calculateInverseInertia(mass: number, transform: Transform) {
     const { radius } = this
 
     const t = (2 / 5) * mass * radius * radius
 
-    this.inertia.set([
-      t, 0, 0,
-      0, t, 0,
-      0, 0, t
-    ])
-
-    this.inertia.invert()
+    this.inverseInertia.set([t, 0, 0, 0, t, 0, 0, 0, t])
+    this.inverseInertia.invert()
   }
-
 }

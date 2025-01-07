@@ -5,15 +5,15 @@ const { min, max, abs, sqrt } = Math
 
 export class vec2 extends Float32Array {
 
-  static readonly zero: Readonly<vec2> = new vec2([0.0, 0.0])
-  static readonly one: Readonly<vec2> = new vec2([1.0, 1.0])
+  static readonly zero: vec2 = new vec2([0.0, 0.0])
+  static readonly one: vec2 = new vec2([1.0, 1.0])
 
-  static readonly right: Readonly<vec2> = new vec2([1.0, 0.0])
-  static readonly up: Readonly<vec2> = new vec2([0.0, 1.0])
+  static readonly right: vec2 = new vec2([1.0, 0.0])
+  static readonly up: vec2 = new vec2([0.0, 1.0])
 
-  static readonly axes: Readonly<vec2[]> = [vec2.right, vec2.up]
+  static readonly axes: vec2[] = [vec2.right, vec2.up]
 
-  static readonly infinity: Readonly<vec2> = new vec2([Infinity, Infinity])
+  static readonly infinity: vec2 = new vec2([Infinity, Infinity])
 
   constructor(values: number[] = [0.0, 0.0]) {
     super(values.slice(0, 2))

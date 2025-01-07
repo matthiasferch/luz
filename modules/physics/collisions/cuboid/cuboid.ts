@@ -67,5 +67,5 @@ export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Colli
 
   const p = vec3.add(c1, c2).scale(0.5)
 
-  return { normal: n, contact: p, distance: d }
+  return { normal: n!, contact: p, distance: d }
 }

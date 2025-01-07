@@ -7,6 +7,7 @@
 		"declaration": true,
 		"declarationDir": "./dist",
 		"emitDecoratorMetadata": true,
-		"experimentalDecorators": true
+		"experimentalDecorators": true,
+		"strictNullChecks": true
 	}
 }

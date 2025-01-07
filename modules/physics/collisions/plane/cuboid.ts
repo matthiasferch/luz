@@ -1,25 +1,25 @@
-import { vec3 } from '@luz/vectors'
 import { Plane } from '../../colliders/plane'
 import { Collision } from '../../collision'
 import { Cuboid } from '../../volumes/cuboid'
 
-const { abs } = Math
+export const collidePlaneWithCuboid = (plane: Plane, cuboid: Cuboid): Collision[] | null => {
+  const collisions: Collision[] = []
 
-export const collidePlaneWithCuboid = (plane: Plane, cuboid: Cuboid): Collision | null => {
-  const { normal: n, distance: d } = plane
-  const { center: c, extents: e } = cuboid
+  cuboid.getVertices().forEach((vertex) => {
+    const distanceToPlane = plane.signedDistance(vertex)
 
-  const s = vec3.dot(n, c) - d
+    // If the vertex is penetrating the plane, add it to the collision manifold
+    if (distanceToPlane <= 0) {
+      const normal = plane.normal.copy()
+      const penetrationDepth = -distanceToPlane // Negative because it's penetration
 
-  const t = abs(s)
+      collisions.push({
+        contact: vertex.copy(), // The vertex itself is the contact point
+        normal: normal,
+        distance: penetrationDepth
+      })
+    }
+  })
 
-  const f = abs(n.x * e.x) + abs(n.y * e.y) + abs(n.z * e.z)
-
-  if (t > f) {
-    return null
-  }
-
-  const p = vec3.subtract(c, vec3.scale(n, f))
-
-  return { contact: p, normal: n, distance: t - f }
+  return collisions.length > 0 ? collisions : null
 }

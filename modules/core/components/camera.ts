@@ -4,10 +4,8 @@ import { Component } from '../component'
 import { Transform } from '../transform'
 
 export class Camera extends Component {
-
-  readonly type: Component.Type = Component.Type.Camera
-
-  readonly timestep = Component.Timestep.Variable
+  readonly type: Component.Type = 'camera'
+  readonly timestep: Component.Timestep = 'variable'
 
   @Serialized
   aspect = 1.0
@@ -46,5 +44,4 @@ export class Camera extends Component {
     // reconstruction matrix (to reconstruct fragment positions)
     mat4.multiply(this.projectionMatrix, this.viewMatrix, this.reconstructionMatrix).invert()
   }
-
 }

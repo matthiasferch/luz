@@ -1,9 +1,8 @@
 {
-  "name": "@luz/physics",
+  "name": "@luz/tests",
   "author": "Matthias Ferch",
   "scripts": {
-    "test": "mocha -r ts-node/register test/**/*.spec.ts",
-    "build": "rimraf ./dist && webpack"
+    "test": "mocha -r ts-node/register *.test.ts"
   },
   "devDependencies": {
     "@types/chai": "^4.3.6",

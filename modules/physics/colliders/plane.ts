@@ -3,19 +3,15 @@ import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 
 export class Plane extends Collider {
-
-  type = Collider.Type.Plane
+  type: Collider.Type = 'plane'
 
   @Serialized
-  readonly normal: Readonly<vec3>
+  readonly normal: vec3
 
   @Serialized
   readonly distance: number
 
-  constructor({
-    normal = vec3.up,
-    distance = 0
-  } = {}) {
+  constructor({ normal = vec3.up, distance = 0 } = {}) {
     super()
 
     this.normal = normal.copy()
@@ -23,4 +19,7 @@ export class Plane extends Collider {
     this.distance = distance
   }
 
+  signedDistance(point: vec3): number {
+    return vec3.dot(point, this.normal) - this.distance
+  }
 }

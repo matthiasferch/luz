@@ -4,6 +4,7 @@ export { Collision } from './collision'
 
 export { Ray } from './colliders/ray'
 export { Plane } from './colliders/plane'
+export { Polygon } from './colliders/polygon'
 
 export { Sphere } from './volumes/sphere'
 export { Cuboid } from './volumes/cuboid'
@@ -20,5 +21,8 @@ export { collidePlaneWithCuboid } from './collisions/plane/cuboid'
 
 export { collideSphereWithSphere } from './collisions/sphere/sphere'
 export { collideSphereWithCuboid } from './collisions/sphere/cuboid'
+
+export { collidePolygonWithSphere } from './collisions/polygon/sphere'
+export { collidePolygonWithCuboid } from './collisions/polygon/cuboid'
 
 export { collideCuboidWithCuboid } from './collisions/cuboid/cuboid'

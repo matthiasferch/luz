@@ -6,37 +6,34 @@ import { Light } from './components/light'
 import { Model } from './components/model'
 import { Transform } from './transform'
 
-const { Type, Timestep } = Component
-
 export class Entity extends Transform {
-
   @Serialized
   readonly components: Record<string, Component> = {}
 
   // volume: Volume -- TODO: for visibility determination
 
   get bodies() {
-    return this.withType<Body>(Type.Body)
+    return this.ofType<Body>('body')
   }
 
   get models() {
-    return this.withType<Model>(Type.Model)
+    return this.ofType<Model>('model')
   }
 
   get cameras() {
-    return this.withType<Camera>(Type.Camera)
+    return this.ofType<Camera>('camera')
   }
 
   get lights() {
-    return this.withType<Light>(Type.Light)
+    return this.ofType<Light>('light')
   }
 
   get fixedTimestep() {
-    return this.withTimestep(Timestep.Fixed)
+    return this.ofTimestep('fixed')
   }
 
   get variableTimestep() {
-    return this.withTimestep(Timestep.Variable)
+    return this.ofTimestep('variable')
   }
 
   update(deltaTime: number) {
@@ -53,7 +50,7 @@ export class Entity extends Transform {
     })
   }
 
-  private withType<T>(type: Component.Type) {
+  private ofType<T extends Component>(type: Component.Type) {
     const components = Object.values(this.components)
 
     return components.filter((component) => {
@@ -61,12 +58,11 @@ export class Entity extends Transform {
     }) as T[]
   }
 
-  private withTimestep(timestep: Component.Timestep) {
+  private ofTimestep(timestep: Component.Timestep) {
     const components = Object.values(this.components)
 
     return components.filter((component) => {
       return component.timestep === timestep
     })
   }
-
 }

@@ -3,32 +3,34 @@ import { Collision } from '../../collision'
 import { Cuboid } from '../../volumes/cuboid'
 import { Sphere } from '../../volumes/sphere'
 
-const { sqrt, min, max } = Math
-
-export const collideSphereWithCuboid = (sphere: Sphere, cuboid: Cuboid): Collision | null => {
-  const { center: c1, radius: r } = sphere
-  const { center: c2, extents: e } = cuboid
-  
-  const r2 = r * r
-
-  const m1 = vec3.add(c2, e)
-  const m2 = vec3.subtract(c2, e)
-
-  const m = new vec3([
-    max(m2.x, min(c1.x, m1.x)),
-    max(m2.y, min(c1.y, m1.y)),
-    max(m2.z, min(c1.z, m1.z))
+export function collideSphereWithCuboid(sphere: Sphere, cuboid: Cuboid): Collision[] | null {
+  // Step 1: Find the closest point on the cuboid's surface to the sphere's center
+  const closestPoint = new vec3([
+    Math.max(cuboid.center.x - cuboid.extents.x, Math.min(sphere.center.x, cuboid.center.x + cuboid.extents.x)),
+    Math.max(cuboid.center.y - cuboid.extents.y, Math.min(sphere.center.y, cuboid.center.y + cuboid.extents.y)),
+    Math.max(cuboid.center.z - cuboid.extents.z, Math.min(sphere.center.z, cuboid.center.z + cuboid.extents.z))
   ])
 
-  const d1 = vec3.subtract(m, c1)
-  const d2 = vec3.dot(d1, d1)
+  // Step 2: Calculate the distance from the closest point to the sphere's center
+  const distanceToCuboid = vec3.distance(closestPoint, sphere.center)
 
-  if (d2 > r2) {
-    return null
+  // Step 3: Check if a collision has occurred (i.e., distance to cuboid is less than the sphere's radius)
+  if (distanceToCuboid <= sphere.radius) {
+    // Step 4: Calculate the correct normal (from cuboid surface to sphere center)
+    const normal = vec3.subtract(sphere.center, closestPoint).normalize()
+
+    // Step 5: Compute the penetration depth
+    const penetrationDepth = sphere.radius - distanceToCuboid
+
+    // Return the collision details
+    return [
+      {
+        contact: closestPoint.copy(),
+        normal: normal.copy(), // This will point from the cuboid toward the sphere
+        distance: penetrationDepth
+      }
+    ]
   }
 
-  const n = vec3.normalize(d1)
-  const p = vec3.add(c1, vec3.scale(n, r))
-
-  return { contact: p, normal: n, distance: sqrt(r2 - d2) }
+  return null // No collision
 }

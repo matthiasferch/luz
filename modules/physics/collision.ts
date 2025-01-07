@@ -5,6 +5,9 @@ export interface Collision {
   normal: vec3
   contact: vec3
   distance: number
+}
 
-  bodies?: Body[]
+export type CollisionManifold = {
+  bodies: [Body, Body | null]
+  collisions: Collision[]
 }

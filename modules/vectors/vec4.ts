@@ -5,8 +5,8 @@ const { min, max, abs, sqrt } = Math
 
 export class vec4 extends Float32Array {
 
-  static readonly zero: Readonly<vec4> = new vec4([0.0, 0.0, 0.0, 1.0])
-  static readonly one: Readonly<vec4> = new vec4([1.0, 1.0, 1.0, 1.0])
+  static readonly zero: vec4 = new vec4([0.0, 0.0, 0.0, 1.0])
+  static readonly one: vec4 = new vec4([1.0, 1.0, 1.0, 1.0])
 
   constructor(values: number[] = [0.0, 0.0, 0.0, 1.0]) {
     super(values.slice(0, 4))
@@ -50,6 +50,14 @@ export class vec4 extends Float32Array {
 
   set xyzw(xyzw: number[]) {
     this.set(xyzw)
+  }
+
+  get rgba(): number[] {
+    return Array.from(this)
+  }
+
+  set rgba(rgba: number[]) {
+    this.set(rgba)
   }
 
   get length(): number {

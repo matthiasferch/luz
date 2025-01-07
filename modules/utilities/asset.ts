@@ -1,8 +1,8 @@
 import { Serializable, Serialized } from './serializable'
 
-export class Resource extends Serializable {
+export class Asset extends Serializable {
 
   @Serialized
-  filepath: string
+  path: string
 
 }

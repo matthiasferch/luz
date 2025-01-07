@@ -22,7 +22,7 @@ export class Transform extends Serializable {
 
   readonly inverseTransposeMatrix = new mat4()
 
-  static readonly origin: Readonly<Transform> = new Transform()
+  static readonly origin: Transform = new Transform()
 
   constructor({
     translation = vec3.zero,

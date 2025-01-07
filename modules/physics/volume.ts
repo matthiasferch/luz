@@ -4,23 +4,20 @@ import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from './collider'
 
 export abstract class Volume extends Collider {
-
   @Serialized
-  readonly origin: Readonly<vec3>
+  protected readonly origin: vec3
 
   readonly center: vec3
 
-  readonly inertia: mat3
+  readonly inverseInertia: mat3
 
-  constructor({
-    origin = vec3.zero
-  } = {}) {
+  constructor({ origin = vec3.zero } = {}) {
     super()
 
     this.origin = origin.copy()
     this.center = origin.copy()
 
-    this.inertia = new mat3()
+    this.inverseInertia = new mat3()
   }
 
   serialize() {
@@ -34,7 +31,5 @@ export abstract class Volume extends Collider {
 
   abstract transform(transform: Transform): void
 
-  abstract calculateInertia(mass: number, transform: Transform): void
-
+  abstract calculateInverseInertia(mass: number, transform: Transform): void
 }
-

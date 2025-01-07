@@ -6,15 +6,19 @@ import { Shader } from '../types/shader'
 import { Texture } from '../types/texture'
 import { Uniform } from '../types/uniform'
 
-export class Programs {
+type UniformData = Partial<{
+  uniforms: Record<string, Uniform.Value>
+  uniformBuffers: Record<string, UniformBuffer>
+}>
 
+export class Programs {
   private programs: Program[] = []
 
-  private usedProgram: Program
+  private usedProgram: Program // TODO: should be 'boundProgram' for sake of consistency
 
-  constructor(private gl: WebGL2RenderingContext) { }
+  constructor(private gl: WebGL2RenderingContext) {}
 
-  create(vertexShader: Shader, fragmentShader: Shader): Program | null {
+  create(vertexShader: Shader, fragmentShader: Shader, data?: UniformData): Program | null {
     let program = this.gl.createProgram() as Program
 
     this.gl.attachShader(program, vertexShader)
@@ -38,20 +42,21 @@ export class Programs {
 
     this.setupTexureSlots(program)
 
+    if (data) {
+      this.update(program, data)
+    }
+
     this.programs.push(program)
 
     return program
   }
 
-  update(program: Program, data?: {
-    uniforms?: Record<string, Uniform.Value>,
-    uniformBuffers?: Record<string, UniformBuffer>
-  }) {
+  update(program: Program, data: UniformData) {
     this.use(program)
 
-    if (data?.uniforms) {
-      Object.keys(data.uniforms).forEach(name => {
-        const value = data.uniforms[name]
+    if (data.uniforms) {
+      Object.keys(data.uniforms).forEach((name) => {
+        const value = data.uniforms![name]
 
         if (value === undefined) {
           // tslint:disable-next-line: no-console
@@ -125,12 +130,12 @@ export class Programs {
       })
     }
 
-    if (data?.uniformBuffers) {
+    if (data.uniformBuffers) {
       Object.keys(data.uniformBuffers).forEach((name) => {
         const uniformBlock = program.uniformBlocks[name]
 
         if (uniformBlock) {
-          this.gl.bindBufferBase(this.gl.UNIFORM_BUFFER, uniformBlock.index, data.uniformBuffers[name])
+          this.gl.bindBufferBase(this.gl.UNIFORM_BUFFER, uniformBlock.index, data.uniformBuffers![name])
         }
       })
     }
@@ -198,23 +203,28 @@ export class Programs {
 
     for (let blockIndex = 0; blockIndex < activeUniformBlocks; blockIndex++) {
       const uniformBlockName = this.gl.getActiveUniformBlockName(program, blockIndex)
-      const uniformBlockIndex = this.gl.getUniformBlockIndex(program, uniformBlockName)
+
+      const uniformBlockIndex = this.gl.getUniformBlockIndex(program, uniformBlockName!)
 
       const uniformBlockBinding = uniformBlockIndex
       this.gl.uniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding)
 
-      const uniformIndices = this.gl.getActiveUniformBlockParameter(program, blockIndex, this.gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES) as number[]
+      const uniformIndices = this.gl.getActiveUniformBlockParameter(
+        program,
+        blockIndex,
+        this.gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES
+      ) as number[]
       const uniformOffsets = this.gl.getActiveUniforms(program, uniformIndices, this.gl.UNIFORM_OFFSET) as number[]
 
       const uniformOffsetsByName = uniformIndices.reduce((offsets: Record<string, number>, uniformIndex, index) => {
         const uniform = this.gl.getActiveUniform(program, uniformIndex)
-        offsets[uniform.name] = uniformOffsets[index]
+        offsets[uniform!.name] = uniformOffsets[index]
 
         return offsets
       }, {})
 
-      program.uniformBlocks[uniformBlockName] = {
-        name: uniformBlockName,
+      program.uniformBlocks[uniformBlockName!] = {
+        name: uniformBlockName!,
         index: uniformBlockIndex,
         binding: uniformBlockBinding,
         offsets: uniformOffsetsByName
@@ -227,7 +237,7 @@ export class Programs {
 
     let slot = 0
 
-    this.update(program)
+    this.use(program)
 
     Object.keys(program.uniforms).forEach((name) => {
       const uniform = program.uniforms[name]
@@ -245,5 +255,4 @@ export class Programs {
   private isUniformArray(uniform: WebGLActiveInfo) {
     return uniform.size > 1
   }
-
 }

@@ -1,25 +1,24 @@
 import { Shader } from '../types/shader'
 
 export class Shaders {
-
   private shaders: Shader[] = []
 
-  constructor(private gl: WebGL2RenderingContext) { }
+  constructor(private gl: WebGL2RenderingContext) {}
 
   create(stage: Shader.Stage, source: string, headers?: string[]): Shader | null {
     let type: number
 
     switch (stage) {
-      case Shader.Stage.VertexShader:
+      case 'vertex':
         type = this.gl.VERTEX_SHADER
         break
 
-      case Shader.Stage.FragmentShader:
+      case 'fragment':
         type = this.gl.FRAGMENT_SHADER
         break
     }
 
-    if (headers?.length > 0) {
+    if (headers && headers.length > 0) {
       headers.reverse().forEach((header) => {
         source = `${header}\n\n${source}`
       })
@@ -30,9 +29,9 @@ export class Shaders {
     this.gl.shaderSource(shader, source)
     this.gl.compileShader(shader)
 
-    shader.compiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)
+    shader.isCompiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)
 
-    if (!shader.compiled || !this.gl.isShader(shader)) {
+    if (!shader.isCompiled || !this.gl.isShader(shader)) {
       // tslint:disable-next-line: no-console
       console.error(this.gl.getShaderInfoLog(shader))
 
@@ -45,5 +44,4 @@ export class Shaders {
 
     return shader
   }
-
 }

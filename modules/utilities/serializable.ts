@@ -13,7 +13,6 @@ export function Serialized(target: Object, propertyKey: string) {
 }
 
 export class Serializable {
-
   serialize() {
     const isPlainObject = (value: any) => {
       return typeof value === 'object' && value.constructor === Object
@@ -65,14 +64,14 @@ export class Serializable {
 
     const instance = new this()
 
-    const properties = Serializable.getAllSerializableProperties(this)
+    const keys = Serializable.getAllSerializableProperties(this)
 
-    for (const prop of properties) {
-      if (data.hasOwnProperty(prop)) {
-        if (instance[prop] && isDeserializable(instance[prop].constructor)) {
-          instance[prop] = instance[prop].constructor.deserialize(data[prop])
+    for (const key of keys) {
+      if (data.hasOwnProperty(key)) {
+        if (instance[key] && isDeserializable(instance[key].constructor)) {
+          instance[key] = instance[key].constructor.deserialize(data[key])
         } else {
-          instance[prop] = data[prop]
+          instance[key] = data[key]
         }
       }
     }
@@ -95,5 +94,4 @@ export class Serializable {
 
     return allProperties
   }
-
 }

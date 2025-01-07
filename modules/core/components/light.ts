@@ -5,8 +5,7 @@ import { Transform } from '../transform'
 import { Camera } from './camera'
 
 export class Light extends Camera {
-
-  readonly type = Component.Type.Light
+  readonly type: Component.Type = 'light'
 
   @Serialized
   radius = 6.0
@@ -49,5 +48,4 @@ export class Light extends Camera {
     this.textureMatrix.multiply(this.projectionMatrix)
     this.textureMatrix.multiply(this.viewMatrix)
   }
-
 }

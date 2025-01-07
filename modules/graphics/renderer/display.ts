@@ -4,12 +4,12 @@ export class Display {
 
   constructor(private gl: WebGL2RenderingContext) {}
 
-  set viewport(viewport: Readonly<vec4>) {
+  set viewport(viewport: vec4) {
     const [x, y, z, w] = viewport
     this.gl.viewport(x, y, z, w)
   }
 
-  clear(color: Readonly<vec4>, depth: number, stencil?: number) {
+  clear(color: vec4, depth: number, stencil?: number) {
     let clearMask = 0
 
     if (color != null) {

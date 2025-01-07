@@ -1,12 +1,7 @@
 export type Shader = WebGLShader & {
-  compiled: boolean
+  isCompiled: boolean
 }
 
-export module Shader {
-
-  export enum Stage {
-    VertexShader,
-    FragmentShader
-  }
-  
+export namespace Shader {
+  export type Stage = 'vertex' | 'fragment'
 }

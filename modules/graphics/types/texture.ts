@@ -1,11 +1,12 @@
-export type Texture = WebGLTexture & {
-  target: number
-
-  format: number
-  type: number
+export type TextureProperties = {
+  path?: string
+  data?: any
 
   width: number
   height: number
+
+  format: Texture.Format
+  precision: Texture.Precision
 
   tiling: Texture.Tiling
   filtering: Texture.Filtering
@@ -13,23 +14,19 @@ export type Texture = WebGLTexture & {
   useMipmaps: boolean
 }
 
-export module Texture {
+export type Texture = WebGLTexture &
+  TextureProperties & {
+    target: number
 
-  export enum Tiling {
-    None,
-  
-    Both,
-  
-    Horizontal,
-    Vertical
+    dataType: number
+    dataFormat: number
+    components: number
   }
 
-  export enum Filtering {
-    None,
-    Linear,
-    Bilinear,
-    Trilinear
-  }
-  
+export namespace Texture {
+  export type Precision = 8 | 32
+
+  export type Format = 'color' | 'alpha' | 'depth'
+  export type Tiling = 'none' | 'repeat' | 'mirror'
+  export type Filtering = 'none' | 'linear' | 'bilinear' | 'trilinear'
 }
-

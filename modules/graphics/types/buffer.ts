@@ -4,12 +4,6 @@ import { UniformBuffer } from '../buffers/uniform-buffer'
 
 export type Buffer = FrameBuffer | RenderBuffer | UniformBuffer
 
-export module Buffer {
-
-  export enum Target {
-    FrameBuffer,
-    RenderBuffer,
-    UniformBuffer
-  }
-  
+export namespace Buffer {
+  export type Target = 'frame' | 'render' | 'uniform'
 }

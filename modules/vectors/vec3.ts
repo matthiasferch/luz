@@ -4,17 +4,23 @@ import { mat3 } from './mat3'
 const { min, max, abs, sqrt } = Math
 
 export class vec3 extends Float32Array {
+  static readonly zero: vec3 = new vec3([0.0, 0.0, 0.0])
+  static readonly one: vec3 = new vec3([1.0, 1.0, 1.0])
 
-  static readonly zero: Readonly<vec3> = new vec3([0.0, 0.0, 0.0])
-  static readonly one: Readonly<vec3> = new vec3([1.0, 1.0, 1.0])
+  static readonly grey: vec3 = new vec3([0.8, 0.8, 0.8])
 
-  static readonly right: Readonly<vec3> = new vec3([1.0, 0.0, 0.0])
-  static readonly up: Readonly<vec3> = new vec3([0.0, 1.0, 0.0])
-  static readonly forward: Readonly<vec3> = new vec3([0.0, 0.0, 1.0])
+  static readonly right: vec3 = new vec3([1.0, 0.0, 0.0])
+  static readonly left: vec3 = new vec3([-1.0, 0.0, 0.0])
 
-  static readonly axes: Readonly<vec3[]> = [vec3.right, vec3.up, vec3.forward]
+  static readonly up: vec3 = new vec3([0.0, 1.0, 0.0])
+  static readonly down: vec3 = new vec3([0.0, -1.0, 0.0])
 
-  static readonly infinity: Readonly<vec3> = new vec3([Infinity, Infinity, Infinity])
+  static readonly forward: vec3 = new vec3([0.0, 0.0, 1.0])
+  static readonly backward: vec3 = new vec3([0.0, 0.0, -1.0])
+
+  static readonly axes: vec3[] = [vec3.right, vec3.up, vec3.forward]
+
+  static readonly infinity: vec3 = new vec3([Infinity, Infinity, Infinity])
 
   constructor(values: number[] = [0.0, 0.0, 0.0]) {
     super(values.slice(0, 3))
@@ -50,6 +56,14 @@ export class vec3 extends Float32Array {
 
   set xyz(xyz: number[]) {
     this.set(xyz)
+  }
+
+  get rgb(): number[] {
+    return Array.from(this)
+  }
+
+  set rgb(rgb: number[]) {
+    this.set(rgb)
   }
 
   get length(): number {
@@ -203,7 +217,10 @@ export class vec3 extends Float32Array {
       dest = this
     }
 
-    return normal.copy(dest).scale(-2.0 * vec3.dot(this, normal)).add(this)
+    return normal
+      .copy(dest)
+      .scale(-2.0 * vec3.dot(this, normal))
+      .add(this)
   }
 
   transform(matrix: mat3, dest: null | vec3 = null): vec3 {
@@ -219,7 +236,7 @@ export class vec3 extends Float32Array {
 
     return [x, y, z]
   }
-  
+
   static deserialize(values: number[]) {
     return new vec3(values)
   }
@@ -410,50 +427,49 @@ export class vec3 extends Float32Array {
 
   static sum(...vectors: vec3[]): vec3 {
     const dest = new vec3()
-  
+
     for (const vector of vectors) {
       dest.x += vector.x
       dest.y += vector.y
       dest.z += vector.z
     }
-  
+
     return dest
   }
 
   static difference(...vectors: vec3[]): vec3 {
     const dest = new vec3()
-  
+
     for (const vector of vectors) {
       dest.x -= vector.x
       dest.y -= vector.y
       dest.z -= vector.z
     }
-  
+
     return dest
   }
 
   static product(...vectors: vec3[]): vec3 {
     const dest = new vec3()
-  
+
     for (const vector of vectors) {
       dest.x *= vector.x
       dest.y *= vector.y
       dest.z *= vector.z
     }
-  
+
     return dest
   }
 
   static division(...vectors: vec3[]): vec3 {
     const dest = new vec3()
-  
+
     for (const vector of vectors) {
       dest.x /= vector.x
       dest.y /= vector.y
       dest.z /= vector.z
     }
-  
+
     return dest
   }
-
 }

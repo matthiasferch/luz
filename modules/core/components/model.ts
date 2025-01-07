@@ -1,34 +1,24 @@
-import { Mesh, Texture } from '@luz/graphics'
+import { Material, Mesh } from '@luz/graphics'
 import { Serialized } from '@luz/utilities'
-import { vec3 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
 
 export class Model extends Component {
+  readonly type: Component.Type = 'model'
+  readonly timestep: Component.Timestep = 'variable'
 
-  readonly type = Component.Type.Model
+  //@Serialized
+  //topology: Mesh.Topology
 
-  readonly timestep = Component.Timestep.Variable
+  //@Serialized
+  //vertices: number[]
 
-  @Serialized
-  topology: Mesh.Topology
+  //@Serialized
+  //indices?: number[]
 
-  @Serialized
-  vertices: number[]
+  meshes: Record<string, Mesh> = {}
 
-  @Serialized
-  indices?: number[]
-
-  @Serialized
-  images?: string[]
-
-  @Serialized
-  readonly color = vec3.one
-
-  mesh: Mesh
-
-  texture: Texture
+  materials: Record<string, Material> = {}
 
   update(transform: Transform, deltaTime: number) {}
-
 }

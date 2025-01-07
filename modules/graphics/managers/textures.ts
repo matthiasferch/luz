@@ -1,114 +1,166 @@
-import { Texture } from '../types/texture'
+import { Texture, TextureProperties } from '../types/texture'
 
 export class Textures {
+  readonly default: Texture
 
   private textures: Texture[] = []
 
-  private boundTextures: { [index: number]: Texture } = {}
+  private boundTextures: Record<number, Texture> = {}
 
-  constructor(private gl: WebGL2RenderingContext) { }
+  constructor(private gl: WebGL2RenderingContext) {
+    this.default = this.create({ data: new Uint8Array([0xff, 0xff, 0xff, 0xff]) })
+  }
 
-  create(target: number, format: number, width: number, height: number, filtering: Texture.Filtering, tiling: Texture.Tiling, mipmaps: boolean): Texture {
-    let texture = this.gl.createTexture() as Texture
+  create(properties: Partial<TextureProperties>): Texture {
+    const { gl } = this
 
-    texture.target = target
-    texture.format = format
+    const texture = gl.createTexture() as Texture
 
-    texture.width = width
-    texture.height = height
-
-    texture.tiling = tiling
-    texture.filtering = filtering
-
-    texture.useMipmaps = mipmaps
-
-    let sourceFormat: number
-
-    switch (texture.format) {
-      case this.gl.RGBA:
-      case this.gl.RGBA32F:
-        sourceFormat = this.gl.RGBA
-
-        break
-
-      case this.gl.LUMINANCE:
-        sourceFormat = this.gl.LUMINANCE
-
-        break
-
-      case this.gl.DEPTH_COMPONENT32F:
-        sourceFormat = this.gl.DEPTH_COMPONENT
-
-        break
+    const defaultProperties: TextureProperties = {
+      width: 1,
+      height: 1,
+      format: 'color',
+      precision: 8,
+      tiling: 'none',
+      filtering: 'none',
+      useMipmaps: false
     }
 
+    properties = { ...defaultProperties, ...properties }
+
+    Object.assign(texture, properties)
+
+    texture.target = gl.TEXTURE_2D
+
     switch (texture.format) {
-      case this.gl.RGBA32F:
-      case this.gl.DEPTH_COMPONENT32F:
-        texture.type = this.gl.FLOAT
+      case 'color':
+        switch (texture.precision) {
+          case 8:
+            texture.components = gl.RGBA
+            texture.dataFormat = gl.RGBA
+            texture.dataType = gl.UNSIGNED_BYTE
+
+            break
+
+          case 32:
+            texture.components = gl.RGBA32F
+            texture.dataFormat = gl.RGBA
+            texture.dataType = gl.FLOAT
+
+            break
+
+          default:
+            throw new Error(`Invalid texture precision: ${texture.precision}`)
+        }
 
         break
+
+      case 'alpha':
+        switch (texture.precision) {
+          case 8:
+            texture.components = gl.ALPHA
+            texture.dataFormat = gl.ALPHA
+            texture.dataType = gl.UNSIGNED_BYTE
+
+            break
+
+          case 32:
+            texture.components = gl.ALPHA
+            texture.dataFormat = gl.ALPHA
+            texture.dataType = gl.FLOAT
+
+            break
+
+          default:
+            throw new Error(`Invalid texture precision: ${texture.precision}`)
+        }
+
+        break
+
+      case 'depth': {
+        switch (texture.precision) {
+          case 8:
+            texture.components = gl.DEPTH_COMPONENT
+            texture.dataFormat = gl.DEPTH_COMPONENT
+            texture.dataType = gl.UNSIGNED_BYTE
+
+            break
+
+          case 32:
+            texture.components = gl.DEPTH_COMPONENT32F
+            texture.dataFormat = gl.DEPTH_COMPONENT
+            texture.dataType = gl.FLOAT
+
+            break
+
+          default:
+            throw new Error(`Invalid texture precision: ${texture.precision}`)
+        }
+
+        break
+      }
 
       default:
-        texture.type = this.gl.UNSIGNED_BYTE
-
-        break
+        throw new Error(`Invalid texture format: ${texture.format}`)
     }
 
     this.bind(texture, 0)
 
-    this.gl.texImage2D(texture.target, 0, texture.format, width, height, 0, sourceFormat, texture.type, null)
+    const { target, width, height, components, dataFormat, dataType, data } = texture
+
+    gl.texImage2D(target, 0, components, width, height, 0, dataFormat, dataType, null)
 
     switch (texture.tiling) {
-      case Texture.Tiling.None:
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE)
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE)
+      case 'none':
+        gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
+        gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
         break
 
-      case Texture.Tiling.Both:
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT)
+      case 'repeat':
+        gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.REPEAT)
+        gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.REPEAT)
 
         break
 
-      case Texture.Tiling.Horizontal:
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE)
+      case 'mirror':
+        gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT)
+        gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT)
 
         break
 
-      case Texture.Tiling.Vertical:
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE)
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT)
+      default:
+        throw new Error(`Invalid texture tiling: ${texture.tiling}`)
+    }
+
+    switch (texture.filtering) {
+      case 'none':
+        gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
+
+        break
+
+      case 'linear':
+        gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, texture.useMipmaps ? gl.LINEAR_MIPMAP_NEAREST : gl.LINEAR)
+
+        break
+
+      case 'bilinear':
+        gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, texture.useMipmaps ? gl.LINEAR_MIPMAP_NEAREST : gl.LINEAR)
+
+        break
+
+      case 'trilinear':
+        gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, texture.useMipmaps ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
 
         break
     }
 
-    switch (texture.filtering) {
-      case Texture.Filtering.None:
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST)
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST)
-
-        break
-
-      case Texture.Filtering.Linear:
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST)
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_MIN_FILTER, mipmaps ? this.gl.LINEAR_MIPMAP_NEAREST : this.gl.LINEAR)
-
-        break
-
-      case Texture.Filtering.Bilinear:
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_MIN_FILTER, mipmaps ? this.gl.LINEAR_MIPMAP_NEAREST : this.gl.LINEAR)
-
-        break
-
-      case Texture.Filtering.Trilinear:
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
-        this.gl.texParameteri(texture.target, this.gl.TEXTURE_MIN_FILTER, mipmaps ? this.gl.LINEAR_MIPMAP_LINEAR : this.gl.LINEAR)
-
-        break
+    if (data) {
+      this.update(texture, data)
     }
 
     this.textures.push(texture)
@@ -116,7 +168,9 @@ export class Textures {
     return texture
   }
 
-  update(texture: Texture, source: any, x = 0, y = 0, width?: number, height?: number) {
+  update(texture: Texture, data: any, x = 0, y = 0, width?: number, height?: number) {
+    const { gl } = this
+
     if (width === undefined) {
       width = texture.width
     }
@@ -127,22 +181,29 @@ export class Textures {
 
     this.bind(texture, 0)
 
-    this.gl.texSubImage2D(texture.target, 0, x, y, width, height, texture.format, texture.type, source)
+    const { target, components, dataType, useMipmaps } = texture
 
-    if (texture.useMipmaps) {
-      this.gl.generateMipmap(texture.target)
+    console.log(target, x, y, width, height, components, dataType, data)
+
+    gl.texSubImage2D(target, 0, x, y, width, height, components, dataType, data)
+
+    if (useMipmaps) {
+      gl.generateMipmap(target)
     }
+
+    texture.data = data
   }
 
   private bind(texture: Texture, unit: number) {
+    const { gl } = this
+
     if (this.boundTextures[unit] === texture) {
       return
     }
 
-    this.gl.activeTexture(this.gl.TEXTURE0 + unit)
-    this.gl.bindTexture(texture.target, texture)
+    gl.activeTexture(gl.TEXTURE0 + unit)
+    gl.bindTexture(texture.target, texture)
 
     this.boundTextures[unit] = texture
   }
-
 }
