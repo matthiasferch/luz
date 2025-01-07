@@ -1,5 +1,5 @@
 import { Material, Mesh } from '@luz/graphics'
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { Component } from '../component'
 import { Transform } from '../transform'
 
@@ -7,13 +7,13 @@ export class Model extends Component {
   readonly type: Component.Type = 'model'
   readonly timestep: Component.Timestep = 'variable'
 
-  //@Serialized
+  //@Serialize
   //topology: Mesh.Topology
 
-  //@Serialized
+  //@Serialize
   //vertices: number[]
 
-  //@Serialized
+  //@Serialize
   //indices?: number[]
 
   meshes: Record<string, Mesh> = {}

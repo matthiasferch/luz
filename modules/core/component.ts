@@ -1,8 +1,8 @@
-import { Serializable, Serialized } from '@luz/utilities'
+import { Serializable, Serialize } from '@luz/utilities'
 import { Transform } from './transform'
 
 export abstract class Component extends Serializable {
-  @Serialized
+  @Serialize
   abstract readonly type: Component.Type
 
   abstract readonly timestep: Component.Timestep

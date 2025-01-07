@@ -1,4 +1,4 @@
-import { Serialized, Serializable } from '@luz/utilities'
+import { Serialize, Serializable } from '@luz/utilities'
 import { mat3, mat4, quat, vec3 } from '@luz/vectors'
 
 export interface SerializedTransform {
@@ -7,11 +7,10 @@ export interface SerializedTransform {
 }
 
 export class Transform extends Serializable {
-
-  @Serialized
+  @Serialize
   readonly rotation = new quat()
 
-  @Serialized
+  @Serialize
   readonly translation = new vec3()
 
   readonly direction = new vec3()
@@ -24,10 +23,7 @@ export class Transform extends Serializable {
 
   static readonly origin: Transform = new Transform()
 
-  constructor({
-    translation = vec3.zero,
-    rotation = quat.identity
-  } = {}) {
+  constructor({ translation = vec3.zero, rotation = quat.identity } = {}) {
     super()
 
     this.translation = translation.copy()
@@ -47,5 +43,4 @@ export class Transform extends Serializable {
     // inverse transpose matrix (to transform plane equations)
     this.modelMatrix.invert(this.inverseTransposeMatrix).transpose()
   }
-
 }

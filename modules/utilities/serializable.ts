@@ -1,6 +1,11 @@
+import { Material, Mesh, Texture } from '@luz/graphics'
+import { SerializedMaterial } from '@luz/graphics/renderer/material'
+import { SerializedMesh } from '@luz/graphics/renderer/mesh'
+import { SerializedTexture } from '@luz/graphics/types/texture'
+
 const serializableProperties = new WeakMap()
 
-export function Serialized(target: Object, propertyKey: string) {
+export function Serialize(target: Object, propertyKey: string) {
   let properties: string[] = []
 
   if (serializableProperties.has(target.constructor)) {
@@ -10,6 +15,12 @@ export function Serialized(target: Object, propertyKey: string) {
   }
 
   properties.push(propertyKey)
+}
+
+export type DeserializationCallbacks = {
+  onDeserializeMesh: (mesh: SerializedMesh, materials?: Record<string, Material>) => Mesh
+  onDeserializeTexture: (texture: SerializedTexture) => Texture
+  onDeserializeMaterial: (material: SerializedMaterial) => Material
 }
 
 export class Serializable {
@@ -57,7 +68,7 @@ export class Serializable {
     return data
   }
 
-  static deserialize<T extends Serializable>(this: new () => T, data: any): T {
+  static async deserialize(data: any, callbacks: DeserializationCallbacks) {
     const isDeserializable = (value: any) => {
       return typeof value.deserialize === 'function'
     }

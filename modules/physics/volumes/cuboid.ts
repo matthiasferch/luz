@@ -1,5 +1,5 @@
 import { Transform } from '@luz/core'
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
@@ -7,7 +7,7 @@ import { Volume } from '../volume'
 export class Cuboid extends Volume {
   readonly type: Collider.Type = 'cuboid'
 
-  @Serialized
+  @Serialize
   readonly extents: vec3
 
   readonly axes: vec3[] // Transformed axes of the cuboid

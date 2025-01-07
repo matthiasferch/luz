@@ -1,18 +1,18 @@
 import { Collider, CollisionDispatcher, Sphere } from '@luz/physics'
-import { Serializable, Serialized } from '@luz/utilities'
+import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 
 export class Scene extends Serializable {
-  @Serialized
+  @Serialize
   readonly gravity: vec3
 
-  @Serialized
+  @Serialize
   readonly entities: Record<string, Entity> = {}
 
-  @Serialized
+  @Serialize
   readonly colliders: Record<string, Collider> = {}
 
   readonly collisionManifolds: CollisionManifold[] = []

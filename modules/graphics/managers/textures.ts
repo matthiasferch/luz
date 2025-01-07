@@ -1,22 +1,18 @@
-import { Texture, TextureProperties } from '../types/texture'
+import { Texture, SerializedTexture } from '../types/texture'
 
 export class Textures {
-  readonly default: Texture
-
   private textures: Texture[] = []
 
   private boundTextures: Record<number, Texture> = {}
 
-  constructor(private gl: WebGL2RenderingContext) {
-    this.default = this.create({ data: new Uint8Array([0xff, 0xff, 0xff, 0xff]) })
-  }
+  constructor(private gl: WebGL2RenderingContext) {}
 
-  create(properties: Partial<TextureProperties>): Texture {
+  create(properties: Partial<SerializedTexture>): Texture {
     const { gl } = this
 
     const texture = gl.createTexture() as Texture
 
-    const defaultProperties: TextureProperties = {
+    const defaultProperties: SerializedTexture = {
       width: 1,
       height: 1,
       format: 'color',

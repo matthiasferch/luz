@@ -1,4 +1,4 @@
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { mat4, vec3 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
@@ -7,16 +7,16 @@ import { Camera } from './camera'
 export class Light extends Camera {
   readonly type: Component.Type = 'light'
 
-  @Serialized
+  @Serialize
   radius = 6.0
 
-  @Serialized
+  @Serialize
   falloff = 10.0
 
-  @Serialized
+  @Serialize
   intensity = 1.0
 
-  @Serialized
+  @Serialize
   readonly color = vec3.one.copy()
 
   readonly translation = new vec3()

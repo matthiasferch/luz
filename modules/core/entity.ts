@@ -1,4 +1,4 @@
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { Component } from './component'
 import { Body } from './components/body'
 import { Camera } from './components/camera'
@@ -7,7 +7,7 @@ import { Model } from './components/model'
 import { Transform } from './transform'
 
 export class Entity extends Transform {
-  @Serialized
+  @Serialize
   readonly components: Record<string, Component> = {}
 
   // volume: Volume -- TODO: for visibility determination

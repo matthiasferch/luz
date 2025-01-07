@@ -1,14 +1,14 @@
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 
 export class Ray extends Collider {
   type: Collider.Type = 'ray'
 
-  @Serialized
+  @Serialize
   readonly origin: vec3
 
-  @Serialized
+  @Serialize
   readonly direction: vec3
 
   constructor({ origin = vec3.zero, direction = vec3.up }) {

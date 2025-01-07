@@ -1,14 +1,14 @@
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 
 export class Plane extends Collider {
   type: Collider.Type = 'plane'
 
-  @Serialized
+  @Serialize
   readonly normal: vec3
 
-  @Serialized
+  @Serialize
   readonly distance: number
 
   constructor({ normal = vec3.up, distance = 0 } = {}) {

@@ -1,11 +1,11 @@
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 
 export class Polygon extends Collider {
   type: Collider.Type = 'polygon'
 
-  @Serialized
+  @Serialize
   readonly vertices: vec3[]
 
   readonly edges: vec3[]

@@ -9,6 +9,8 @@ import { Program } from '../types/program'
 import { Uniform } from '../types/uniform'
 import { Display } from './display'
 import { State } from './state'
+import { Texture } from '../types/texture'
+import { Material } from './material'
 
 export class Renderer {
   readonly shaders: Shaders
@@ -23,6 +25,9 @@ export class Renderer {
 
   readonly meshes: Meshes
 
+  readonly defaultTexture: Texture
+  readonly defaultMaterial: Material
+
   constructor(private gl: WebGL2RenderingContext) {
     this.shaders = new Shaders(this.gl)
     this.programs = new Programs(this.gl)
@@ -35,6 +40,10 @@ export class Renderer {
     this.state = new State(this.gl)
 
     this.meshes = new Meshes(this.gl)
+
+    this.defaultTexture = this.textures.create({ data: new Uint8Array([0xff, 0xff, 0xff, 0xff]) })
+
+    this.defaultMaterial = new Material({ baseTexture: this.defaultTexture })
   }
 
   render<T extends {}>(
@@ -96,7 +105,7 @@ export class Renderer {
     const collectedUniformValues: Record<string, Uniform.Value> = {}
 
     const collectRecursively = (values: any, prefix?: string) => {
-      if (typeof values !== 'object') {
+      if (values == null || typeof values !== 'object') {
         return
       }
 

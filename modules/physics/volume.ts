@@ -1,10 +1,10 @@
 import { Transform } from '@luz/core'
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from './collider'
 
 export abstract class Volume extends Collider {
-  @Serialized
+  @Serialize
   protected readonly origin: vec3
 
   readonly center: vec3

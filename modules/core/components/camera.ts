@@ -1,4 +1,4 @@
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { mat3, mat4, vec2 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
@@ -7,13 +7,13 @@ export class Camera extends Component {
   readonly type: Component.Type = 'camera'
   readonly timestep: Component.Timestep = 'variable'
 
-  @Serialized
+  @Serialize
   aspect = 1.0
 
-  @Serialized
+  @Serialize
   aperture = 90.0
 
-  @Serialized
+  @Serialize
   readonly clipPlanes = new vec2([1.0, 100.0])
 
   readonly viewMatrix = new mat4()

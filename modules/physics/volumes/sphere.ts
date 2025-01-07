@@ -1,5 +1,5 @@
 import { Transform } from '@luz/core'
-import { Serialized } from '@luz/utilities'
+import { Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
@@ -7,7 +7,7 @@ import { Volume } from '../volume'
 export class Sphere extends Volume {
   readonly type: Collider.Type = 'sphere'
 
-  @Serialized
+  @Serialize
   readonly radius: number
 
   constructor({ origin = vec3.zero, radius = 1.0 }) {

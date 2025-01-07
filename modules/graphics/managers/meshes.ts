@@ -1,23 +1,15 @@
 import { IndexBuffer } from '../buffers/index-buffer'
 import { VertexBuffer } from '../buffers/vertex-buffer'
-import { Material } from '../renderer/material'
-import { Mesh } from '../renderer/mesh'
+import { Mesh, SerializedMesh } from '../renderer/mesh'
 import { VertexArray } from '../types/vertex-array'
 
 const vertexSize = 8 // position (xyz) + normal (xyz) + texture coordinates (uv)
 
-type MeshData = {
-  topology: Mesh.Topology
-
-  vertices: number[]
-  indices?: number[]
-}
-
 export class Meshes {
   constructor(private gl: WebGL2RenderingContext) {}
 
-  create(data: MeshData, material?: Material): Mesh | null {
-    const { topology, vertices } = data
+  create(mesh: SerializedMesh): Mesh {
+    const { topology, vertices } = mesh
 
     let vertexArray = this.gl.createVertexArray() as VertexArray
     let vertexBuffer = this.gl.createBuffer() as VertexBuffer
@@ -29,8 +21,8 @@ export class Meshes {
 
     let indexBuffer: IndexBuffer | null = null
 
-    if (data.indices && data.indices.length > 0) {
-      const { indices } = data
+    if (mesh.indices && mesh.indices.length > 0) {
+      const { indices } = mesh
 
       indexBuffer = this.gl.createBuffer() as IndexBuffer
 
