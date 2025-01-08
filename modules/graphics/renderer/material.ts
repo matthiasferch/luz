@@ -23,10 +23,8 @@ export class Material extends Serializable {
     const { baseTexture } = serializedMaterial
 
     if (baseTexture) {
-      //material.baseTexture = await Texture.deserialize(baseTexture, callbacks)
+      material.baseTexture = await Texture.deserialize(baseTexture, callbacks)
     }
-
-    console.log(material)
 
     return material
   }

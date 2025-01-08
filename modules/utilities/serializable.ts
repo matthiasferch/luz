@@ -20,7 +20,6 @@ export function Serialize(target: Object, propertyKey: string) {
 export type DeserializationCallbacks = {
   onDeserializeMesh: (mesh: SerializedMesh, materials?: Record<string, Material>) => Mesh
   onDeserializeTexture: (texture: SerializedTexture) => Texture
-  onDeserializeMaterial: (material: SerializedMaterial) => Material
 }
 
 export class Serializable {
