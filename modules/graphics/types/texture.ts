@@ -1,13 +1,17 @@
-import { Surface } from '../renderer/surface'
-
-export type TextureInternals = {
+export type Texture = WebGLTexture & {
   target: number
+
+  width: number
+  height: number
+
   dataType: number
   dataFormat: number
   components: number
-}
 
-export type Texture = WebGLTexture & Surface & TextureInternals
+  useMipmaps: boolean
+
+  data?: any
+}
 
 export namespace Texture {
   export type Precision = 8 | 32

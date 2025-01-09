@@ -13,25 +13,17 @@ export class Textures {
 
     const texture = gl.createTexture() as Texture
 
-    const defaults: Partial<Surface> = {
-      width: 1,
-      height: 1,
-      format: 'color',
-      precision: 8,
-      tiling: 'none',
-      filtering: 'none',
-      useMipmaps: false
-    }
+    const { width = 1, height = 1, precision = 8, format = 'color' } = surface
+    const { tiling = 'none', filtering = 'none', useMipmaps = false } = surface
 
-    surface = { ...defaults, ...surface }
-
-    Object.assign(texture, surface)
+    texture.width = width
+    texture.height = height
 
     texture.target = gl.TEXTURE_2D
 
-    switch (texture.format) {
+    switch (format) {
       case 'color':
-        switch (texture.precision) {
+        switch (precision) {
           case 8:
             texture.components = gl.RGBA
             texture.dataFormat = gl.RGBA
@@ -47,13 +39,13 @@ export class Textures {
             break
 
           default:
-            throw new Error(`Invalid texture precision: ${texture.precision}`)
+            throw new Error(`Invalid texture precision: ${precision}`)
         }
 
         break
 
       case 'alpha':
-        switch (texture.precision) {
+        switch (precision) {
           case 8:
             texture.components = gl.ALPHA
             texture.dataFormat = gl.ALPHA
@@ -69,13 +61,13 @@ export class Textures {
             break
 
           default:
-            throw new Error(`Invalid texture precision: ${texture.precision}`)
+            throw new Error(`Invalid texture precision: ${precision}`)
         }
 
         break
 
       case 'depth': {
-        switch (texture.precision) {
+        switch (precision) {
           case 8:
             texture.components = gl.DEPTH_COMPONENT
             texture.dataFormat = gl.DEPTH_COMPONENT
@@ -91,23 +83,23 @@ export class Textures {
             break
 
           default:
-            throw new Error(`Invalid texture precision: ${texture.precision}`)
+            throw new Error(`Invalid texture precision: ${precision}`)
         }
 
         break
       }
 
       default:
-        throw new Error(`Invalid texture format: ${texture.format}`)
+        throw new Error(`Invalid texture format: ${format}`)
     }
 
     this.bind(texture, 0)
 
-    const { target, width, height, components, dataFormat, dataType, data } = texture
+    const { target, components, dataFormat, dataType } = texture
 
     gl.texImage2D(target, 0, components, width, height, 0, dataFormat, dataType, null)
 
-    switch (texture.tiling) {
+    switch (tiling) {
       case 'none':
         gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
@@ -127,10 +119,10 @@ export class Textures {
         break
 
       default:
-        throw new Error(`Invalid texture tiling: ${texture.tiling}`)
+        throw new Error(`Invalid texture tiling: ${tiling}`)
     }
 
-    switch (texture.filtering) {
+    switch (filtering) {
       case 'none':
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
         gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
@@ -139,25 +131,25 @@ export class Textures {
 
       case 'linear':
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
-        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, texture.useMipmaps ? gl.LINEAR_MIPMAP_NEAREST : gl.LINEAR)
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, useMipmaps ? gl.LINEAR_MIPMAP_NEAREST : gl.LINEAR)
 
         break
 
       case 'bilinear':
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, texture.useMipmaps ? gl.LINEAR_MIPMAP_NEAREST : gl.LINEAR)
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, useMipmaps ? gl.LINEAR_MIPMAP_NEAREST : gl.LINEAR)
 
         break
 
       case 'trilinear':
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, texture.useMipmaps ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
+        gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, useMipmaps ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
 
         break
     }
 
-    if (data) {
-      this.update(texture, data)
+    if (surface.data) {
+      this.update(texture, surface.data)
     }
 
     this.textures.push(texture)

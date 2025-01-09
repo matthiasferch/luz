@@ -22,26 +22,46 @@ export function Serialize(valueType?: any) {
 
 const { isArray } = Array
 
+const isObject = (value: any): value is object => {
+  return typeof value === 'object'
+}
+
 export class Serializable {
   serialize() {
-    const data: Record<string, any> = {}
+    const isSerializable = (value: any) => {
+      return typeof value.serialize === 'function'
+    }
 
     const properties = Serializable.getAllSerializableProperties(this.constructor)
 
-    for (const { key } of properties) {
+    return properties.reduce((data, { key }) => {
       const value = this[key]
-      // Serialization logic here...
-      data[key] = value
-    }
 
-    return data
+      if (value === undefined) {
+        return data
+      }
+
+      if (isSerializable(value)) {
+        data[key] = value.serialize(value)
+      } else if (isArray(value)) {
+        data[key] = value.map((value) => {
+          return isSerializable(value) ? value.serialize(value) : value
+        })
+      } else if (isObject(value)) {
+        data[key] = Object.entries(value).reduce((entries, [key, value]) => {
+          entries[key] = isSerializable(value) ? value.serialize(value) : value
+
+          return entries
+        }, {})
+      } else {
+        data[key] = value
+      }
+
+      return data
+    }, {})
   }
 
   static deserialize(data: any) {
-    const isObject = (value: any) => {
-      return value && typeof value === 'object'
-    }
-
     const isDeserializable = (type: any) => {
       return type && typeof type.deserialize === 'function'
     }

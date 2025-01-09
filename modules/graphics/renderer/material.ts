@@ -6,19 +6,20 @@ import { Surface } from './surface'
 
 export class Material extends Serializable {
   @Serialize()
-  readonly color: vec3
+  readonly color = vec3.one.copy()
 
   @Serialize()
   readonly surface: Surface | null
 
   texture: Texture | null
 
-  constructor({ color = vec3.one, surface = null, texture = null }: Partial<Material> = {}) {
+  constructor(data: Partial<Material> = {}) {
     super()
 
-    this.color = color.copy()
+    Object.assign(this, data)
 
-    this.surface = surface
-    this.texture = texture
+    if (data.color) {
+      this.color.set(data.color)
+    }
   }
 }
