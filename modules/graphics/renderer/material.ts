@@ -1,33 +1,24 @@
 import { Texture } from '@luz/graphics'
 import { Serializable } from '@luz/utilities'
-import { DeserializationCallbacks, Serialize } from '@luz/utilities/serializable'
+import { Serialize } from '@luz/utilities/serializable'
 import { vec3 } from '@luz/vectors'
+import { Surface } from './surface'
 
 export class Material extends Serializable {
-  @Serialize
-  readonly baseColor: vec3
+  @Serialize()
+  readonly color: vec3
 
-  @Serialize
-  baseTexture: Texture | null
+  @Serialize()
+  readonly surface: Surface | null
 
-  constructor({ baseColor = vec3.one, baseTexture = null }: { baseColor?: vec3; baseTexture?: Texture | null } = {}) {
+  texture: Texture | null
+
+  constructor({ color = vec3.one, surface = null, texture = null }: Partial<Material> = {}) {
     super()
 
-    this.baseColor = baseColor.copy()
-    this.baseTexture = baseTexture
-  }
+    this.color = color.copy()
 
-  static async deserialize(serializedMaterial: SerializedMaterial, callbacks: DeserializationCallbacks) {
-    const material = (await super.deserialize(serializedMaterial, callbacks)) as Material
-
-    const { baseTexture } = serializedMaterial
-
-    if (baseTexture) {
-      material.baseTexture = await Texture.deserialize(baseTexture, callbacks)
-    }
-
-    return material
+    this.surface = surface
+    this.texture = texture
   }
 }
-
-export class SerializedMaterial extends Material {}

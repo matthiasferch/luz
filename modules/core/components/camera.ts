@@ -7,13 +7,13 @@ export class Camera extends Component {
   readonly type: Component.Type = 'camera'
   readonly timestep: Component.Timestep = 'variable'
 
-  @Serialize
+  @Serialize()
   aspect = 1.0
 
-  @Serialize
+  @Serialize()
   aperture = 90.0
 
-  @Serialize
+  @Serialize()
   readonly clipPlanes = new vec2([1.0, 100.0])
 
   readonly viewMatrix = new mat4()

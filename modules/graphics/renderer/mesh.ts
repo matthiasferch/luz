@@ -1,31 +1,29 @@
-import { DeserializationCallbacks, Serializable } from '@luz/utilities/serializable'
+import { Serializable, Serialize } from '@luz/utilities/serializable'
 import { VertexArray } from '../types/vertex-array'
 import { Material } from './material'
 
-export type SerializedMesh = {
-  topology: Mesh.Topology
-
-  vertices: number[]
-  indices?: number[]
-
-  material?: string
-}
-
 export class Mesh extends Serializable {
+  @Serialize()
   readonly topology: Mesh.Topology
-  readonly vertexArray: VertexArray
 
-  material?: Material
+  @Serialize()
+  readonly vertices: number[]
 
-  constructor({ topology, vertexArray }: { topology: Mesh.Topology; vertexArray: VertexArray }) {
+  @Serialize()
+  readonly indices: number[]
+
+  @Serialize()
+  material?: Material | string
+
+  vertexArray: VertexArray | null = null
+
+  constructor({ topology = 'triangles', vertices = [], indices = [], material }: Partial<Mesh> = {}) {
     super()
 
     this.topology = topology
-    this.vertexArray = vertexArray
-  }
-
-  static async deserialize(serializedMesh: SerializedMesh, callbacks: DeserializationCallbacks) {
-    return callbacks.onDeserializeMesh(serializedMesh)
+    this.vertices = vertices
+    this.indices = indices
+    this.material = material
   }
 }
 

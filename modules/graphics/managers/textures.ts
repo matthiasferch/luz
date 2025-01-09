@@ -1,4 +1,5 @@
-import { Texture, SerializedTexture } from '../types/texture'
+import { Texture } from '../types/texture'
+import { Surface } from '../renderer/surface'
 
 export class Textures {
   private textures: Texture[] = []
@@ -7,12 +8,12 @@ export class Textures {
 
   constructor(private gl: WebGL2RenderingContext) {}
 
-  create(properties: Partial<SerializedTexture>): Texture {
+  create(surface: Partial<Surface>): Texture {
     const { gl } = this
 
     const texture = gl.createTexture() as Texture
 
-    const defaultProperties: SerializedTexture = {
+    const defaults: Partial<Surface> = {
       width: 1,
       height: 1,
       format: 'color',
@@ -22,9 +23,9 @@ export class Textures {
       useMipmaps: false
     }
 
-    properties = { ...defaultProperties, ...properties }
+    surface = { ...defaults, ...surface }
 
-    Object.assign(texture, properties)
+    Object.assign(texture, surface)
 
     texture.target = gl.TEXTURE_2D
 
@@ -178,8 +179,6 @@ export class Textures {
     this.bind(texture, 0)
 
     const { target, components, dataType, useMipmaps } = texture
-
-    console.log(target, x, y, width, height, components, dataType, data)
 
     gl.texSubImage2D(target, 0, x, y, width, height, components, dataType, data)
 

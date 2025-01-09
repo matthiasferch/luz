@@ -1,96 +1,84 @@
-import { Material, Mesh, Texture } from '@luz/graphics'
-import { SerializedMaterial } from '@luz/graphics/renderer/material'
-import { SerializedMesh } from '@luz/graphics/renderer/mesh'
-import { SerializedTexture } from '@luz/graphics/types/texture'
+import 'reflect-metadata'
 
 const serializableProperties = new WeakMap()
 
-export function Serialize(target: Object, propertyKey: string) {
-  let properties: string[] = []
+type SerializableProperty = { key: string; type: any; valueType?: any }
 
-  if (serializableProperties.has(target.constructor)) {
-    properties = serializableProperties.get(target.constructor)
-  } else {
-    serializableProperties.set(target.constructor, properties)
+export function Serialize(valueType?: any) {
+  return function (target: Object, key: string) {
+    let properties: SerializableProperty[] = []
+
+    if (serializableProperties.has(target.constructor)) {
+      properties = serializableProperties.get(target.constructor)
+    } else {
+      serializableProperties.set(target.constructor, properties)
+    }
+
+    const type = Reflect.getMetadata('design:type', target, key)
+
+    properties.push({ key, type, valueType })
   }
-
-  properties.push(propertyKey)
 }
 
-export type DeserializationCallbacks = {
-  onDeserializeMesh: (mesh: SerializedMesh, materials?: Record<string, Material>) => Mesh
-  onDeserializeTexture: (texture: SerializedTexture) => Texture
-}
+const { isArray } = Array
 
 export class Serializable {
   serialize() {
-    const isPlainObject = (value: any) => {
-      return typeof value === 'object' && value.constructor === Object
-    }
-
-    const isSerializable = (value: any) => {
-      return typeof value.serialize === 'function'
-    }
-
-    const data = {}
+    const data: Record<string, any> = {}
 
     const properties = Serializable.getAllSerializableProperties(this.constructor)
 
-    for (const prop of properties) {
-      const value = this[prop]
-
-      if (Array.isArray(value)) {
-        data[prop] = value.map((item) => {
-          if (item && isSerializable(item)) {
-            return item.serialize()
-          }
-
-          return item
-        })
-      } else if (value && isPlainObject(value)) {
-        data[prop] = {}
-
-        for (const key in value) {
-          if (value[key] && isSerializable(value[key])) {
-            data[prop][key] = value[key].serialize()
-          } else {
-            data[prop][key] = value[key]
-          }
-        }
-      } else if (value && isSerializable(value)) {
-        data[prop] = value.serialize()
-      } else {
-        data[prop] = value
-      }
+    for (const { key } of properties) {
+      const value = this[key]
+      // Serialization logic here...
+      data[key] = value
     }
 
     return data
   }
 
-  static async deserialize(data: any, callbacks: DeserializationCallbacks) {
-    const isDeserializable = (value: any) => {
-      return typeof value.deserialize === 'function'
+  static deserialize(data: any) {
+    const isObject = (value: any) => {
+      return value && typeof value === 'object'
+    }
+
+    const isDeserializable = (type: any) => {
+      return type && typeof type.deserialize === 'function'
     }
 
     const instance = new this()
 
-    const keys = Serializable.getAllSerializableProperties(this)
+    const properties = Serializable.getAllSerializableProperties(this)
 
-    for (const key of keys) {
-      if (data.hasOwnProperty(key)) {
-        if (instance[key] && isDeserializable(instance[key].constructor)) {
-          instance[key] = instance[key].constructor.deserialize(data[key])
-        } else {
-          instance[key] = data[key]
-        }
+    for (const { key, type, valueType } of properties) {
+      const value = data[key]
+
+      if (value === undefined) {
+        continue
+      }
+
+      if (isDeserializable(type)) {
+        instance[key] = type.deserialize(value)
+      } else if (isArray(value)) {
+        instance[key] = value.map((value) => {
+          return isDeserializable(valueType) ? valueType.deserialize(value) : value
+        })
+      } else if (isObject(value)) {
+        instance[key] = Object.entries(value).reduce((entries, [key, value]) => {
+          entries[key] = isDeserializable(valueType) ? valueType.deserialize(value) : value
+
+          return entries
+        }, {})
+      } else {
+        instance[key] = value
       }
     }
 
     return instance
   }
 
-  private static getAllSerializableProperties(target: Function): string[] {
-    let allProperties: string[] = []
+  private static getAllSerializableProperties(target: Function): SerializableProperty[] {
+    let allProperties: SerializableProperty[] = []
 
     let prototype = target.prototype
 

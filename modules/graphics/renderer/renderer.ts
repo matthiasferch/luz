@@ -43,7 +43,7 @@ export class Renderer {
 
     this.defaultTexture = this.textures.create({ data: new Uint8Array([0xff, 0xff, 0xff, 0xff]) })
 
-    this.defaultMaterial = new Material({ baseTexture: this.defaultTexture })
+    this.defaultMaterial = new Material({ texture: this.defaultTexture })
   }
 
   render<T extends {}>(

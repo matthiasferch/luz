@@ -1,7 +1,7 @@
 import { Serialize, Serializable } from '../utilities'
 
 export abstract class Collider extends Serializable {
-  @Serialize
+  @Serialize()
   abstract readonly type: Collider.Type
 }
 

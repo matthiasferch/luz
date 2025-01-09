@@ -1,6 +1,6 @@
 import { IndexBuffer } from '../buffers/index-buffer'
 import { VertexBuffer } from '../buffers/vertex-buffer'
-import { Mesh, SerializedMesh } from '../renderer/mesh'
+import { Mesh } from '../renderer/mesh'
 import { VertexArray } from '../types/vertex-array'
 
 const vertexSize = 8 // position (xyz) + normal (xyz) + texture coordinates (uv)
@@ -8,16 +8,19 @@ const vertexSize = 8 // position (xyz) + normal (xyz) + texture coordinates (uv)
 export class Meshes {
   constructor(private gl: WebGL2RenderingContext) {}
 
-  create(mesh: SerializedMesh): Mesh {
-    const { topology, vertices } = mesh
+  upload(mesh: Partial<Mesh>) {
+    if (!mesh.vertices || mesh.vertices.length === 0) {
+      throw new Error('Mesh has no vertices')
+    }
 
-    let vertexArray = this.gl.createVertexArray() as VertexArray
-    let vertexBuffer = this.gl.createBuffer() as VertexBuffer
+    mesh.vertexArray = this.gl.createVertexArray() as VertexArray
+
+    const vertexBuffer = this.gl.createBuffer() as VertexBuffer
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer)
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(vertices), this.gl.STATIC_DRAW)
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mesh.vertices), this.gl.STATIC_DRAW)
 
-    vertexArray.vertexCount = vertices.length / vertexSize
+    mesh.vertexArray.vertexCount = mesh.vertices.length / vertexSize
 
     let indexBuffer: IndexBuffer | null = null
 
@@ -29,12 +32,12 @@ export class Meshes {
       this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
       this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), this.gl.STATIC_DRAW)
 
-      vertexArray.indexCount = indices.length
+      mesh.vertexArray.indexCount = indices.length
     } else {
-      vertexArray.indexCount = 0
+      mesh.vertexArray.indexCount = 0
     }
 
-    this.gl.bindVertexArray(vertexArray)
+    this.gl.bindVertexArray(mesh.vertexArray)
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer)
 
@@ -57,11 +60,13 @@ export class Meshes {
     this.gl.vertexAttribPointer(2, 2, this.gl.FLOAT, false, stride, 6 * Float32Array.BYTES_PER_ELEMENT)
 
     this.gl.bindVertexArray(null)
-
-    return new Mesh({ topology, vertexArray })
   }
 
   render(mesh: Mesh) {
+    if (!mesh.vertexArray) {
+      throw new Error('Mesh has no vertex array')
+    }
+
     let mode: number
 
     switch (mesh.topology) {

@@ -8,10 +8,10 @@ export class Body extends Component {
   readonly type: Component.Type = 'body'
   readonly timestep: Component.Timestep = 'fixed'
 
-  @Serialize
+  @Serialize()
   mass: number
 
-  @Serialize
+  @Serialize()
   volume: Volume
 
   readonly force: vec3

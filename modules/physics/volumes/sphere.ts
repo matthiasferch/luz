@@ -7,7 +7,7 @@ import { Volume } from '../volume'
 export class Sphere extends Volume {
   readonly type: Collider.Type = 'sphere'
 
-  @Serialize
+  @Serialize()
   readonly radius: number
 
   constructor({ origin = vec3.zero, radius = 1.0 }) {

@@ -7,16 +7,16 @@ import { Camera } from './camera'
 export class Light extends Camera {
   readonly type: Component.Type = 'light'
 
-  @Serialize
+  @Serialize()
   radius = 6.0
 
-  @Serialize
+  @Serialize()
   falloff = 10.0
 
-  @Serialize
+  @Serialize()
   intensity = 1.0
 
-  @Serialize
+  @Serialize()
   readonly color = vec3.one.copy()
 
   readonly translation = new vec3()

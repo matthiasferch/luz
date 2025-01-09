@@ -7,7 +7,7 @@ import { Model } from './components/model'
 import { Transform } from './transform'
 
 export class Entity extends Transform {
-  @Serialize
+  @Serialize(Component)
   readonly components: Record<string, Component> = {}
 
   // volume: Volume -- TODO: for visibility determination

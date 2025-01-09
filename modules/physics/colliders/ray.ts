@@ -5,10 +5,10 @@ import { Collider } from '../collider'
 export class Ray extends Collider {
   type: Collider.Type = 'ray'
 
-  @Serialize
+  @Serialize()
   readonly origin: vec3
 
-  @Serialize
+  @Serialize()
   readonly direction: vec3
 
   constructor({ origin = vec3.zero, direction = vec3.up }) {

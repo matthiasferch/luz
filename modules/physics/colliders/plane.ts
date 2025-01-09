@@ -5,10 +5,10 @@ import { Collider } from '../collider'
 export class Plane extends Collider {
   type: Collider.Type = 'plane'
 
-  @Serialize
+  @Serialize()
   readonly normal: vec3
 
-  @Serialize
+  @Serialize()
   readonly distance: number
 
   constructor({ normal = vec3.up, distance = 0 } = {}) {

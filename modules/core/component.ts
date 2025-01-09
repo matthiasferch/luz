@@ -2,7 +2,7 @@ import { Serializable, Serialize } from '@luz/utilities'
 import { Transform } from './transform'
 
 export abstract class Component extends Serializable {
-  @Serialize
+  @Serialize()
   abstract readonly type: Component.Type
 
   abstract readonly timestep: Component.Timestep

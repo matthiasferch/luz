@@ -4,7 +4,7 @@ import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from './collider'
 
 export abstract class Volume extends Collider {
-  @Serialize
+  @Serialize()
   protected readonly origin: vec3
 
   readonly center: vec3

@@ -7,7 +7,7 @@ import { Volume } from '../volume'
 export class Cuboid extends Volume {
   readonly type: Collider.Type = 'cuboid'
 
-  @Serialize
+  @Serialize()
   readonly extents: vec3
 
   readonly axes: vec3[] // Transformed axes of the cuboid

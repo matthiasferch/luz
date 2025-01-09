@@ -5,7 +5,7 @@ import { Serialize } from '@luz/utilities'
 export class Polygon extends Collider {
   type: Collider.Type = 'polygon'
 
-  @Serialize
+  @Serialize()
   readonly vertices: vec3[]
 
   readonly edges: vec3[]

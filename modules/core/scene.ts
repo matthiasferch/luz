@@ -6,13 +6,13 @@ import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 
 export class Scene extends Serializable {
-  @Serialize
+  @Serialize()
   readonly gravity: vec3
 
-  @Serialize
+  @Serialize(Entity)
   readonly entities: Record<string, Entity> = {}
 
-  @Serialize
+  @Serialize(Collider)
   readonly colliders: Record<string, Collider> = {}
 
   readonly collisionManifolds: CollisionManifold[] = []

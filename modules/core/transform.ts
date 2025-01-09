@@ -7,10 +7,10 @@ export interface SerializedTransform {
 }
 
 export class Transform extends Serializable {
-  @Serialize
+  @Serialize()
   readonly rotation = new quat()
 
-  @Serialize
+  @Serialize()
   readonly translation = new vec3()
 
   readonly direction = new vec3()
