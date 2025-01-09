@@ -1,17 +1,12 @@
 import { Serialize, Serializable } from '@luz/utilities'
 import { mat3, mat4, quat, vec3 } from '@luz/vectors'
 
-export interface SerializedTransform {
-  rotation: number[]
-  translation: number[]
-}
-
 export class Transform extends Serializable {
   @Serialize()
-  readonly rotation = new quat()
+  readonly rotation: quat = new quat()
 
   @Serialize()
-  readonly translation = new vec3()
+  readonly translation: vec3 = new vec3()
 
   readonly direction = new vec3()
 

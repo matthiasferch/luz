@@ -5,8 +5,7 @@ import { Component } from '../component'
 import { Transform } from '../transform'
 
 export class Body extends Component {
-  readonly type: Component.Type = 'body'
-  readonly timestep: Component.Timestep = 'fixed'
+  readonly type: Component.Type = 'Body'
 
   @Serialize()
   mass: number

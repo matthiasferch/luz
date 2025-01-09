@@ -2,11 +2,7 @@ import { Epsilon } from './constants'
 import { vec2 } from './vec2'
 
 export class mat2 extends Float32Array {
-
-  constructor(values: number[] = [
-    1.0, 0.0,
-    0.0, 1.0
-  ]) {
+  constructor(values: number[] = [1.0, 0.0, 0.0, 1.0]) {
     super(values.slice(0, 4))
   }
 
@@ -79,7 +75,7 @@ export class mat2 extends Float32Array {
     return dest
   }
 
-  invert(dest: null | mat2 = null): mat2 {
+  invert(dest: null | mat2 = null): mat2 | null {
     if (!dest) {
       dest = this
     }
@@ -206,5 +202,4 @@ export class mat2 extends Float32Array {
 
     return dest
   }
-
 }

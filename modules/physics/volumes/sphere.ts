@@ -1,16 +1,17 @@
 import { Transform } from '@luz/core'
-import { Serialize } from '@luz/utilities'
+import { Serialize, RegisterClass } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
 
+@RegisterClass
 export class Sphere extends Volume {
-  readonly type: Collider.Type = 'sphere'
+  readonly type: Collider.Type = 'Sphere'
 
   @Serialize()
   readonly radius: number
 
-  constructor({ origin = vec3.zero, radius = 1.0 }) {
+  constructor({ origin = vec3.zero, radius = 1.0 } = {}) {
     super({ origin })
 
     this.radius = radius

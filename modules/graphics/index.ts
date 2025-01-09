@@ -25,4 +25,5 @@ export { VertexBuffer } from './buffers/vertex-buffer'
 export { UniformBuffer } from './buffers/uniform-buffer'
 
 export { Mesh } from './renderer/mesh'
+export { Surface } from './renderer/surface'
 export { Material } from './renderer/material'

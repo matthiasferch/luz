@@ -38,14 +38,14 @@ export class Scene extends Serializable {
 
     // transform bodies
     entities.forEach((entity) => {
-      entity.bodies.forEach((body) => {
+      Object.values(entity.bodies).forEach((body) => {
         body.transform(entity)
       })
     })
 
     while (this.elapsedTime >= this.timestep) {
       const bodies = entities.reduce((bodies: Body[], entity) => {
-        return [...bodies, ...entity.bodies]
+        return [...bodies, ...Object.values(entity.bodies)]
       }, [])
 
       this.updatePhysics(bodies)

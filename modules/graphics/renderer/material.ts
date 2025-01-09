@@ -6,7 +6,7 @@ import { Surface } from './surface'
 
 export class Material extends Serializable {
   @Serialize()
-  readonly color = vec3.one.copy()
+  readonly color: vec3 = vec3.one.copy()
 
   @Serialize()
   readonly surface: Surface | null

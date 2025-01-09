@@ -1,14 +1,14 @@
 type Callback<T extends { type: string }, S> = (a: T, b: T) => S | null
 
-export class Dispatcher<T extends { type: string }, S> {
+export class Dispatcher<T extends { type: string }, S, R> {
 
-  private callbacks: Map<string, Callback<T, S>> = new Map()
+  private callbacks: Map<string, Callback<T, R>> = new Map()
 
-  register(firstType: string, otherType: string, callback: Callback<T, S>) {
+  register(firstType: S, otherType: S, callback: Callback<T, R>) {
     this.callbacks.set(`${firstType}-${otherType}`, callback)
   }
 
-  dispatch(first: T, other: T): S | null {
+  dispatch(first: T, other: T): R | null {
     let key = `${first.type}-${other.type}`
     let callback = this.callbacks.get(key)
 

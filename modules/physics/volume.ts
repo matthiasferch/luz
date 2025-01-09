@@ -5,7 +5,7 @@ import { Collider } from './collider'
 
 export abstract class Volume extends Collider {
   @Serialize()
-  protected readonly origin: vec3
+  protected readonly origin: vec3 = vec3.zero
 
   readonly center: vec3
 

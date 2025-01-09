@@ -4,17 +4,16 @@ import { Component } from '../component'
 import { Transform } from '../transform'
 
 export class Camera extends Component {
-  readonly type: Component.Type = 'camera'
-  readonly timestep: Component.Timestep = 'variable'
+  readonly type: Component.Type = 'Camera'
 
   @Serialize()
-  aspect = 1.0
+  aspect: number = 1.0
 
   @Serialize()
-  aperture = 90.0
+  aperture: number = 90.0
 
   @Serialize()
-  readonly clipPlanes = new vec2([1.0, 100.0])
+  readonly clipPlanes: vec2 = new vec2([1.0, 100.0])
 
   readonly viewMatrix = new mat4()
 

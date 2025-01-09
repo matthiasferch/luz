@@ -5,19 +5,19 @@ import { Transform } from '../transform'
 import { Camera } from './camera'
 
 export class Light extends Camera {
-  readonly type: Component.Type = 'light'
+  readonly type: Component.Type = 'Light'
 
   @Serialize()
-  radius = 6.0
+  radius: number = 6.0
 
   @Serialize()
-  falloff = 10.0
+  falloff: number = 10.0
 
   @Serialize()
-  intensity = 1.0
+  intensity: number = 1.0
 
   @Serialize()
-  readonly color = vec3.one.copy()
+  readonly color: vec3 = vec3.one.copy()
 
   readonly translation = new vec3()
 

@@ -1,9 +1,10 @@
-import { Serialize } from '@luz/utilities'
+import { Serialize, RegisterClass } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 
+@RegisterClass
 export class Ray extends Collider {
-  type: Collider.Type = 'ray'
+  type: Collider.Type = 'Ray'
 
   @Serialize()
   readonly origin: vec3

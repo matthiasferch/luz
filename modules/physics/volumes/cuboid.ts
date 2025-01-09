@@ -1,11 +1,12 @@
 import { Transform } from '@luz/core'
-import { Serialize } from '@luz/utilities'
+import { Serialize, RegisterClass } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
 
+@RegisterClass
 export class Cuboid extends Volume {
-  readonly type: Collider.Type = 'cuboid'
+  readonly type: Collider.Type = 'Cuboid'
 
   @Serialize()
   readonly extents: vec3

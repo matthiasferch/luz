@@ -1,17 +1,18 @@
 import 'reflect-metadata'
+import { getRegisteredClass } from './registry'
 
-const serializableProperties = new WeakMap()
+const serializedProperties = new WeakMap()
 
-type SerializableProperty = { key: string; type: any; valueType?: any }
+type SerializedProperty = { key: string; type: any; valueType?: any }
 
 export function Serialize(valueType?: any) {
   return function (target: Object, key: string) {
-    let properties: SerializableProperty[] = []
+    let properties: SerializedProperty[] = []
 
-    if (serializableProperties.has(target.constructor)) {
-      properties = serializableProperties.get(target.constructor)
+    if (serializedProperties.has(target.constructor)) {
+      properties = serializedProperties.get(target.constructor)
     } else {
-      serializableProperties.set(target.constructor, properties)
+      serializedProperties.set(target.constructor, properties)
     }
 
     const type = Reflect.getMetadata('design:type', target, key)
@@ -70,11 +71,15 @@ export class Serializable {
 
     const properties = Serializable.getAllSerializableProperties(this)
 
-    for (const { key, type, valueType } of properties) {
+    for (let { key, type, valueType } of properties) {
       const value = data[key]
 
       if (value === undefined) {
         continue
+      }
+
+      if (getRegisteredClass(value)) {
+        type = getRegisteredClass(value)
       }
 
       if (isDeserializable(type)) {
@@ -97,13 +102,13 @@ export class Serializable {
     return instance
   }
 
-  private static getAllSerializableProperties(target: Function): SerializableProperty[] {
-    let allProperties: SerializableProperty[] = []
+  private static getAllSerializableProperties(target: Function): SerializedProperty[] {
+    let allProperties: SerializedProperty[] = []
 
     let prototype = target.prototype
 
     while (prototype && prototype !== Object.prototype) {
-      const properties = serializableProperties.get(prototype.constructor) || []
+      const properties = serializedProperties.get(prototype.constructor) || []
 
       allProperties = [...allProperties, ...properties]
 
