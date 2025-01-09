@@ -7,12 +7,12 @@ export class Ray extends Collider {
   type: Collider.Type = 'Ray'
 
   @Serialize()
-  readonly origin: vec3
+  readonly origin: vec3 = vec3.zero
 
   @Serialize()
-  readonly direction: vec3
+  readonly direction: vec3 = vec3.up
 
-  constructor({ origin = vec3.zero, direction = vec3.up }) {
+  constructor({ origin = vec3.zero, direction = vec3.up } = {}) {
     super()
 
     this.origin = origin.copy()

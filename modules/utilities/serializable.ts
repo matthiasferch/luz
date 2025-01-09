@@ -86,10 +86,18 @@ export class Serializable {
         instance[key] = type.deserialize(value)
       } else if (isArray(value)) {
         instance[key] = value.map((value) => {
+          if (getRegisteredClass(value)) {
+            valueType = getRegisteredClass(value)
+          }
+
           return isDeserializable(valueType) ? valueType.deserialize(value) : value
         })
       } else if (isObject(value)) {
         instance[key] = Object.entries(value).reduce((entries, [key, value]) => {
+          if (getRegisteredClass(value)) {
+            valueType = getRegisteredClass(value)
+          }
+
           entries[key] = isDeserializable(valueType) ? valueType.deserialize(value) : value
 
           return entries

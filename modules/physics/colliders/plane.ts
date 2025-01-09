@@ -7,10 +7,10 @@ export class Plane extends Collider {
   type: Collider.Type = 'Plane'
 
   @Serialize()
-  readonly normal: vec3
+  readonly normal: vec3 = vec3.up
 
   @Serialize()
-  readonly distance: number
+  readonly distance: number = 0
 
   constructor({ normal = vec3.up, distance = 0 } = {}) {
     super()

@@ -328,15 +328,13 @@ export class quat extends Float32Array {
   }
 
   serialize() {
-    const { yaw, pitch, roll } = this
+    const { x, y, z, w } = this
 
-    return [toDegrees(yaw), toDegrees(pitch), toDegrees(roll)]
+    return [x, y, z, w]
   }
 
   static deserialize(values: number[]) {
-    const [yaw, pitch, roll] = values
-
-    return quat.fromEulerAngles(toRadians(yaw), toRadians(pitch), toRadians(roll))
+    return new quat(values)
   }
 
   static dot(q1: quat, q2: quat): number {
