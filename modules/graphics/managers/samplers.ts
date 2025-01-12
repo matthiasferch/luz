@@ -8,7 +8,7 @@ export class Samplers {
 
   constructor(private gl: WebGL2RenderingContext) {}
 
-  create(filtering: Texture.Filtering = 'none', tiling: Texture.Tiling = 'none'): Sampler {
+  create(filtering: Texture.Filtering = 'None', tiling: Texture.Tiling = 'None'): Sampler {
     let sampler = this.gl.createSampler() as Sampler
 
     this.update(sampler, filtering, tiling)
@@ -20,25 +20,25 @@ export class Samplers {
 
   update(sampler: Sampler, filtering: Texture.Filtering, tiling: Texture.Tiling) {
     switch (filtering) {
-      case 'none':
+      case 'None':
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST)
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST)
 
         break
 
-      case 'linear':
+      case 'Linear':
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST)
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_NEAREST)
 
         break
 
-      case 'bilinear':
+      case 'Bilinear':
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_NEAREST)
 
         break
 
-      case 'trilinear':
+      case 'Trilinear':
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR_MIPMAP_LINEAR)
 
@@ -46,13 +46,13 @@ export class Samplers {
     }
 
     switch (tiling) {
-      case 'repeat':
+      case 'Repeat':
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT)
 
         break
 
-      case 'mirror':
+      case 'Mirror':
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_WRAP_S, this.gl.MIRRORED_REPEAT)
         this.gl.samplerParameteri(sampler, this.gl.TEXTURE_WRAP_T, this.gl.MIRRORED_REPEAT)
 

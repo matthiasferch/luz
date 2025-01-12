@@ -1,7 +1,6 @@
 import { vec4 } from '@luz/vectors'
 
 export class Display {
-
   constructor(private gl: WebGL2RenderingContext) {}
 
   set viewport(viewport: vec4) {
@@ -9,22 +8,22 @@ export class Display {
     this.gl.viewport(x, y, z, w)
   }
 
-  clear(color: vec4, depth: number, stencil?: number) {
+  clear({ color, depth, stencil }: { color?: vec4; depth?: number; stencil?: number }) {
     let clearMask = 0
 
-    if (color != null) {
+    if (color) {
       this.gl.clearColor(color.x, color.y, color.z, color.w)
 
       clearMask |= this.gl.COLOR_BUFFER_BIT
     }
 
-    if (depth != null) {
+    if (depth) {
       this.gl.clearDepth(depth)
 
       clearMask |= this.gl.DEPTH_BUFFER_BIT
     }
 
-    if (stencil != null) {
+    if (stencil) {
       this.gl.clearStencil(stencil)
 
       clearMask |= this.gl.STENCIL_BUFFER_BIT
@@ -32,5 +31,4 @@ export class Display {
 
     this.gl.clear(clearMask)
   }
-
 }

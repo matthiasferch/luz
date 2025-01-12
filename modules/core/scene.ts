@@ -5,7 +5,7 @@ import { Body } from './components/body'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 
-export class Scene extends Serializable {
+export class Scene extends Serializable<Scene> {
   @Serialize()
   readonly gravity: vec3
 

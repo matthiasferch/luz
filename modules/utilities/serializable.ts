@@ -27,7 +27,11 @@ const isObject = (value: any): value is object => {
   return typeof value === 'object'
 }
 
-export class Serializable {
+export class Serializable<T extends {}> {
+  constructor(data: Partial<T> = {}) {
+    Object.assign(this, data)
+  }
+
   serialize() {
     const isSerializable = (value: any) => {
       return typeof value.serialize === 'function'
@@ -62,7 +66,7 @@ export class Serializable {
     }, {})
   }
 
-  static deserialize(data: any) {
+  static deserialize<T>(data: Partial<T>) {
     const isDeserializable = (type: any) => {
       return type && typeof type.deserialize === 'function'
     }

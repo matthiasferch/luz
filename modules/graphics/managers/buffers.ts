@@ -11,15 +11,15 @@ export class Buffers {
 
   constructor(private gl: WebGL2RenderingContext) {}
 
-  create(target: 'frame'): FrameBuffer
+  create(target: 'FrameBuffer'): FrameBuffer
 
-  create(target: 'render'): RenderBuffer
+  create(target: 'RenderBuffer'): RenderBuffer
 
-  create(target: 'uniform', data?: any): UniformBuffer
+  create(target: 'UniformBuffer', data?: any): UniformBuffer
 
   create(target: Buffer.Target, data?: any) {
     switch (target) {
-      case 'frame':
+      case 'FrameBuffer':
         const frameBuffer = this.gl.createFramebuffer() as FrameBuffer
 
         frameBuffer.target = this.gl.FRAMEBUFFER
@@ -30,7 +30,7 @@ export class Buffers {
 
         return frameBuffer
 
-      case 'render':
+      case 'RenderBuffer':
         const renderBuffer = this.gl.createRenderbuffer() as RenderBuffer
 
         renderBuffer.target = this.gl.RENDERBUFFER
@@ -39,7 +39,7 @@ export class Buffers {
 
         return renderBuffer
 
-      case 'uniform':
+      case 'UniformBuffer':
         const buffer = this.gl.createBuffer() as UniformBuffer
 
         buffer.target = this.gl.UNIFORM_BUFFER
@@ -52,6 +52,9 @@ export class Buffers {
         this.buffers.push(buffer)
 
         return buffer
+
+      default:
+        throw new Error(`Invalid buffer target: ${target}`)
     }
   }
 
@@ -71,29 +74,35 @@ export class Buffers {
     this.gl.renderbufferStorage(buffer.target, format, width, height)
   }
 
-  attach(framebuffer: FrameBuffer, texture: Texture, attachment: number): void
-  attach(frameBuffer: FrameBuffer, renderBuffer: RenderBuffer, attachment: number): void
+  attach(framebuffer: FrameBuffer, texture: Texture, attachment: number)
+  attach(frameBuffer: FrameBuffer, renderBuffer: RenderBuffer, attachment: number)
 
-  attach(framebuffer: FrameBuffer, buffer: Texture | RenderBuffer, attachment: number) {
-    this.bind(framebuffer)
+  attach(frameBuffer: FrameBuffer, data: Texture | RenderBuffer, attachment: number) {
+    this.bind(frameBuffer)
 
-    switch (buffer.target) {
+    switch (data.target) {
       case this.gl.TEXTURE_2D:
-        this.gl.framebufferTexture2D(framebuffer.target, attachment, buffer.target, buffer, 0)
+        console.log('TEXTURE_2D', frameBuffer.target, attachment, data.target, data)
+        this.gl.framebufferTexture2D(frameBuffer.target, attachment, data.target, data, 0)
 
         break
 
       case this.gl.RENDERBUFFER:
-        this.gl.framebufferRenderbuffer(framebuffer.target, attachment, this.gl.RENDERBUFFER, buffer)
+        console.log('RENDERBUFFER', frameBuffer.target, attachment, data.target, data)
+        this.gl.framebufferRenderbuffer(frameBuffer.target, attachment, this.gl.RENDERBUFFER, data)
 
         break
     }
 
-    framebuffer.attachments[attachment] = buffer
+    if (this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER) !== this.gl.FRAMEBUFFER_COMPLETE) {
+      throw new Error('Framebuffer is incomplete')
+    }
+
+    frameBuffer.attachments[attachment] = data
   }
 
-  use(framebuffer: FrameBuffer) {
-    this.bind(framebuffer)
+  use(frameBuffer: FrameBuffer) {
+    this.bind(frameBuffer)
   }
 
   private bind(buffer: Buffer) {
@@ -110,10 +119,11 @@ export class Buffers {
         if (frameBuffer) {
           Object.values(frameBuffer.attachments).forEach((attachment) => {
             const texture = attachment as Texture
+            const { target, useMipmaps } = texture
 
-            if (texture.useMipmaps) {
-              this.gl.bindTexture(texture.target, texture)
-              this.gl.generateMipmap(texture.target)
+            if (useMipmaps) {
+              this.gl.bindTexture(target, texture)
+              this.gl.generateMipmap(target)
             }
           })
         }

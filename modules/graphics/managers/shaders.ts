@@ -9,11 +9,11 @@ export class Shaders {
     let type: number
 
     switch (stage) {
-      case 'vertex':
+      case 'Vertex':
         type = this.gl.VERTEX_SHADER
         break
 
-      case 'fragment':
+      case 'Fragment':
         type = this.gl.FRAGMENT_SHADER
         break
     }

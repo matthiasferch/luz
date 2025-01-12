@@ -1,7 +1,7 @@
 import { Serializable, Serialize } from '@luz/utilities'
 import { Texture } from '../types/texture'
 
-export class Surface extends Serializable {
+export class Surface extends Serializable<Surface> {
   @Serialize()
   path?: string
 
@@ -15,25 +15,21 @@ export class Surface extends Serializable {
   height: number = 1
 
   @Serialize()
-  format: Texture.Format = 'color'
+  format: Texture.Format = 'Color'
 
   @Serialize()
   precision: Texture.Precision = 8
 
   @Serialize()
-  tiling: Texture.Tiling = 'none'
+  tiling: Texture.Tiling = 'None'
 
   @Serialize()
-  filtering: Texture.Filtering = 'none'
+  filtering: Texture.Filtering = 'None'
 
   @Serialize()
   useMipmaps: boolean = false
 
-  constructor(data: Partial<Surface> = {}) {
-    super()
-
-    Object.assign(this, data)
-  }
+  texture?: Texture
 
   static deserialize(data: Partial<Surface>) {
     const surface = super.deserialize(data) as Surface

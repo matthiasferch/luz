@@ -1,7 +1,7 @@
 export class State {
-  private activeCullMode: State.CullMode = 'none'
-  private activeBlendMode: State.BlendMode = 'none'
-  private activeDepthTest: State.DepthTest = 'none'
+  private activeCullMode: State.CullMode = 'None'
+  private activeBlendMode: State.BlendMode = 'None'
+  private activeDepthTest: State.DepthTest = 'None'
 
   constructor(private gl: WebGL2RenderingContext) {}
 
@@ -10,17 +10,17 @@ export class State {
       return
     }
 
-    if (cullMode === 'none') {
+    if (cullMode === 'None') {
       this.gl.disable(this.gl.CULL_FACE)
     } else {
       this.gl.enable(this.gl.CULL_FACE)
 
       switch (cullMode) {
-        case 'front':
+        case 'Front':
           this.gl.cullFace(this.gl.FRONT)
           break
 
-        case 'back':
+        case 'Back':
           this.gl.cullFace(this.gl.BACK)
           break
       }
@@ -34,17 +34,17 @@ export class State {
       return
     }
 
-    if (blendMode === 'none') {
+    if (blendMode === 'None') {
       this.gl.disable(this.gl.BLEND)
     } else {
       this.gl.enable(this.gl.BLEND)
 
       switch (blendMode) {
-        case 'additive':
+        case 'Additive':
           this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE)
           break
 
-        case 'transparent':
+        case 'Transparent':
           this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
           break
       }
@@ -58,41 +58,41 @@ export class State {
       return
     }
 
-    if (depthTest === 'none') {
+    if (depthTest === 'None') {
       this.gl.disable(this.gl.DEPTH_TEST)
     } else {
       this.gl.enable(this.gl.DEPTH_TEST)
 
       switch (depthTest) {
-        case 'never':
+        case 'Never':
           this.gl.depthFunc(this.gl.NEVER)
           break
 
-        case 'always':
+        case 'Always':
           this.gl.depthFunc(this.gl.ALWAYS)
           break
 
-        case 'equal':
+        case 'Equal':
           this.gl.depthFunc(this.gl.EQUAL)
           break
 
-        case 'notEqual':
+        case 'NotEqual':
           this.gl.depthFunc(this.gl.NOTEQUAL)
           break
 
-        case 'less':
+        case 'Less':
           this.gl.depthFunc(this.gl.LESS)
           break
 
-        case 'lessEqual':
+        case 'LessEqual':
           this.gl.depthFunc(this.gl.LEQUAL)
           break
 
-        case 'greater':
+        case 'Greater':
           this.gl.depthFunc(this.gl.GREATER)
           break
 
-        case 'greaterEqual':
+        case 'GreaterEqual':
           this.gl.depthFunc(this.gl.GEQUAL)
           break
       }
@@ -103,18 +103,18 @@ export class State {
 }
 
 export namespace State {
-  export type CullMode = 'none' | 'front' | 'back'
+  export type CullMode = 'None' | 'Front' | 'Back'
 
-  export type BlendMode = 'none' | 'additive' | 'transparent'
+  export type BlendMode = 'None' | 'Additive' | 'Transparent'
 
   export type DepthTest =
-    | 'none'
-    | 'never'
-    | 'always'
-    | 'equal'
-    | 'notEqual'
-    | 'less'
-    | 'lessEqual'
-    | 'greater'
-    | 'greaterEqual'
+    | 'None'
+    | 'Never'
+    | 'Always'
+    | 'Equal'
+    | 'NotEqual'
+    | 'Less'
+    | 'LessEqual'
+    | 'Greater'
+    | 'GreaterEqual'
 }

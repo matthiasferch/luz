@@ -14,9 +14,9 @@ export type Texture = WebGLTexture & {
 }
 
 export namespace Texture {
-  export type Precision = 8 | 32
+  export type Precision = 8 | 24 | 32
 
-  export type Format = 'color' | 'alpha' | 'depth'
-  export type Tiling = 'none' | 'repeat' | 'mirror'
-  export type Filtering = 'none' | 'linear' | 'bilinear' | 'trilinear'
+  export type Format = 'Color' | 'Alpha' | 'Depth'
+  export type Tiling = 'None' | 'Repeat' | 'Mirror'
+  export type Filtering = 'None' | 'Linear' | 'Bilinear' | 'Trilinear'
 }

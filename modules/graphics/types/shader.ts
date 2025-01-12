@@ -3,5 +3,5 @@ export type Shader = WebGLShader & {
 }
 
 export namespace Shader {
-  export type Stage = 'vertex' | 'fragment'
+  export type Stage = 'Vertex' | 'Fragment'
 }

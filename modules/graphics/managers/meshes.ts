@@ -1,6 +1,6 @@
-import { IndexBuffer } from '../buffers/index-buffer'
-import { VertexBuffer } from '../buffers/vertex-buffer'
+import { Material } from '../renderer/material'
 import { Mesh } from '../renderer/mesh'
+import { Partition } from '../renderer/partition'
 import { VertexArray } from '../types/vertex-array'
 
 const vertexSize = 8 // position (xyz) + normal (xyz) + texture coordinates (uv)
@@ -8,36 +8,42 @@ const vertexSize = 8 // position (xyz) + normal (xyz) + texture coordinates (uv)
 export class Meshes {
   constructor(private gl: WebGL2RenderingContext) {}
 
-  upload(mesh: Partial<Mesh>) {
-    if (!mesh.vertices || mesh.vertices.length === 0) {
+  create(partition: Omit<Partition, 'mesh'>, material: Material): Mesh {
+    if (!partition.topology) {
+      throw new Error('Mesh has no topology')
+    }
+
+    if (!partition.vertices || partition.vertices.length === 0) {
       throw new Error('Mesh has no vertices')
     }
 
-    mesh.vertexArray = this.gl.createVertexArray() as VertexArray
+    const vertexArray = this.gl.createVertexArray() as VertexArray
 
-    const vertexBuffer = this.gl.createBuffer() as VertexBuffer
+    vertexArray.topology = partition.topology
+
+    const vertexBuffer = this.gl.createBuffer()
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer)
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(mesh.vertices), this.gl.STATIC_DRAW)
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(partition.vertices), this.gl.STATIC_DRAW)
 
-    mesh.vertexArray.vertexCount = mesh.vertices.length / vertexSize
+    vertexArray.vertexCount = partition.vertices.length / vertexSize
 
-    let indexBuffer: IndexBuffer | null = null
+    let indexBuffer: WebGLBuffer | null = null
 
-    if (mesh.indices && mesh.indices.length > 0) {
-      const { indices } = mesh
+    if (partition.indices && partition.indices.length > 0) {
+      const { indices } = partition
 
-      indexBuffer = this.gl.createBuffer() as IndexBuffer
+      indexBuffer = this.gl.createBuffer()
 
       this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
       this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), this.gl.STATIC_DRAW)
 
-      mesh.vertexArray.indexCount = indices.length
+      vertexArray.indexCount = indices.length
     } else {
-      mesh.vertexArray.indexCount = 0
+      vertexArray.indexCount = 0
     }
 
-    this.gl.bindVertexArray(mesh.vertexArray)
+    this.gl.bindVertexArray(vertexArray)
 
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer)
 
@@ -60,51 +66,58 @@ export class Meshes {
     this.gl.vertexAttribPointer(2, 2, this.gl.FLOAT, false, stride, 6 * Float32Array.BYTES_PER_ELEMENT)
 
     this.gl.bindVertexArray(null)
+
+    return { vertexArray, material }
   }
 
   render(mesh: Mesh) {
-    if (!mesh.vertexArray) {
+    const { vertexArray } = mesh
+
+    if (!vertexArray) {
       throw new Error('Mesh has no vertex array')
     }
 
     let mode: number
 
-    switch (mesh.topology) {
-      case 'points':
+    switch (vertexArray.topology) {
+      case 'Points':
         mode = this.gl.POINTS
         break
 
-      case 'lines':
+      case 'Lines':
         mode = this.gl.LINES
         break
 
-      case 'lineLoop':
+      case 'LineLoop':
         mode = this.gl.LINE_LOOP
         break
 
-      case 'lineStrip':
+      case 'LineStrip':
         mode = this.gl.LINE_STRIP
         break
 
-      case 'triangles':
+      case 'Triangles':
         mode = this.gl.TRIANGLES
         break
 
-      case 'triangleFan':
+      case 'TriangleFan':
         mode = this.gl.TRIANGLE_FAN
         break
 
-      case 'triangleStrip':
+      case 'TriangleStrip':
         mode = this.gl.TRIANGLE_STRIP
         break
+
+      default:
+        throw new Error(`Invalid topology: ${vertexArray.topology}`)
     }
 
-    this.gl.bindVertexArray(mesh.vertexArray)
+    this.gl.bindVertexArray(vertexArray)
 
-    if (mesh.vertexArray.indexCount > 0) {
-      this.gl.drawElements(mode, mesh.vertexArray.indexCount, this.gl.UNSIGNED_SHORT, 0)
+    if (vertexArray.indexCount > 0) {
+      this.gl.drawElements(mode, vertexArray.indexCount, this.gl.UNSIGNED_SHORT, 0)
     } else {
-      this.gl.drawArrays(mode, 0, mesh.vertexArray.vertexCount)
+      this.gl.drawArrays(mode, 0, vertexArray.vertexCount)
     }
 
     this.gl.bindVertexArray(null)

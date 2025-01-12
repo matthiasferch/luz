@@ -8,13 +8,13 @@ export class Textures {
 
   constructor(private gl: WebGL2RenderingContext) {}
 
-  create(surface: Partial<Surface>): Texture {
+  create(surface: Omit<Partial<Surface>, 'texture'>): Texture {
     const { gl } = this
 
     const texture = gl.createTexture() as Texture
 
-    const { width = 1, height = 1, precision = 8, format = 'color' } = surface
-    const { tiling = 'none', filtering = 'none', useMipmaps = false } = surface
+    const { width = 1, height = 1, precision = 8, format = 'Color' } = surface
+    const { tiling = 'None', filtering = 'None', useMipmaps = false } = surface
 
     texture.width = width
     texture.height = height
@@ -22,7 +22,7 @@ export class Textures {
     texture.target = gl.TEXTURE_2D
 
     switch (format) {
-      case 'color':
+      case 'Color':
         switch (precision) {
           case 8:
             texture.components = gl.RGBA
@@ -44,7 +44,7 @@ export class Textures {
 
         break
 
-      case 'alpha':
+      case 'Alpha':
         switch (precision) {
           case 8:
             texture.components = gl.ALPHA
@@ -66,12 +66,12 @@ export class Textures {
 
         break
 
-      case 'depth': {
+      case 'Depth': {
         switch (precision) {
-          case 8:
-            texture.components = gl.DEPTH_COMPONENT
+          case 24:
+            texture.components = gl.DEPTH_COMPONENT24
             texture.dataFormat = gl.DEPTH_COMPONENT
-            texture.dataType = gl.UNSIGNED_BYTE
+            texture.dataType = gl.UNSIGNED_INT
 
             break
 
@@ -100,19 +100,19 @@ export class Textures {
     gl.texImage2D(target, 0, components, width, height, 0, dataFormat, dataType, null)
 
     switch (tiling) {
-      case 'none':
+      case 'None':
         gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
         gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
 
         break
 
-      case 'repeat':
+      case 'Repeat':
         gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.REPEAT)
         gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.REPEAT)
 
         break
 
-      case 'mirror':
+      case 'Mirror':
         gl.texParameteri(target, gl.TEXTURE_WRAP_S, gl.MIRRORED_REPEAT)
         gl.texParameteri(target, gl.TEXTURE_WRAP_T, gl.MIRRORED_REPEAT)
 
@@ -123,25 +123,25 @@ export class Textures {
     }
 
     switch (filtering) {
-      case 'none':
+      case 'None':
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
         gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
 
         break
 
-      case 'linear':
+      case 'Linear':
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.NEAREST)
         gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, useMipmaps ? gl.LINEAR_MIPMAP_NEAREST : gl.LINEAR)
 
         break
 
-      case 'bilinear':
+      case 'Bilinear':
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
         gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, useMipmaps ? gl.LINEAR_MIPMAP_NEAREST : gl.LINEAR)
 
         break
 
-      case 'trilinear':
+      case 'Trilinear':
         gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
         gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, useMipmaps ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR)
 
@@ -153,6 +153,8 @@ export class Textures {
     }
 
     this.textures.push(texture)
+
+    console.log('Created texture:', texture)
 
     return texture
   }
@@ -178,6 +180,8 @@ export class Textures {
       gl.generateMipmap(target)
     }
 
+    console.log('Updated texture:', texture)
+
     texture.data = data
   }
 
@@ -192,5 +196,7 @@ export class Textures {
     gl.bindTexture(texture.target, texture)
 
     this.boundTextures[unit] = texture
+
+    console.log('Bound texture:', texture, 'to unit:', unit)
   }
 }

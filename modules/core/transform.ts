@@ -1,7 +1,7 @@
 import { Serialize, Serializable } from '@luz/utilities'
 import { mat3, mat4, quat, vec3 } from '@luz/vectors'
 
-export class Transform extends Serializable {
+export class Transform extends Serializable<Transform> {
   @Serialize()
   readonly rotation: quat = new quat()
 
