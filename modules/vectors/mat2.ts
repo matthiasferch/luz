@@ -180,6 +180,10 @@ export class mat2 extends Float32Array {
     return dest
   }
 
+  static deserialize(values: number[]) {
+    return new mat2(values)
+  }
+
   static multiply(m1: mat2, m2: mat2, dest: null | mat2 = null): mat2 {
     if (!dest) {
       dest = new mat2()

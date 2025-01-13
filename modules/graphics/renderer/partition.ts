@@ -1,6 +1,6 @@
 import { Serializable, Serialize } from '@luz/utilities/serializable'
 import { VertexArray } from '../types/vertex-array'
-import { Mesh } from './mesh'
+import { Mesh } from '../types/mesh'
 
 export class Partition extends Serializable<Partition> {
   @Serialize()

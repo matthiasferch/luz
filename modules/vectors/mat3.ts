@@ -391,6 +391,11 @@ export class mat3 extends Float32Array {
     return dest
   }
 
+
+  static deserialize(values: number[]) {
+    return new mat3(values)
+  }
+
   static transform(matrix: mat3, vector: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()

@@ -480,6 +480,11 @@ export class mat4 extends Float32Array {
     translation.xyz = [v30, v31, v32]
   }
 
+
+  static deserialize(values: number[]) {
+    return new mat4(values)
+  }
+
   static construct(rotation: quat, translation: vec3, dest: null | mat4 = null) {
     if (!dest) {
       dest = new mat4()

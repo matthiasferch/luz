@@ -1,4 +1,5 @@
 import 'reflect-metadata'
+
 import { getRegisteredClass } from './registry'
 
 const serializedProperties = new WeakMap()
@@ -26,7 +27,6 @@ const { isArray } = Array
 const isObject = (value: any): value is object => {
   return typeof value === 'object'
 }
-
 export class Serializable<T extends {}> {
   constructor(data: Partial<T> = {}) {
     Object.assign(this, data)

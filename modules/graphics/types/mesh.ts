@@ -1,5 +1,5 @@
+import { Material } from '../renderer/material'
 import { VertexArray } from '../types/vertex-array'
-import { Material } from './material'
 
 export type Mesh = {
   vertexArray: VertexArray

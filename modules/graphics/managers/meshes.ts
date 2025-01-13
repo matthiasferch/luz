@@ -1,5 +1,5 @@
+import { Mesh } from '../types/mesh'
 import { Material } from '../renderer/material'
-import { Mesh } from '../renderer/mesh'
 import { Partition } from '../renderer/partition'
 import { VertexArray } from '../types/vertex-array'
 
