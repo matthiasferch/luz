@@ -185,7 +185,7 @@ export class Textures {
     texture.data = data
   }
 
-  private bind(texture: Texture, unit: number) {
+  bind(texture: Texture, unit: number) {
     const { gl } = this
 
     if (this.boundTextures[unit] === texture) {

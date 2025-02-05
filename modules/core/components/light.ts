@@ -1,4 +1,4 @@
-import { Serialize } from '@luz/utilities'
+import { Serialize, Uniform } from '@luz/utilities'
 import { mat4, vec3 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
@@ -7,22 +7,29 @@ import { Camera } from './camera'
 export class Light extends Camera {
   readonly type: Component.Type = 'Light'
 
+  @Uniform()
   @Serialize()
   radius: number = 6.0
 
+  @Uniform()
   @Serialize()
   falloff: number = 10.0
 
+  @Uniform()
   @Serialize()
   intensity: number = 1.0
 
+  @Uniform()
   @Serialize()
   readonly color: vec3 = vec3.one.copy()
 
+  @Uniform()
   readonly translation = new vec3()
 
+  @Uniform()
   readonly direction = new vec3()
 
+  @Uniform()
   readonly textureMatrix = new mat4()
 
   private readonly biasMatrix = new mat4()

@@ -1,10 +1,10 @@
 import { Transform } from '@luz/core'
-import { Serialize, RegisterClass } from '@luz/utilities'
+import { Serialize, Register } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
 
-@RegisterClass
+@Register()
 export class Sphere extends Volume {
   readonly type: Collider.Type = 'Sphere'
 

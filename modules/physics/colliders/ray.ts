@@ -1,8 +1,8 @@
-import { Serialize, RegisterClass } from '@luz/utilities'
+import { Serialize, Register } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 
-@RegisterClass
+@Register()
 export class Ray extends Collider {
   type: Collider.Type = 'Ray'
 

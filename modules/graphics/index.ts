@@ -1,5 +1,4 @@
 export { State } from './renderer/state'
-export { Display } from './renderer/display'
 export { Renderer } from './renderer/renderer'
 
 export { Meshes } from './managers/meshes'
@@ -14,10 +13,12 @@ export { Buffer } from './types/buffer'
 export { Shader } from './types/shader'
 export { Texture } from './types/texture'
 export { Sampler } from './types/sampler'
-export { Uniform } from './types/uniform'
 export { Program } from './types/program'
 export { Attribute } from './types/attribute'
 export { VertexArray } from './types/vertex-array'
+
+export { RenderPass } from './renderer/pass'
+export { RenderTarget } from './renderer/target'
 
 export { FrameBuffer } from './buffers/frame-buffer'
 export { RenderBuffer } from './buffers/render-buffer'
@@ -28,4 +29,7 @@ export { Material } from './renderer/material'
 export { Armature } from './renderer/armature'
 export { Animation } from './renderer/animation'
 export { Partition } from './renderer/partition'
-export { Weight as BoneWeight } from './renderer/weight'
+
+export { Bone } from './renderer/bone'
+export { Weight } from './renderer/weight'
+export { Keyframe, ScaleKeyframe, RotationKeyframe, TranslationKeyframe } from './renderer/keyframe'

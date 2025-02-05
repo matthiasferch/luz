@@ -29,7 +29,11 @@ export class Surface extends Serializable<Surface> {
   @Serialize()
   useMipmaps: boolean = false
 
-  texture?: Texture
+  constructor(data: Partial<Surface> = {}) {
+    super()
+
+    Object.assign(this, data)
+  }
 
   static deserialize(data: Partial<Surface>) {
     const surface = super.deserialize(data) as Surface

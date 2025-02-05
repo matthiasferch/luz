@@ -1,4 +1,5 @@
 export { Pool } from './pool'
 export { Dispatcher } from './dispatcher'
 export { Serialize, Serializable } from './serializable'
-export { RegisterClass, getRegisteredClass } from './registry'
+export { Uniform, getUniformProperties } from './uniform'
+export { Register, getRegisteredClass } from './registry'

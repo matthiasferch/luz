@@ -28,9 +28,9 @@ const isObject = (value: any): value is object => {
   return typeof value === 'object'
 }
 export class Serializable<T extends {}> {
-  constructor(data: Partial<T> = {}) {
-    Object.assign(this, data)
-  }
+  /*constructor(data: Partial<T> = {}) {
+    Object.assign(this, data) // won't work, overridden by default values in derived classes!
+  }*/
 
   serialize() {
     const isSerializable = (value: any) => {

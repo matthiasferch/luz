@@ -19,9 +19,12 @@ export class Shaders {
     }
 
     if (headers && headers.length > 0) {
-      headers.reverse().forEach((header) => {
-        source = `${header}\n\n${source}`
-      })
+      headers
+        .slice()
+        .reverse()
+        .forEach((header) => {
+          source = `${header}\n${source}`
+        })
     }
 
     let shader = this.gl.createShader(type) as Shader
@@ -32,6 +35,10 @@ export class Shaders {
     shader.isCompiled = this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)
 
     if (!shader.isCompiled || !this.gl.isShader(shader)) {
+      source.split('\n').forEach((line, index) => {
+        console.log(`${index + 1}\t${line}`)
+      })
+
       // tslint:disable-next-line: no-console
       console.error(this.gl.getShaderInfoLog(shader))
 

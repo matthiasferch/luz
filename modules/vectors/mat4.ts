@@ -5,13 +5,7 @@ import { vec3 } from './vec3'
 import { vec4 } from './vec4'
 
 export class mat4 extends Float32Array {
-
-  constructor(values: number[] = [
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 1.0, 0.0,
-    0.0, 0.0, 0.0, 1.0
-  ]) {
+  constructor(values: number[] = [1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0]) {
     super(values.slice(0, 16))
   }
 
@@ -310,19 +304,7 @@ export class mat4 extends Float32Array {
       dest = new mat3()
     }
 
-    dest.set([
-      this[0],
-      this[1],
-      this[2],
-
-      this[4],
-      this[5],
-      this[6],
-
-      this[8],
-      this[9],
-      this[10]
-    ])
+    dest.set([this[0], this[1], this[2], this[4], this[5], this[6], this[8], this[9], this[10]])
 
     return dest
   }
@@ -480,12 +462,11 @@ export class mat4 extends Float32Array {
     translation.xyz = [v30, v31, v32]
   }
 
-
   static deserialize(values: number[]) {
     return new mat4(values)
   }
 
-  static construct(rotation: quat, translation: vec3, dest: null | mat4 = null) {
+  static construct(translation: vec3, rotation: quat, scale = vec3.one, dest: null | mat4 = null) {
     if (!dest) {
       dest = new mat4()
     }
@@ -498,6 +479,10 @@ export class mat4 extends Float32Array {
     const vx = translation.x
     const vy = translation.y
     const vz = translation.z
+
+    const sx = scale.x
+    const sy = scale.y
+    const sz = scale.z
 
     const x2 = qx + qx
     const y2 = qy + qy
@@ -513,19 +498,19 @@ export class mat4 extends Float32Array {
     const wz = qw * z2
 
     dest.set([
-      1.0 - (yy + zz),
-      xy + wz,
-      xz - wy,
+      (1.0 - (yy + zz)) * sx,
+      (xy + wz) * sx,
+      (xz - wy) * sx,
       0.0,
 
-      xy - wz,
-      1.0 - (xx + zz),
-      yz + wx,
+      (xy - wz) * sy,
+      (1.0 - (xx + zz)) * sy,
+      (yz + wx) * sy,
       0.0,
 
-      xz + wy,
-      yz - wx,
-      1.0 - (xx + yy),
+      (xz + wy) * sz,
+      (yz - wx) * sz,
+      (1.0 - (xx + yy)) * sz,
       0.0,
 
       vx,
@@ -601,7 +586,15 @@ export class mat4 extends Float32Array {
     return dest
   }
 
-  static frustum(left: number, right: number, bottom: number, top: number, near: number, far: number, dest: null | mat4 = null): mat4 {
+  static frustum(
+    left: number,
+    right: number,
+    bottom: number,
+    top: number,
+    near: number,
+    far: number,
+    dest: null | mat4 = null
+  ): mat4 {
     if (!dest) {
       dest = new mat4()
     }
@@ -646,7 +639,15 @@ export class mat4 extends Float32Array {
     return mat4.frustum(-right, right, -top, top, near, far, dest)
   }
 
-  static orthographic(left: number, right: number, bottom: number, top: number, near: number, far: number, dest: null | mat4 = null): mat4 {
+  static orthographic(
+    left: number,
+    right: number,
+    bottom: number,
+    top: number,
+    near: number,
+    far: number,
+    dest: null | mat4 = null
+  ): mat4 {
     if (!dest) {
       dest = new mat4()
     }
@@ -734,29 +735,8 @@ export class mat4 extends Float32Array {
     const x = vec3.cross(up, z).normalize()
     const y = vec3.cross(z, x).normalize()
 
-    dest.set([
-      x.x,
-      x.y,
-      x.z,
-      0.0,
-
-      y.x,
-      y.y,
-      y.z,
-      0.0,
-
-      z.x,
-      z.y,
-      z.z,
-      0.0,
-
-      eye.x,
-      eye.y,
-      eye.z,
-      1.0
-    ])
+    dest.set([x.x, x.y, x.z, 0.0, y.x, y.y, y.z, 0.0, z.x, z.y, z.z, 0.0, eye.x, eye.y, eye.z, 1.0])
 
     return dest
   }
-
 }

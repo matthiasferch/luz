@@ -68,13 +68,19 @@ export class Programs {
 
         if (uniform) {
           switch (uniform.type) {
-            case this.gl.SAMPLER_2D:
+            case this.gl.SAMPLER_2D: {
               const slot = program.textureSlots[name]
               const texture = value as Texture
 
               this.gl.activeTexture(this.gl.TEXTURE0 + slot)
               this.gl.bindTexture(texture.target, texture)
               break
+            }
+
+            case this.gl.BOOL: {
+              this.gl.uniform1i(uniform.location, value ? 1 : 0)
+              break
+            }
 
             case this.gl.INT: {
               this.gl.uniform1i(uniform.location, value as number)
@@ -114,6 +120,7 @@ export class Programs {
 
             case this.gl.FLOAT_MAT4: {
               const matrix = value as mat4
+
               this.gl.uniformMatrix4fv(uniform.location, false, matrix)
               break
             }

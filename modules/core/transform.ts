@@ -1,33 +1,40 @@
-import { Serialize, Serializable } from '@luz/utilities'
+import { Serialize, Serializable, Uniform } from '@luz/utilities'
 import { mat3, mat4, quat, vec3 } from '@luz/vectors'
 
 export class Transform extends Serializable<Transform> {
   @Serialize()
-  readonly rotation: quat = new quat()
+  readonly scale: vec3 = vec3.one.copy()
 
   @Serialize()
-  readonly translation: vec3 = new vec3()
+  readonly rotation: quat = quat.identity.copy()
 
+  @Serialize()
+  readonly translation: vec3 = vec3.zero.copy()
+
+  @Uniform()
   readonly direction = new vec3()
 
+  @Uniform()
   readonly modelMatrix = new mat4()
 
+  @Uniform()
   readonly rotationMatrix = new mat3()
 
   readonly inverseTransposeMatrix = new mat4()
 
   static readonly origin: Transform = new Transform()
 
-  constructor({ translation = vec3.zero, rotation = quat.identity } = {}) {
+  constructor({ translation = vec3.zero, rotation = quat.identity, scale = vec3.one } = {}) {
     super()
 
     this.translation = translation.copy()
     this.rotation = rotation.copy()
+    this.scale = scale.copy()
   }
 
   update(deltaTime: number) {
     // model matrix
-    mat4.construct(this.rotation, this.translation, this.modelMatrix)
+    mat4.construct(this.translation, this.rotation, this.scale, this.modelMatrix)
 
     // rotation matrix
     this.modelMatrix.toMat3(this.rotationMatrix)

@@ -1,4 +1,4 @@
-import { Serialize } from '@luz/utilities'
+import { Serialize, Uniform } from '@luz/utilities'
 import { mat3, mat4, vec2 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
@@ -9,20 +9,27 @@ export class Camera extends Component {
   @Serialize()
   aspect: number = 1.0
 
+  @Uniform()
   @Serialize()
   aperture: number = 90.0
 
+  @Uniform()
   @Serialize()
   readonly clipPlanes: vec2 = new vec2([1.0, 100.0])
 
+  @Uniform()
   readonly viewMatrix = new mat4()
 
+  @Uniform()
   readonly normalMatrix = new mat3()
 
+  @Uniform()
   readonly modelViewMatrix = new mat4()
 
+  @Uniform()
   readonly projectionMatrix = new mat4()
 
+  @Uniform()
   readonly reconstructionMatrix = new mat4()
 
   update(transform: Transform, deltaTime: number) {

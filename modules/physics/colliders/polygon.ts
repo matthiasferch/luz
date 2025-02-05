@@ -1,8 +1,8 @@
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
-import { Serialize, RegisterClass } from '@luz/utilities'
+import { Serialize, Register } from '@luz/utilities'
 
-@RegisterClass
+@Register()
 export class Polygon extends Collider {
   type: Collider.Type = 'Polygon'
 

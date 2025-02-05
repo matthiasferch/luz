@@ -74,21 +74,19 @@ export class Buffers {
     this.gl.renderbufferStorage(buffer.target, format, width, height)
   }
 
-  attach(framebuffer: FrameBuffer, texture: Texture, attachment: number)
-  attach(frameBuffer: FrameBuffer, renderBuffer: RenderBuffer, attachment: number)
+  attach(framebuffer: FrameBuffer, texture: Texture, attachment: number): void
+  attach(frameBuffer: FrameBuffer, renderBuffer: RenderBuffer, attachment: number): void
 
   attach(frameBuffer: FrameBuffer, data: Texture | RenderBuffer, attachment: number) {
     this.bind(frameBuffer)
 
     switch (data.target) {
       case this.gl.TEXTURE_2D:
-        console.log('TEXTURE_2D', frameBuffer.target, attachment, data.target, data)
         this.gl.framebufferTexture2D(frameBuffer.target, attachment, data.target, data, 0)
 
         break
 
       case this.gl.RENDERBUFFER:
-        console.log('RENDERBUFFER', frameBuffer.target, attachment, data.target, data)
         this.gl.framebufferRenderbuffer(frameBuffer.target, attachment, this.gl.RENDERBUFFER, data)
 
         break
@@ -101,48 +99,60 @@ export class Buffers {
     frameBuffer.attachments[attachment] = data
   }
 
-  use(frameBuffer: FrameBuffer) {
-    this.bind(frameBuffer)
-  }
+  bind(buffer: Buffer) {
+    const { target } = buffer
 
-  private bind(buffer: Buffer) {
-    const boundBuffer = buffer ? this.boundBuffers[buffer.target] : null
+    const boundBuffer = this.boundBuffers[target]
 
     if (boundBuffer === buffer) {
-      // return
+       return
     }
 
-    switch (buffer.target) {
+    switch (target) {
       case this.gl.FRAMEBUFFER:
-        const frameBuffer = boundBuffer as FrameBuffer
+        /*const frameBuffer = buffer as FrameBuffer
 
-        if (frameBuffer) {
-          Object.values(frameBuffer.attachments).forEach((attachment) => {
-            const texture = attachment as Texture
-            const { target, useMipmaps } = texture
+        Object.values(frameBuffer.attachments).forEach((attachment) => {
+          const texture = attachment as Texture
+          const { target, useMipmaps } = texture
 
-            if (useMipmaps) {
-              this.gl.bindTexture(target, texture)
-              this.gl.generateMipmap(target)
-            }
-          })
-        }
+          if (useMipmaps) {
+            this.gl.bindTexture(target, texture)
+            this.gl.generateMipmap(target)
+          }
+        })*/
 
-        this.gl.bindFramebuffer(buffer.target, buffer)
+        this.gl.bindFramebuffer(target, buffer)
 
         break
 
       case this.gl.RENDERBUFFER:
-        this.gl.bindRenderbuffer(buffer.target, buffer)
+        this.gl.bindRenderbuffer(target, buffer)
 
         break
 
       default:
-        this.gl.bindBuffer(buffer.target, buffer)
+        this.gl.bindBuffer(target, buffer)
 
         break
     }
 
-    this.boundBuffers[buffer.target] = buffer
+    this.boundBuffers[target] = buffer
+  }
+
+  unbind(target: Buffer.Target) {
+    switch (target) {
+      case 'FrameBuffer':
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
+        break
+
+      case 'RenderBuffer':
+        this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null)
+        break
+
+      case 'UniformBuffer':
+        this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null)
+        break
+    }
   }
 }

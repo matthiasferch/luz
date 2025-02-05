@@ -1,7 +1,8 @@
-import { Material, Partition, Armature, Animation, BoneWeight } from '@luz/graphics'
-import { Serialize } from '@luz/utilities'
+import { Material, Partition, Armature, Animation } from '@luz/graphics'
+import { Serialize, Uniform } from '@luz/utilities'
 import { Component } from '../component'
 import { Transform } from '../transform'
+import { mat4 } from '@luz/vectors'
 
 export class Model extends Component {
   readonly type: Component.Type = 'Model'
@@ -18,8 +19,24 @@ export class Model extends Component {
   @Serialize(Animation)
   readonly animations: Record<string, Animation> = {}
 
-  @Serialize()
-  readonly boneWeights: Record<string, BoneWeight[]> | null = null
+  boneMatrices: mat4[] = [] // uploaded separately
+
+  @Uniform()
+  isAnimated: boolean = false
+
+  static deserialize(data: Partial<Model>) {
+    const model = super.deserialize(data) as Model
+
+    if (Object.values(model.armatures).length > 0) {
+      model.boneMatrices = Array.from({ length: 64 }, () => {
+        return mat4.identity.copy()
+      })
+
+      model.isAnimated = true
+    }
+
+    return model
+  }
 
   update(transform: Transform, deltaTime: number) {}
 }

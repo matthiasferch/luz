@@ -327,6 +327,10 @@ export class quat extends Float32Array {
     return dest
   }
 
+  interpolate(q: quat, time: number, dest: null | quat = null): quat {
+    return quat.interpolate(this, q, time, dest)
+  }
+
   serialize() {
     const { x, y, z, w } = this
 
@@ -335,6 +339,51 @@ export class quat extends Float32Array {
 
   static deserialize(values: number[]) {
     return new quat(values)
+  }
+
+  static interpolate(q1: quat, q2: quat, time: number, dest: null | quat = null): quat {
+    if (!dest) {
+      dest = new quat()
+    }
+
+    if (time <= 0.0) {
+      return q1.copy(dest)
+    }
+
+    if (time >= 1.0) {
+      return q2.copy(dest)
+    }
+
+    let cos = quat.dot(q1, q2)
+    const q2a = q2.copy(dest)
+
+    if (cos < 0.0) {
+      q2a.invert()
+      cos = -cos
+    }
+
+    let k0: number
+    let k1: number
+
+    if (cos > 1 - Epsilon) {
+      k0 = 1 - time
+      k1 = 0 + time
+    } else {
+      const sin: number = Math.sqrt(1 - cos * cos)
+      const angle: number = Math.atan2(sin, cos)
+
+      const oneOverSin: number = 1 / sin
+
+      k0 = Math.sin((1 - time) * angle) * oneOverSin
+      k1 = Math.sin((0 + time) * angle) * oneOverSin
+    }
+
+    dest.x = k0 * q1.x + k1 * q2a.x
+    dest.y = k0 * q1.y + k1 * q2a.y
+    dest.z = k0 * q1.z + k1 * q2a.z
+    dest.w = k0 * q1.w + k1 * q2a.w
+
+    return dest
   }
 
   static dot(q1: quat, q2: quat): number {

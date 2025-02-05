@@ -231,6 +231,10 @@ export class vec3 extends Float32Array {
     return matrix.transform(this, dest)
   }
 
+  interpolate(v2: vec3, time: number, dest: null | vec3 = null): vec3 {
+    return vec3.interpolate(this, v2, time, dest)
+  }
+
   serialize() {
     const { x, y, z } = this
 
@@ -239,6 +243,25 @@ export class vec3 extends Float32Array {
 
   static deserialize(values: number[]) {
     return new vec3(values)
+  }
+
+  static interpolate(v1: vec3, v2: vec3, time: number, dest: null | vec3 = null): vec3 {
+    if (!dest) {
+      dest = new vec3()
+    }
+
+    if (time <= 0.0) {
+      return v1.copy(dest)
+    }
+
+    if (time >= 1.0) {
+      return v2.copy(dest)
+    }
+
+    return v1
+      .copy(dest)
+      .scale(1.0 - time)
+      .add(v2.copy().scale(time))
   }
 
   static absolute(vector: vec3, dest: null | vec3 = null): vec3 {
@@ -253,42 +276,42 @@ export class vec3 extends Float32Array {
     return dest
   }
 
-  static minimum(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+  static minimum(v1: vec3, v2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    dest.x = min(vector.x, vector2.x)
-    dest.y = min(vector.y, vector2.y)
-    dest.z = min(vector.z, vector2.z)
+    dest.x = min(v1.x, v2.x)
+    dest.y = min(v1.y, v2.y)
+    dest.z = min(v1.z, v2.z)
 
     return dest
   }
 
-  static maximum(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+  static maximum(v1: vec3, v2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    dest.x = max(vector.x, vector2.x)
-    dest.y = max(vector.y, vector2.y)
-    dest.z = max(vector.z, vector2.z)
+    dest.x = max(v1.x, v2.x)
+    dest.y = max(v1.y, v2.y)
+    dest.z = max(v1.z, v2.z)
 
     return dest
   }
 
-  static cross(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+  static cross(v1: vec3, v2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    const x = vector.x
-    const y = vector.y
-    const z = vector.z
+    const x = v1.x
+    const y = v1.y
+    const z = v1.z
 
-    const x2 = vector2.x
-    const y2 = vector2.y
-    const z2 = vector2.z
+    const x2 = v2.x
+    const y2 = v2.y
+    const z2 = v2.z
 
     dest.x = y * z2 - z * y2
     dest.y = z * x2 - x * z2
@@ -297,38 +320,38 @@ export class vec3 extends Float32Array {
     return dest
   }
 
-  static dot(vector: vec3, vector2: vec3): number {
-    const x = vector.x
-    const y = vector.y
-    const z = vector.z
+  static dot(v1: vec3, v2: vec3): number {
+    const x = v1.x
+    const y = v1.y
+    const z = v1.z
 
-    const x2 = vector2.x
-    const y2 = vector2.y
-    const z2 = vector2.z
+    const x2 = v2.x
+    const y2 = v2.y
+    const z2 = v2.z
 
     return x * x2 + y * y2 + z * z2
   }
 
-  static distance(vector: vec3, vector2: vec3): number {
-    return sqrt(this.squaredDistance(vector, vector2))
+  static distance(v1: vec3, v2: vec3): number {
+    return sqrt(this.squaredDistance(v1, v2))
   }
 
-  static squaredDistance(vector: vec3, vector2: vec3): number {
-    const x = vector2.x - vector.x
-    const y = vector2.y - vector.y
-    const z = vector2.z - vector.z
+  static squaredDistance(v1: vec3, v2: vec3): number {
+    const x = v2.x - v1.x
+    const y = v2.y - v1.y
+    const z = v2.z - v1.z
 
     return x * x + y * y + z * z
   }
 
-  static direction(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+  static direction(v1: vec3, v2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    const x = vector.x - vector2.x
-    const y = vector.y - vector2.y
-    const z = vector.z - vector2.z
+    const x = v1.x - v2.x
+    const y = v1.y - v2.y
+    const z = v1.z - v2.z
 
     let length = sqrt(x * x + y * y + z * z)
 
@@ -349,62 +372,62 @@ export class vec3 extends Float32Array {
     return dest
   }
 
-  static mix(vector: vec3, vector2: vec3, time: number, dest: null | vec3 = null): vec3 {
+  static mix(v1: vec3, v2: vec3, time: number, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    dest.x = vector.x + time * (vector2.x - vector.x)
-    dest.y = vector.y + time * (vector2.y - vector.y)
-    dest.z = vector.z + time * (vector2.z - vector.z)
+    dest.x = v1.x + time * (v2.x - v1.x)
+    dest.y = v1.y + time * (v2.y - v1.y)
+    dest.z = v1.z + time * (v2.z - v1.z)
 
     return dest
   }
 
-  static add(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+  static add(v1: vec3, v2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    dest.x = vector.x + vector2.x
-    dest.y = vector.y + vector2.y
-    dest.z = vector.z + vector2.z
+    dest.x = v1.x + v2.x
+    dest.y = v1.y + v2.y
+    dest.z = v1.z + v2.z
 
     return dest
   }
 
-  static subtract(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+  static subtract(v1: vec3, v2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    dest.x = vector.x - vector2.x
-    dest.y = vector.y - vector2.y
-    dest.z = vector.z - vector2.z
+    dest.x = v1.x - v2.x
+    dest.y = v1.y - v2.y
+    dest.z = v1.z - v2.z
 
     return dest
   }
 
-  static multiply(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+  static multiply(v1: vec3, v2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    dest.x = vector.x * vector2.x
-    dest.y = vector.y * vector2.y
-    dest.z = vector.z * vector2.z
+    dest.x = v1.x * v2.x
+    dest.y = v1.y * v2.y
+    dest.z = v1.z * v2.z
 
     return dest
   }
 
-  static divide(vector: vec3, vector2: vec3, dest: null | vec3 = null): vec3 {
+  static divide(v1: vec3, v2: vec3, dest: null | vec3 = null): vec3 {
     if (!dest) {
       dest = new vec3()
     }
 
-    dest.x = vector.x / vector2.x
-    dest.y = vector.y / vector2.y
-    dest.z = vector.z / vector2.z
+    dest.x = v1.x / v2.x
+    dest.y = v1.y / v2.y
+    dest.z = v1.z / v2.z
 
     return dest
   }
