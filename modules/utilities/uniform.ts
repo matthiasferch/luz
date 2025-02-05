@@ -15,8 +15,6 @@ export function Uniform() {
     const type = Reflect.getMetadata('design:type', target, key)
 
     properties.push({ key, type })
-
-    console.log(uniformProperties)
   }
 }
 

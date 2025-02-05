@@ -154,8 +154,6 @@ export class Textures {
 
     this.textures.push(texture)
 
-    console.log('Created texture:', texture)
-
     return texture
   }
 
@@ -180,8 +178,6 @@ export class Textures {
       gl.generateMipmap(target)
     }
 
-    console.log('Updated texture:', texture)
-
     texture.data = data
   }
 
@@ -196,7 +192,5 @@ export class Textures {
     gl.bindTexture(texture.target, texture)
 
     this.boundTextures[unit] = texture
-
-    console.log('Bound texture:', texture, 'to unit:', unit)
   }
 }

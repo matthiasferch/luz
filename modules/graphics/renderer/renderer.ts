@@ -47,9 +47,9 @@ export class Renderer {
     this.textures = new Textures(this.gl)
     this.samplers = new Samplers(this.gl)
 
-    const defaultData = new Uint8Array([0xff, 0xff, 0xff, 0xff])
-    this.defaultTexture = this.textures.create({ data: defaultData })
+    const textureData = new Uint8Array([0xff, 0xff, 0xff, 0xff])
 
+    this.defaultTexture = this.textures.create({ data: textureData })
     this.defaultMaterial = new Material({ texture: this.defaultTexture })
   }
 
@@ -192,7 +192,7 @@ export class Renderer {
       })
     }
 
-    Object.values(model.partitions).forEach((partition) => {
+    Object.entries(model.partitions).forEach(([name, partition]) => {
       const { mesh } = partition
 
       if (!mesh) {
@@ -203,6 +203,10 @@ export class Renderer {
 
       if (!material) {
         throw new Error('Mesh has no material')
+      }
+
+      if (!material.texture) {
+        throw new Error(name)
       }
 
       this.programs.update(program, {
@@ -223,14 +227,6 @@ export class Renderer {
 
   private collectUniformValues(program: Program, uniformValues: any) {
     const collectedUniformValues: Record<string, Uniform.Value> = {}
-
-    Object.entries(uniformValues).forEach(([name, value]: [string, Uniform.Value]) => {
-      const properties = getUniformProperties(value?.constructor)
-
-      if (properties?.length > 0) {
-        //console.log(properties)
-      }
-    })
 
     const collectRecursively = (values: any, prefix?: string) => {
       if (values == null || typeof values !== 'object') {

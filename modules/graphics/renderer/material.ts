@@ -15,11 +15,15 @@ export class Material extends Serializable<Material> {
   @Uniform()
   texture: Texture
 
-  constructor({ color }: Partial<Material> = {}) {
+  constructor({ color, texture }: Partial<Material> = {}) {
     super()
 
     if (color) {
       this.color.set(color)
+    }
+
+    if (texture) {
+      this.texture = texture
     }
   }
 }
