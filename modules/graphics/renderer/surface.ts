@@ -1,7 +1,7 @@
 import { Serializable, Serialize } from '@luz/utilities'
 import { Texture } from '../types/texture'
 
-export class Surface extends Serializable<Surface> {
+export class Surface extends Serializable {
   @Serialize()
   path?: string
 
@@ -35,8 +35,8 @@ export class Surface extends Serializable<Surface> {
     Object.assign(this, data)
   }
 
-  static deserialize(data: Partial<Surface>) {
-    const surface = super.deserialize(data) as Surface
+  static async deserialize(data: Partial<Surface>) {
+    const surface = (await super.deserialize(data)) as Surface
 
     if ('data' in surface) {
       const { data, precision = 8 } = surface

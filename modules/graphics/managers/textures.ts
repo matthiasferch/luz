@@ -8,7 +8,7 @@ export class Textures {
 
   constructor(private gl: WebGL2RenderingContext) {}
 
-  create(surface: Omit<Partial<Surface>, 'texture'>): Texture {
+  create(surface: Partial<Surface>): Texture {
     const { gl } = this
 
     const texture = gl.createTexture() as Texture

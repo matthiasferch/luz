@@ -27,11 +27,7 @@ const { isArray } = Array
 const isObject = (value: any): value is object => {
   return typeof value === 'object'
 }
-export class Serializable<T extends {}> {
-  /*constructor(data: Partial<T> = {}) {
-    Object.assign(this, data) // won't work, overridden by default values in derived classes!
-  }*/
-
+export class Serializable {
   serialize() {
     const isSerializable = (value: any) => {
       return typeof value.serialize === 'function'
@@ -66,7 +62,7 @@ export class Serializable<T extends {}> {
     }, {})
   }
 
-  static deserialize<T>(data: Partial<T>) {
+  static async deserialize(data: any) {
     const isDeserializable = (type: any) => {
       return type && typeof type.deserialize === 'function'
     }
@@ -75,37 +71,65 @@ export class Serializable<T extends {}> {
 
     const properties = Serializable.getAllSerializableProperties(this)
 
-    for (let { key, type, valueType } of properties) {
+    for (const { key, type, valueType } of properties) {
       const value = data[key]
 
       if (value === undefined) {
         continue
       }
 
+      let currentType = type
+      let currentValueType = valueType
+
       if (getRegisteredClass(value)) {
-        type = getRegisteredClass(value)
+        currentType = getRegisteredClass(value)
       }
 
-      if (isDeserializable(type)) {
-        instance[key] = type.deserialize(value)
+      if (isDeserializable(currentType)) {
+        instance[key] = await currentType.deserialize(value)
       } else if (isArray(value)) {
-        instance[key] = value.map((value) => {
-          if (getRegisteredClass(value)) {
-            valueType = getRegisteredClass(value)
-          }
+        instance[key] = await Promise.all(
+          value.map(async (item) => {
+            let itemValueType = currentValueType
 
-          return isDeserializable(valueType) ? valueType.deserialize(value) : value
-        })
+            if (getRegisteredClass(item)) {
+              itemValueType = getRegisteredClass(item)
+            }
+
+            if (typeof item === 'string' && itemValueType !== undefined) {
+              const response = await fetch(item)
+              const jsonData = await response.json()
+
+              return await itemValueType.deserialize(jsonData)
+            } else {
+              return isDeserializable(itemValueType) ? await itemValueType.deserialize(item) : item
+            }
+          })
+        )
       } else if (isObject(value)) {
-        instance[key] = Object.entries(value).reduce((entries, [key, value]) => {
-          if (getRegisteredClass(value)) {
-            valueType = getRegisteredClass(value)
-          }
+        const entries = await Promise.all(
+          Object.entries(value).map(async ([entryKey, entryValue]) => {
+            let entryValueType = currentValueType
 
-          entries[key] = isDeserializable(valueType) ? valueType.deserialize(value) : value
+            if (getRegisteredClass(entryValue)) {
+              entryValueType = getRegisteredClass(entryValue)
+            }
 
-          return entries
-        }, {})
+            if (typeof entryValue === 'string' && entryValueType !== undefined) {
+              const response = await fetch(entryValue)
+              const jsonData = await response.json()
+
+              return [entryKey, await entryValueType.deserialize(jsonData)]
+            } else {
+              return [
+                entryKey,
+                isDeserializable(entryValueType) ? await entryValueType.deserialize(entryValue) : entryValue
+              ]
+            }
+          })
+        )
+
+        instance[key] = Object.fromEntries(entries)
       } else {
         instance[key] = value
       }

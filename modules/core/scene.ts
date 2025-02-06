@@ -5,7 +5,7 @@ import { Body } from './components/body'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 
-export class Scene extends Serializable<Scene> {
+export class Scene extends Serializable {
   @Serialize()
   readonly gravity: vec3
 
@@ -29,6 +29,10 @@ export class Scene extends Serializable<Scene> {
     this.gravity = new vec3([0, -9.81, 0])
 
     this.collisionDispatcher = new CollisionDispatcher()
+  }
+
+  static async deserialize(data: Partial<Scene>) {
+    return (await super.deserialize(data)) as Scene
   }
 
   update(deltaTime: number) {

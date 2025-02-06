@@ -337,7 +337,7 @@ export class quat extends Float32Array {
     return [x, y, z, w]
   }
 
-  static deserialize(values: number[]) {
+  static async deserialize(values: number[]) {
     return new quat(values)
   }
 

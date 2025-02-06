@@ -20,6 +20,10 @@ export class Entity extends Transform {
 
   // volume: Volume -- TODO: for visibility determination
 
+  static async deserialize(data: Partial<Entity>) {
+    return (await super.deserialize(data)) as Entity
+  }
+
   update(deltaTime: number) {
     super.update(deltaTime)
 

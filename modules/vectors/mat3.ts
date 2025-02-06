@@ -4,12 +4,7 @@ import { quat } from './quat'
 import { vec3 } from './vec3'
 
 export class mat3 extends Float32Array {
-
-  constructor(values: number[] = [
-    1.0, 0.0, 0.0,
-    0.0, 1.0, 0.0,
-    0.0, 0.0, 1.0
-  ]) {
+  constructor(values: number[] = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]) {
     super(values.slice(0, 9))
   }
 
@@ -149,7 +144,7 @@ export class mat3 extends Float32Array {
     let det = v00 * det01 + v01 * det11 + v02 * det21
 
     if (det === 0.0) {
-      return null
+      throw new Error('Matrix is not invertible')
     }
 
     det = 1.0 / det
@@ -391,8 +386,7 @@ export class mat3 extends Float32Array {
     return dest
   }
 
-
-  static deserialize(values: number[]) {
+  static async deserialize(values: number[]) {
     return new mat3(values)
   }
 
@@ -466,21 +460,8 @@ export class mat3 extends Float32Array {
     const x = vec3.cross(up, z).normalize()
     const y = vec3.cross(z, x).normalize()
 
-    dest.set([
-      x.x,
-      x.y,
-      x.z,
-
-      y.x,
-      y.y,
-      y.z,
-
-      z.x,
-      z.y,
-      z.z
-    ])
+    dest.set([x.x, x.y, x.z, y.x, y.y, y.z, z.x, z.y, z.z])
 
     return dest
   }
-
 }

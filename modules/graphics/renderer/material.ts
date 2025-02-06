@@ -4,7 +4,7 @@ import { vec3 } from '@luz/vectors'
 import { Surface } from './surface'
 import { Texture } from '../types/texture'
 
-export class Material extends Serializable<Material> {
+export class Material extends Serializable {
   @Uniform()
   @Serialize()
   readonly color: vec3 = vec3.one.copy()

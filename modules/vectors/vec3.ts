@@ -241,7 +241,7 @@ export class vec3 extends Float32Array {
     return [x, y, z]
   }
 
-  static deserialize(values: number[]) {
+  static async deserialize(values: number[]) {
     return new vec3(values)
   }
 

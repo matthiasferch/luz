@@ -180,7 +180,7 @@ export class mat2 extends Float32Array {
     return dest
   }
 
-  static deserialize(values: number[]) {
+  static async deserialize(values: number[]) {
     return new mat2(values)
   }
 

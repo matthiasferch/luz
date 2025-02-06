@@ -1,14 +1,14 @@
 import { Serializable, Serialize } from '@luz/utilities'
 import { Bone } from './bone'
 
-export class Armature extends Serializable<Armature> {
+export class Armature extends Serializable {
   @Serialize(Bone)
   readonly bones: Record<string, Bone> = {}
 
   readonly rootBones: Bone[] = []
 
-  static deserialize(data: Partial<Armature>) {
-    const armature = super.deserialize(data) as Armature
+  static async deserialize(data: Partial<Armature>) {
+    const armature = (await super.deserialize(data)) as Armature
 
     for (let bone of Object.values(armature.bones)) {
       if (bone.parent) {

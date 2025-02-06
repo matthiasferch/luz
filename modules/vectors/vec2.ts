@@ -189,7 +189,7 @@ export class vec2 extends Float32Array {
     return [x, y]
   }
   
-  static deserialize(values: number[]) {
+  static async deserialize(values: number[]) {
     return new vec2(values)
   }
 

@@ -3,7 +3,7 @@ import { Program } from '../types/program'
 import { State } from './state'
 import { Serializable, Serialize } from '@luz/utilities'
 
-export class RenderPass extends Serializable<RenderPass> {
+export class RenderPass extends Serializable {
   @Serialize()
   readonly clearColor: vec4 = vec4.zero.copy()
 
@@ -39,5 +39,9 @@ export class RenderPass extends Serializable<RenderPass> {
     Object.assign(this, data)
 
     this.clearColor.set(this.clearColor)
+  }
+
+  static async deserialize(data: Partial<RenderPass>) {
+    return (await super.deserialize(data)) as RenderPass
   }
 }

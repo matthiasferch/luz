@@ -1,6 +1,6 @@
 import { Serializable, Serialize } from '@luz/utilities'
 
-export class Weight extends Serializable<Weight> {
+export class Weight extends Serializable {
   @Serialize()
   readonly vertex: number
 

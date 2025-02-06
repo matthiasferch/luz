@@ -1,7 +1,7 @@
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3, quat } from '@luz/vectors'
 
-export abstract class Keyframe<T extends vec3 | quat> extends Serializable<Keyframe<T>> {
+export abstract class Keyframe<T extends vec3 | quat> extends Serializable {
   @Serialize()
   readonly index: number
 

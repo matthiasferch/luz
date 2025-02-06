@@ -1,6 +1,6 @@
 import { Serialize, Serializable } from '../utilities'
 
-export abstract class Collider extends Serializable<Collider> {
+export abstract class Collider extends Serializable {
   @Serialize()
   abstract readonly type: Collider.Type
 }

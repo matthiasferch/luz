@@ -24,8 +24,8 @@ export class Model extends Component {
   @Uniform()
   isAnimated: boolean = false
 
-  static deserialize(data: Partial<Model>) {
-    const model = super.deserialize(data) as Model
+  static async deserialize(data: Partial<Model>) {
+    const model = await super.deserialize(data) as Model
 
     if (Object.values(model.armatures).length > 0) {
       model.boneMatrices = Array.from({ length: 64 }, () => {

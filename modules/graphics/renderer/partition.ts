@@ -3,7 +3,7 @@ import { VertexArray } from '../types/vertex-array'
 import { Mesh } from '../types/mesh'
 import { Weight } from './weight'
 
-export class Partition extends Serializable<Partition> {
+export class Partition extends Serializable {
   @Serialize()
   readonly topology: VertexArray.Topology = 'Triangles'
 

@@ -4,7 +4,6 @@ import { mat4 } from './mat4'
 const { min, max, abs, sqrt } = Math
 
 export class vec4 extends Float32Array {
-
   static readonly zero: vec4 = new vec4([0.0, 0.0, 0.0, 1.0])
   static readonly one: vec4 = new vec4([1.0, 1.0, 1.0, 1.0])
 
@@ -233,8 +232,8 @@ export class vec4 extends Float32Array {
 
     return [x, y, z, w]
   }
-  
-  static deserialize(values: number[]) {
+
+  static async deserialize(values: number[]) {
     return new vec4(values)
   }
 
@@ -360,54 +359,53 @@ export class vec4 extends Float32Array {
 
   static sum(...vectors: vec4[]): vec4 {
     const dest = new vec4()
-  
+
     for (const vector of vectors) {
       dest.x += vector.x
       dest.y += vector.y
       dest.z += vector.z
       dest.w += vector.w
     }
-  
+
     return dest
   }
 
   static difference(...vectors: vec4[]): vec4 {
     const dest = new vec4()
-  
+
     for (const vector of vectors) {
       dest.x -= vector.x
       dest.y -= vector.y
       dest.z -= vector.z
       dest.w -= vector.w
     }
-  
+
     return dest
   }
 
   static product(...vectors: vec4[]): vec4 {
     const dest = new vec4()
-  
+
     for (const vector of vectors) {
       dest.x *= vector.x
       dest.y *= vector.y
       dest.z *= vector.z
       dest.w *= vector.w
     }
-  
+
     return dest
   }
 
   static division(...vectors: vec4[]): vec4 {
     const dest = new vec4()
-  
+
     for (const vector of vectors) {
       dest.x /= vector.x
       dest.y /= vector.y
       dest.z /= vector.z
       dest.w /= vector.w
     }
-  
+
     return dest
   }
-
 }

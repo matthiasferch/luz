@@ -1,7 +1,7 @@
 import { Serialize, Serializable, Uniform } from '@luz/utilities'
 import { mat3, mat4, quat, vec3 } from '@luz/vectors'
 
-export class Transform extends Serializable<Transform> {
+export class Transform extends Serializable {
   @Serialize()
   readonly scale: vec3 = vec3.one.copy()
 

@@ -462,7 +462,7 @@ export class mat4 extends Float32Array {
     translation.xyz = [v30, v31, v32]
   }
 
-  static deserialize(values: number[]) {
+  static async deserialize(values: number[]) {
     return new mat4(values)
   }
 

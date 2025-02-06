@@ -3,7 +3,7 @@ import { vec3, mat4 } from '@luz/vectors'
 import { Armature } from './armature'
 import { BoneTransform } from './animation'
 
-export class Bone extends Serializable<Bone> {
+export class Bone extends Serializable {
   @Serialize()
   readonly head: vec3 = vec3.zero.copy()
 

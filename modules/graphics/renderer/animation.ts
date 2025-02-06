@@ -3,7 +3,7 @@ import { Keyframe, ScaleKeyframe, RotationKeyframe, TranslationKeyframe } from '
 import { quat, vec3 } from '@luz/vectors'
 import { Armature } from './armature'
 
-class Keyframes extends Serializable<Keyframes> {
+class Keyframes extends Serializable {
   @Serialize(ScaleKeyframe)
   readonly scale: ScaleKeyframe[] = []
 
@@ -26,7 +26,7 @@ export namespace BoneTransform {
 
 type Interpolate<T> = (v1: T, v2: T, t: number) => T
 
-export class Animation extends Serializable<Animation> {
+export class Animation extends Serializable {
   @Serialize(Keyframes)
   readonly keyframes: Record<string, Keyframes> = {}
 
