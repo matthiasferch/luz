@@ -21,9 +21,6 @@ export class Camera extends Component {
   readonly viewMatrix = new mat4()
 
   @Uniform()
-  readonly normalMatrix = new mat3()
-
-  @Uniform()
   readonly modelViewMatrix = new mat4()
 
   @Uniform()
@@ -40,9 +37,6 @@ export class Camera extends Component {
 
     // model view matrix
     mat4.multiply(this.viewMatrix, modelMatrix, this.modelViewMatrix)
-
-    // normal matrix (to transform normals)
-    this.modelViewMatrix.toMat3(this.normalMatrix).transpose().invert()
 
     // perspective matrix
     mat4.perspective(this.aperture, this.aspect, this.clipPlanes.x, this.clipPlanes.y, this.projectionMatrix)

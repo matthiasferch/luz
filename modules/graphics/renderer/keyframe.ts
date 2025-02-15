@@ -3,7 +3,7 @@ import { vec3, quat } from '@luz/vectors'
 
 export abstract class Keyframe<T extends vec3 | quat> extends Serializable {
   @Serialize()
-  readonly index: number
+  readonly time: number
 
   abstract value: T
 }

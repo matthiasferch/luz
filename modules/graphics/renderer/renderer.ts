@@ -101,7 +101,7 @@ export class Renderer {
     this.gl.clear(clearMask)
   }
 
-  renderPass<T extends {}>(pass: RenderPass, camera: Camera, entities: Entity[], lights: Light[] = [], uniforms?: T) {
+  renderPass<T extends {}>(pass: RenderPass, camera: Camera, entities: Entity[], light: Light, uniforms?: T) {
     // cull mode
     this.state.cullMode = pass.cullMode
 
@@ -126,7 +126,7 @@ export class Renderer {
     // render entities
     Object.values(entities).forEach((entity) => {
       Object.values(entity.models).forEach((model) => {
-        this.renderModel(camera, entity, model, lights, program, uniforms)
+        this.renderModel(camera, entity, model, light, program, uniforms)
       })
     })
   }
@@ -135,7 +135,7 @@ export class Renderer {
     camera: Camera | null,
     transform: Transform,
     model: Model,
-    lights: Light[],
+    light: Light,
     program: Program,
     additionalUniforms?: T
   ) {
@@ -170,16 +170,12 @@ export class Renderer {
     if (model.boneMatrices) {
       // nested structures cannot contain arrays,
       // so we need to place bone matrices outside
-      model.boneMatrices.forEach((matrix, index) => {
-        setUniformValue(matrix, `boneMatrices[${index}]`)
-      })
+      setUniformValue(model.boneMatrices, 'boneMatrices')
     }
 
-    if (lights) {
-      lights.forEach((light, index) => {
-        getUniformProperties(Light).forEach(({ key }) => {
-          setUniformValue(light[key], key, `lights[${index}]`)
-        })
+    if (light) {
+      getUniformProperties(Light).forEach(({ key }) => {
+        setUniformValue(light[key], key, 'light')
       })
     }
 
@@ -188,6 +184,7 @@ export class Renderer {
     if (additionalUniforms) {
       // additional uniforms
       this.programs.update(program, {
+        // this can get quite slow, only use sparingly!
         uniforms: this.collectUniformValues(program, additionalUniforms)
       })
     }

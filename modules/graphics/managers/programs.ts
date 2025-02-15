@@ -181,16 +181,12 @@ export class Programs {
       const uniform = this.gl.getActiveUniform(program, uniformIndex) as Uniform
 
       if (this.isUniformArray(uniform)) {
-        const nameWithoutIndex = uniform.name.slice(0, -3)
+        const name = uniform.name.replace(/\[0\]$/, '')
+        const location = this.gl.getUniformLocation(program, name)
 
-        for (let arrayIndex = 0; arrayIndex < uniform.size; arrayIndex++) {
-          const nameWithIndex = `${nameWithoutIndex}[${arrayIndex}]`
-          const location = this.gl.getUniformLocation(program, nameWithIndex)
-
-          if (location != null) {
-            uniform.location = location
-            program.uniforms[nameWithIndex] = uniform
-          }
+        if (location != null) {
+          uniform.location = location
+          program.uniforms[name] = uniform
         }
       } else {
         const location = this.gl.getUniformLocation(program, uniform.name)
@@ -221,6 +217,7 @@ export class Programs {
         blockIndex,
         this.gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES
       ) as number[]
+
       const uniformOffsets = this.gl.getActiveUniforms(program, uniformIndices, this.gl.UNIFORM_OFFSET) as number[]
 
       const uniformOffsetsByName = uniformIndices.reduce((offsets: Record<string, number>, uniformIndex, index) => {

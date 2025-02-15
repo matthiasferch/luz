@@ -2,6 +2,7 @@ import { Serialize, Serializable } from '@luz/utilities'
 import { Keyframe, ScaleKeyframe, RotationKeyframe, TranslationKeyframe } from './keyframe'
 import { quat, vec3 } from '@luz/vectors'
 import { Armature } from './armature'
+import { Transform } from '@luz/core'
 
 class Keyframes extends Serializable {
   @Serialize(ScaleKeyframe)
@@ -14,27 +15,9 @@ class Keyframes extends Serializable {
   readonly translation: TranslationKeyframe[] = []
 }
 
-export type BoneTransform = { translation: vec3; rotation: quat; scale: vec3 }
-
-export namespace BoneTransform {
-  export const identity: BoneTransform = {
-    translation: vec3.zero,
-    rotation: quat.identity,
-    scale: vec3.one
-  }
-}
-
-type Interpolate<T> = (v1: T, v2: T, t: number) => T
-
 export class Animation extends Serializable {
   @Serialize(Keyframes)
   readonly keyframes: Record<string, Keyframes> = {}
-
-  @Serialize()
-  readonly minimum: number
-
-  @Serialize()
-  readonly maximum: number
 
   @Serialize()
   readonly duration: number
@@ -46,46 +29,42 @@ export class Animation extends Serializable {
 
     const time = this.currentTime % this.duration
 
-    Object.entries(armature.bones).forEach(([name, bone]) => {
-      const transform = this.calculateTransform(name, time)
-
-      bone.update(armature, transform)
+    Object.entries(armature.rootBones).forEach(([name, bone]) => {
+      bone.update(name, armature, this, time)
     })
   }
 
-  private calculateTransform(bone: string, time: number): BoneTransform {
-    const keyframes = this.keyframes[bone]
-
+  transform(keyframes: Keyframes, time: number): Transform {
     if (!keyframes) {
-      return BoneTransform.identity
+      return Transform.origin
     }
 
     const { translation, rotation, scale } = keyframes
 
-    return {
+    return new Transform({
       translation: this.interpolateKeyframes(time, translation, vec3.interpolate),
       rotation: this.interpolateKeyframes(time, rotation, quat.interpolate),
       scale: this.interpolateKeyframes(time, scale, vec3.interpolate)
-    }
+    })
   }
 
   private interpolateKeyframes<T extends vec3 | quat>(
     time: number,
     keyframes: Keyframe<T>[],
-    interpolate: Interpolate<T>
+    interpolate: (v1: T, v2: T, t: number) => T
   ): T {
     for (let i = 0; i < keyframes.length - 1; i++) {
       const k1 = keyframes[i]
       const k2 = keyframes[i + 1]
 
-      const i1 = k1.index
-      const i2 = k2.index
+      const t1 = k1.time
+      const t2 = k2.time
 
-      const v1 = k1.value as T
-      const v2 = k2.value as T
+      const v1 = k1.value
+      const v2 = k2.value
 
-      if (time >= i1 && time <= i2) {
-        return interpolate(v1, v2, (time - i1) / (i2 - i1))
+      if (time >= t1 && time <= t2) {
+        return interpolate(v1, v2, (time - t1) / (t2 - t1))
       }
     }
 
