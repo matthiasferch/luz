@@ -1,29 +1,38 @@
 import { Serializable, Serialize } from '@luz/utilities'
+import { Animation } from './animation'
 import { Bone } from './bone'
 
 export class Armature extends Serializable {
   @Serialize(Bone)
-  readonly bones: Record<string, Bone> = {}
+  readonly bones: Bone[] = []
 
-  readonly rootBones: Record<string, Bone> = {}
+  readonly rootBones: Bone[] = []
 
   static async deserialize(data: Partial<Armature>) {
     const armature = (await super.deserialize(data)) as Armature
 
-    Object.entries(armature.bones).forEach(([name, bone]) => {
+    armature.bones.forEach((bone) => {
       if (bone.parent) {
-        const parentBone = armature.bones[bone.parent]
+        const parentBone = armature.bones.find(({ name }) => name === bone.parent)
 
         if (!parentBone) {
-          throw new Error(`Missing parent ${bone.parent} for bone ${name}`)
+          throw new Error(`Missing parent ${bone.parent} for bone ${bone.name}`)
         }
 
-        parentBone.childBones[name] = bone
+        bone.parentBone = parentBone
+
+        parentBone.childBones.push(bone)
       } else {
-        armature.rootBones[name] = bone
+        armature.rootBones.push(bone)
       }
     })
 
     return armature
+  }
+
+  update(deltaTime: number, animations: Animation[]) {
+    this.rootBones.forEach((bone) => {
+      bone.update(deltaTime, animations)
+    })
   }
 }

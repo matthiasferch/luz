@@ -359,6 +359,7 @@ export class quat extends Float32Array {
 
     if (cos < 0.0) {
       q2a.invert()
+
       cos = -cos
     }
 

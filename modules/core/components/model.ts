@@ -34,5 +34,17 @@ export class Model extends Component {
     return model
   }
 
-  update(transform: Transform, deltaTime: number) {}
+  update(transform: Transform, deltaTime: number) {
+    const animations = Object.values(this.animations)
+
+    animations.forEach((animation) => {
+      animation.update(deltaTime)
+    })
+
+    const armatures = Object.values(this.armatures)
+
+    armatures.forEach((armature) => {
+      armature.update(deltaTime, animations)
+    })
+  }
 }
