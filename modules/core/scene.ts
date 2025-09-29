@@ -24,9 +24,9 @@ export class Scene extends Serializable {
   private readonly timestep: number = 1000 / 60
   private readonly velocityIterations: number = 8
   private readonly positionIterations: number = 8
-  private readonly penetrationAllowance: number = 1.1e-3
-  private readonly positionCorrectionFactor: number = 0.8
-  private readonly contactRestVelocity: number = 1e-3
+  private readonly penetrationAllowance: number = 0.0005
+  private readonly positionCorrectionFactor: number = 0.2
+  private readonly contactRestVelocity: number = 0.001
 
   constructor() {
     super()
@@ -82,7 +82,7 @@ export class Scene extends Serializable {
         break
       }
 
-      this.resolveVelocities(0.0, 0.4)
+      this.resolveVelocities(0.1, 0.4)
     }
 
     for (let iteration = 0; iteration < this.positionIterations; iteration++) {
@@ -146,25 +146,45 @@ export class Scene extends Serializable {
     this.collisionManifolds.forEach(({ bodies, collisions }) => {
       const [b1, b2] = bodies // b1 is dynamic, b2 could be null (static geometry)
 
-      collisions.forEach(({ contact, normal, distance }) => {
-        const r1 = vec3.subtract(contact, b1.volume.center) // Vector from b1's center of mass to contact point
+      collisions.forEach(({ contact, normal: collisionNormal, distance }) => {
+        const r1 = vec3.subtract(contact, b1.volume.center, new vec3()) // Vector from b1's center of mass to contact point
+
+        const normal = collisionNormal.copy()
+        const directionToOther = b2
+          ? vec3.subtract(b2.volume.center, b1.volume.center, new vec3())
+          : r1.copy(new vec3())
+
+        if (directionToOther.length > 0 && vec3.dot(normal, directionToOther) < 0) {
+          normal.scale(-1)
+        }
+
+        const contactVelocity1 = vec3.add(
+          b1.linearVelocity,
+          vec3.cross(b1.angularVelocity, r1, new vec3()),
+          new vec3()
+        )
+
+        const contactVelocity2 = b2
+          ? vec3.add(
+              b2.linearVelocity,
+              vec3.cross(b2.angularVelocity, vec3.subtract(contact, b2.volume.center, new vec3()), new vec3()),
+              new vec3()
+            )
+          : null
 
         // Calculate relative velocity at the contact point
-        const relativeVelocity = vec3.subtract(
-          b2
-            ? vec3.add(b2.linearVelocity, vec3.cross(b2.angularVelocity, vec3.subtract(contact, b2.volume.center)))
-            : vec3.zero,
-          vec3.add(b1.linearVelocity, vec3.cross(b1.angularVelocity, r1))
-        )
+        const relativeVelocity = contactVelocity2
+          ? vec3.subtract(contactVelocity2, contactVelocity1, new vec3())
+          : vec3.subtract(vec3.zero, contactVelocity1, new vec3())
 
         // Decompose relative velocity into normal and tangential components
         const velocityAlongNormal = vec3.dot(relativeVelocity, normal)
 
-        if (b2 && velocityAlongNormal > 0) {
+        if (velocityAlongNormal > 0) {
           return // Bodies are moving apart, no need to resolve the collision
         }
 
-        const tangent = vec3.subtract(relativeVelocity, vec3.scale(normal, velocityAlongNormal))
+        const tangent = vec3.subtract(relativeVelocity, vec3.scale(normal, velocityAlongNormal, new vec3()))
         const tangentLength = tangent.length
         const tangentDirection = tangentLength > 0 ? tangent.normalize() : vec3.zero
 

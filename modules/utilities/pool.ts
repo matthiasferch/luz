@@ -40,7 +40,7 @@ export class Pool<T> {
       this.allocate(this.batchSize)
     }
 
-    return this.pool.pop() // return last object in pool
+    return this.pool.pop() as T // return last object in pool
   }
 
   release(object: T) {

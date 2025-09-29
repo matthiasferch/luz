@@ -4,7 +4,7 @@
   "types": "dist/index.d.ts",
   "author": "Matthias Ferch",
   "scripts": {
-    "test": "mocha -r ts-node/register test/**/*.spec.ts",
+    "test": "npm --prefix ./modules/tests run test",
     "clean": "rimraf ./dist",
     "build": "npm run clean && webpack",
     "watch": "webpack --watch"
