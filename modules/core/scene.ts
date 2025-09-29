@@ -24,6 +24,9 @@ export class Scene extends Serializable {
   private readonly timestep: number = 1000 / 60
   private readonly velocityIterations: number = 8
   private readonly positionIterations: number = 8
+  private readonly penetrationAllowance: number = 1.1e-3
+  private readonly positionCorrectionFactor: number = 0.8
+  private readonly contactRestVelocity: number = 1e-3
 
   constructor() {
     super()
@@ -45,7 +48,7 @@ export class Scene extends Serializable {
     // transform bodies
     entities.forEach((entity) => {
       Object.values(entity.bodies).forEach((body) => {
-        body.transform(entity)
+        body.applyTransform(entity)
       })
     })
 
@@ -177,15 +180,17 @@ export class Scene extends Serializable {
           return // No response needed if both bodies are static
         }
 
+        if (Math.abs(velocityAlongNormal) < this.contactRestVelocity && distance <= this.penetrationAllowance) {
+          return
+        }
+
         // Calculate impulse for the normal direction
         const normalImpulse = vec3.scale(normal, impulseScalar / totalInverseMass)
 
-        // Apply linear impulse to b1 (if dynamic)
         if (inverseMass1 > 0) {
           b1.linearVelocity.subtract(vec3.scale(normalImpulse, inverseMass1))
         }
 
-        // Apply the linear impulse to b2 (if dynamic)
         if (b2 && inverseMass2 > 0) {
           b2.linearVelocity.add(vec3.scale(normalImpulse, inverseMass2))
         }
@@ -223,9 +228,6 @@ export class Scene extends Serializable {
   }
 
   private resolvePositions(): boolean {
-    const correctionFactor = 1.0
-    const penetrationSlop = 1e-4
-
     let appliedCorrection = false
 
     this.collisionManifolds.forEach(({ bodies, collisions }) => {
@@ -240,13 +242,13 @@ export class Scene extends Serializable {
           return
         }
 
-        const correctedDistance = Math.max(distance - penetrationSlop, 0)
+        const correctedDistance = Math.max(distance - this.penetrationAllowance, 0)
 
         if (correctedDistance <= 0) {
           return
         }
 
-        const correctionMagnitude = (correctedDistance * correctionFactor) / totalInverseMass
+        const correctionMagnitude = (correctedDistance * this.positionCorrectionFactor) / totalInverseMass
         const correction = vec3.scale(normal, correctionMagnitude, new vec3())
 
         if (inverseMass1 > 0) {

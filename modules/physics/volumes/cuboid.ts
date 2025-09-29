@@ -20,7 +20,7 @@ export class Cuboid extends Volume {
     this.axes = vec3.axes.map((axis) => axis.copy()) // Local axes, initially aligned with world axes
   }
 
-  transform(transform: Transform) {
+  applyTransform(transform: Transform) {
     const { translation, rotation } = transform
 
     // Update the center of the cuboid

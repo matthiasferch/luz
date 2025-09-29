@@ -17,7 +17,7 @@ export class Sphere extends Volume {
     this.radius = radius
   }
 
-  transform(transform: Transform) {
+  applyTransform(transform: Transform) {
     const { translation } = transform
 
     vec3.add(this.origin, translation, this.center)

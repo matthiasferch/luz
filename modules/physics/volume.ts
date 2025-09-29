@@ -29,7 +29,7 @@ export abstract class Volume extends Collider {
     }
   }
 
-  abstract transform(transform: Transform): void
+  abstract applyTransform(transform: Transform): void
 
   abstract calculateInverseInertia(mass: number, transform: Transform): void
 }

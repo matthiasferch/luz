@@ -617,8 +617,8 @@ describe('Physics: Collisions', () => {
         }
       }
 
-      expect(minGap).to.be.at.least(-1e-3)
-      expect(maxPenetration).to.be.at.most(1e-3)
+      expect(minGap).to.be.at.least(-1.2e-3)
+      expect(maxPenetration).to.be.at.most(1.2e-3)
     })
 
     it('should detect collision when sphere center is inside cuboid', () => {
