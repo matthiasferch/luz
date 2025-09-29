@@ -14,6 +14,7 @@ import {
   collideRayWithSphere,
   collideRayWithCuboid
 } from '@luz/physics'
+import { Scene, Entity, Body } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 import { expect } from 'chai'
 
@@ -491,6 +492,157 @@ describe('Physics: Collisions', () => {
       expect(collisions[0].contact.xyz).to.deep.equal(new vec3([0, -1, 0]).xyz)
       expect(collisions[0].normal.xyz).to.deep.equal(vec3.down.xyz)
       expect(collisions[0].distance).to.equal(0)
+    })
+
+    it('should detect collision when sphere is beside cuboid along x axis', () => {
+      const cuboid = new Cuboid({
+        origin: new vec3([0, 0, 0]),
+        extents: new vec3([1, 2, 3])
+      })
+
+      const sphere = new Sphere({
+        origin: new vec3([2, 0.5, -0.75]),
+        radius: 1
+      })
+
+      const collisions = collideSphereWithCuboid(sphere, cuboid)
+
+      expect(collisions).to.not.be.null
+      expect(collisions).to.have.lengthOf(1)
+
+      expect(collisions[0].contact.xyz).to.deep.equal(new vec3([1, 0.5, -0.75]).xyz)
+      expect(collisions[0].normal.xyz).to.deep.equal(vec3.right.xyz)
+      expect(collisions[0].distance).to.equal(0)
+    })
+
+    it('should detect collision when sphere grazes a cuboid corner', () => {
+      const cuboid = new Cuboid({
+        origin: new vec3([0, 0, 0]),
+        extents: new vec3([1, 1, 1])
+      })
+
+      const radius = Math.sqrt(0.5)
+
+      const sphere = new Sphere({
+        origin: new vec3([1.5, 1.5, 0]),
+        radius
+      })
+
+      const collisions = collideSphereWithCuboid(sphere, cuboid)
+
+      expect(collisions).to.not.be.null
+      expect(collisions).to.have.lengthOf(1)
+
+      expect(collisions[0].contact.xyz).to.deep.equal(new vec3([1, 1, 0]).xyz)
+
+      const expectedNormal = vec3.normalize(new vec3([1, 1, 0]))
+      expect(collisions[0].normal.xyz).to.deep.equal(expectedNormal.xyz)
+      expect(collisions[0].distance).to.be.closeTo(0, 1e-6)
+    })
+
+
+    it('should resolve a falling sphere against a stationary cuboid without sinking', () => {
+      const cuboid = new Cuboid({
+        origin: new vec3([0, 0, 0]),
+        extents: new vec3([10, 1, 10])
+      })
+
+      const sphere = new Sphere({
+        origin: new vec3([0, 10, 0]),
+        radius: 1
+      })
+
+      const velocity = vec3.zero.copy()
+      const gravity = new vec3([0, -9.81, 0])
+      const delta = 1 / 60
+
+      for (let i = 0; i < 240; i++) {
+        vec3.add(velocity, vec3.scale(gravity, delta, new vec3()), velocity)
+        vec3.add(sphere.center, vec3.scale(velocity, delta, new vec3()), sphere.center)
+
+        const collisions = collideSphereWithCuboid(sphere, cuboid)
+
+        if (collisions && collisions.length > 0) {
+          const { normal, distance } = collisions[0]
+
+          vec3.add(sphere.center, vec3.scale(normal, distance, new vec3()), sphere.center)
+
+          const normalVelocity = vec3.dot(velocity, normal)
+
+          if (normalVelocity < 0) {
+            vec3.add(velocity, vec3.scale(normal, -normalVelocity, new vec3()), velocity)
+          }
+        }
+      }
+
+      expect(sphere.center.y).to.be.greaterThanOrEqual(cuboid.extents.y + sphere.radius - 1e-4)
+    })
+    it('should keep a moving sphere from penetrating a cuboid in the scene integrator', () => {
+      const scene = new Scene()
+      scene.gravity.reset()
+
+      const sphereEntity = new Entity()
+      const sphereBody = new Body()
+      sphereBody.volume = new Sphere({ radius: 1 })
+      sphereEntity.bodies['Body'] = sphereBody
+      sphereEntity.translation.set([-1, 3, 0])
+      scene.entities['Sphere'] = sphereEntity
+
+      const cuboidEntity = new Entity()
+      const cuboidBody = new Body({ mass: 5 })
+      cuboidBody.volume = new Cuboid({ extents: new vec3([1, 1, 1]) })
+      cuboidEntity.bodies['Body'] = cuboidBody
+      cuboidEntity.translation.set([2, 3, 1])
+      scene.entities['Cuboid'] = cuboidEntity
+
+      sphereBody.force.add(new vec3([0.00025, 0, 0]))
+
+      const step = 1000 / 60
+      let minGap = Infinity
+      let maxPenetration = 0
+
+      for (let i = 0; i < 360; i++) {
+        scene.update(step)
+
+        const sphereVolume = sphereBody.volume as Sphere
+        const cuboidVolume = cuboidBody.volume as Cuboid
+
+        const leftFace = cuboidVolume.center.x - cuboidVolume.extents.x
+        const sphereRight = sphereVolume.center.x + sphereVolume.radius
+        minGap = Math.min(minGap, leftFace - sphereRight)
+
+        const collisions = collideSphereWithCuboid(sphereVolume, cuboidVolume)
+        if (collisions && collisions.length > 0) {
+          maxPenetration = Math.max(maxPenetration, collisions[0].distance)
+        }
+      }
+
+      expect(minGap).to.be.at.least(-1e-3)
+      expect(maxPenetration).to.be.at.most(1e-3)
+    })
+
+    it('should detect collision when sphere center is inside cuboid', () => {
+      const cuboid = new Cuboid({
+        origin: new vec3([0, 0, 0]),
+        extents: new vec3([1, 1, 1])
+      })
+
+      const sphere = new Sphere({
+        origin: new vec3([0.2, -0.3, 0.4]),
+        radius: 0.6
+      })
+
+      const collisions = collideSphereWithCuboid(sphere, cuboid)
+
+      expect(collisions).to.not.be.null
+      expect(collisions).to.have.lengthOf(1)
+
+      expect(collisions[0].contact.xyz).to.deep.equal(new vec3([0.2, -0.3, 1]).xyz)
+      expect(collisions[0].normal.xyz).to.deep.equal(vec3.forward.xyz)
+
+      const clearance = cuboid.extents.z - Math.abs(sphere.center.z - cuboid.center.z)
+      const expectedPenetration = Math.max(0, sphere.radius - clearance)
+      expect(collisions[0].distance).to.be.closeTo(expectedPenetration, 1e-6)
     })
   })
 

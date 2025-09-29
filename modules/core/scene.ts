@@ -22,6 +22,8 @@ export class Scene extends Serializable {
   private elapsedTime: number = 0
 
   private readonly timestep: number = 1000 / 60
+  private readonly velocityIterations: number = 8
+  private readonly positionIterations: number = 8
 
   constructor() {
     super()
@@ -48,16 +50,17 @@ export class Scene extends Serializable {
     })
 
     while (this.elapsedTime >= this.timestep) {
-      const bodies = entities.reduce((bodies: Body[], entity) => {
-        return [...bodies, ...Object.values(entity.bodies)]
+      const bodies = entities.reduce((acc: Body[], entity) => {
+        return [...acc, ...Object.values(entity.bodies)]
       }, [])
 
-      this.updatePhysics(bodies)
+      this.applyGravity(bodies)
 
-      // fixed update
       entities.forEach((entity) => {
         entity.fixedUpdate(this.timestep)
       })
+
+      this.solveCollisions(bodies)
 
       this.elapsedTime -= this.timestep
     }
@@ -68,11 +71,30 @@ export class Scene extends Serializable {
     })
   }
 
-  private updatePhysics(bodies: Body[]) {
-    this.applyGravity(bodies)
-    this.detectCollisions(bodies)
+  private solveCollisions(bodies: Body[]) {
+    for (let iteration = 0; iteration < this.velocityIterations; iteration++) {
+      this.detectCollisions(bodies)
 
-    this.resolveCollisions(0.0, 0.4)
+      if (this.collisionManifolds.length === 0) {
+        break
+      }
+
+      this.resolveVelocities(0.0, 0.4)
+    }
+
+    for (let iteration = 0; iteration < this.positionIterations; iteration++) {
+      this.detectCollisions(bodies)
+
+      if (this.collisionManifolds.length === 0) {
+        break
+      }
+
+      const applied = this.resolvePositions()
+
+      if (!applied) {
+        break
+      }
+    }
   }
 
   private applyGravity(bodies: Body[]) {
@@ -84,11 +106,12 @@ export class Scene extends Serializable {
   private detectCollisions(bodies: Body[]) {
     this.collisionManifolds.length = 0 // Reset the collisions array for each frame
 
-    bodies.forEach((b1) => {
-      bodies.forEach((b2) => {
-        if (b1 === b2) return // Skip self-collision
+    for (let i = 0; i < bodies.length; i++) {
+      const b1 = bodies[i]
 
-        // Get the collision manifold from the dispatcher
+      for (let j = i + 1; j < bodies.length; j++) {
+        const b2 = bodies[j]
+
         const collisions = this.collisionDispatcher.dispatch(b1.volume, b2.volume)
 
         if (collisions && collisions.length > 0) {
@@ -97,8 +120,8 @@ export class Scene extends Serializable {
             collisions
           })
         }
-      })
-    })
+      }
+    }
 
     bodies.forEach((body) => {
       const colliders = Object.values(this.colliders)
@@ -116,7 +139,7 @@ export class Scene extends Serializable {
     })
   }
 
-  private resolveCollisions(friction: number, restitution: number) {
+  private resolveVelocities(friction: number, restitution: number) {
     this.collisionManifolds.forEach(({ bodies, collisions }) => {
       const [b1, b2] = bodies // b1 is dynamic, b2 could be null (static geometry)
 
@@ -195,19 +218,49 @@ export class Scene extends Serializable {
         }
 
         // --- End of Rolling Calculation ---
+      })
+    })
+  }
 
-        // Apply positional correction to prevent sinking/penetration (using distance)
-        const correctionFactor = 0.8 // Tunable correction factor for positional adjustment
-        const correction = vec3.scale(normal, (distance * correctionFactor) / totalInverseMass)
+  private resolvePositions(): boolean {
+    const correctionFactor = 1.0
+    const penetrationSlop = 1e-4
+
+    let appliedCorrection = false
+
+    this.collisionManifolds.forEach(({ bodies, collisions }) => {
+      const [b1, b2] = bodies
+
+      collisions.forEach(({ normal, distance }) => {
+        const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
+        const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
+        const totalInverseMass = inverseMass1 + inverseMass2
+
+        if (totalInverseMass === 0) {
+          return
+        }
+
+        const correctedDistance = Math.max(distance - penetrationSlop, 0)
+
+        if (correctedDistance <= 0) {
+          return
+        }
+
+        const correctionMagnitude = (correctedDistance * correctionFactor) / totalInverseMass
+        const correction = vec3.scale(normal, correctionMagnitude, new vec3())
 
         if (inverseMass1 > 0) {
-          b1.linearCorrection.add(vec3.scale(correction, inverseMass1))
+          b1.applyPositionCorrection(vec3.scale(correction, inverseMass1, new vec3()))
+          appliedCorrection = true
         }
 
         if (b2 && inverseMass2 > 0) {
-          b2.linearCorrection.subtract(vec3.scale(correction, inverseMass2)) // Move b2 in the opposite direction
+          b2.applyPositionCorrection(vec3.scale(correction, -inverseMass2, new vec3()))
+          appliedCorrection = true
         }
       })
     })
+
+    return appliedCorrection
   }
 }

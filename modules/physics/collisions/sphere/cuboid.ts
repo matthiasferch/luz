@@ -3,34 +3,94 @@ import { Collision } from '../../collision'
 import { Cuboid } from '../../volumes/cuboid'
 import { Sphere } from '../../volumes/sphere'
 
+const EPSILON = 1e-6
+
 export function collideSphereWithCuboid(sphere: Sphere, cuboid: Cuboid): Collision[] | null {
-  // Step 1: Find the closest point on the cuboid's surface to the sphere's center
-  const closestPoint = new vec3([
-    Math.max(cuboid.center.x - cuboid.extents.x, Math.min(sphere.center.x, cuboid.center.x + cuboid.extents.x)),
-    Math.max(cuboid.center.y - cuboid.extents.y, Math.min(sphere.center.y, cuboid.center.y + cuboid.extents.y)),
-    Math.max(cuboid.center.z - cuboid.extents.z, Math.min(sphere.center.z, cuboid.center.z + cuboid.extents.z))
-  ])
+  const extents = [cuboid.extents.x, cuboid.extents.y, cuboid.extents.z]
+  const axes = cuboid.axes
+  const relative = vec3.subtract(sphere.center, cuboid.center)
 
-  // Step 2: Calculate the distance from the closest point to the sphere's center
-  const distanceToCuboid = vec3.distance(closestPoint, sphere.center)
+  const local: number[] = []
+  const closestPoint = cuboid.center.copy()
 
-  // Step 3: Check if a collision has occurred (i.e., distance to cuboid is less than the sphere's radius)
-  if (distanceToCuboid <= sphere.radius) {
-    // Step 4: Calculate the correct normal (from cuboid surface to sphere center)
-    const normal = vec3.subtract(sphere.center, closestPoint).normalize()
+  for (let i = 0; i < 3; i++) {
+    const axis = axes[i]
+    const projection = vec3.dot(relative, axis)
+    local[i] = projection
 
-    // Step 5: Compute the penetration depth
-    const penetrationDepth = sphere.radius - distanceToCuboid
+    const extent = extents[i]
+    const clampedProjection = Math.max(-extent, Math.min(projection, extent))
 
-    // Return the collision details
+    const contribution = vec3.scale(axis, clampedProjection, new vec3())
+    vec3.add(closestPoint, contribution, closestPoint)
+  }
+
+  const offset = vec3.subtract(sphere.center, closestPoint)
+  const distanceSquared = offset.squaredLength
+  const radius = sphere.radius
+
+  if (distanceSquared > radius * radius) {
+    return null
+  }
+
+  if (distanceSquared > EPSILON * EPSILON) {
+    const distance = Math.sqrt(distanceSquared)
+    const normal = offset.scale(1 / distance)
+    const penetrationDepth = radius - distance
+
     return [
       {
         contact: closestPoint.copy(),
-        normal: normal.copy(), // This will point from the cuboid toward the sphere
+        normal: normal.copy(),
         distance: penetrationDepth
       }
     ]
   }
 
-  return null // No collision
+  let bestAxis = 0
+  let bestDistance = Infinity
+
+  for (let i = 0; i < 3; i++) {
+    const extent = extents[i]
+    const projection = local[i]
+    const distanceToFace = Math.max(0, extent - Math.abs(projection))
+
+    if (distanceToFace < bestDistance) {
+      bestDistance = distanceToFace
+      bestAxis = i
+    }
+  }
+
+  const axis = axes[bestAxis]
+  const extent = extents[bestAxis]
+  const projection = local[bestAxis]
+  const sign = projection >= 0 ? 1 : -1
+  const distanceToFace = extent - Math.abs(projection)
+
+  const surfaceOffset = sign * distanceToFace
+  const contact = vec3.add(
+    sphere.center,
+    vec3.scale(axis, surfaceOffset, new vec3()),
+    new vec3()
+  )
+
+  let penetrationDepth = radius - distanceToFace
+
+  if (penetrationDepth < -EPSILON) {
+    return null
+  }
+
+  if (penetrationDepth < 0) {
+    penetrationDepth = 0
+  }
+
+  const normal = axis.copy().scale(sign)
+
+  return [
+    {
+      contact,
+      normal: normal.copy(),
+      distance: penetrationDepth
+    }
+  ]
 }

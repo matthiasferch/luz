@@ -1,4 +1,4 @@
-import { vec3 } from '@luz/vectors'
+﻿import { vec3 } from '@luz/vectors'
 import { Plane } from '../../colliders/plane'
 import { Ray } from '../../colliders/ray'
 import { Collision } from '../../collision'
@@ -19,7 +19,8 @@ export const collideRayWithPlane = (ray: Ray, plane: Plane): Collision | null =>
     return null
   }
 
-  const p = vec3.add(o, vec3.scale(e, t))
+  const contactOffset = vec3.scale(e, t, new vec3())
+  const contact = vec3.add(o, contactOffset, new vec3())
 
-  return { contact: p, normal: n, distance: t }
+  return { contact, normal: n.copy(), distance: t }
 }

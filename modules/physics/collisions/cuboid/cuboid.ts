@@ -1,53 +1,77 @@
-import { Epsilon, vec3 } from '@luz/vectors'
+﻿import { Epsilon, vec3 } from '@luz/vectors'
 import { Collision } from '../../collision'
 import { Cuboid } from '../../volumes/cuboid'
 
-const { min, max } = Math
-
 export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Collision | null => {
-  const { center: c1, extents: e1 } = cuboid1
-  const { center: c2, extents: e2 } = cuboid2
+  const axes1 = cuboid1.axes
+  const axes2 = cuboid2.axes
+  const extents1 = cuboid1.extents
+  const extents2 = cuboid2.extents
+  const center1 = cuboid1.center
+  const center2 = cuboid2.center
 
-  let n: vec3 | null = null
-  let d = Infinity
+  let normal: vec3 | null = null
+  let penetration = Infinity
 
-  const testAxis = (axis: vec3) => {
-    if (axis.length < Epsilon) {
+  const centerDelta = vec3.subtract(center2, center1)
+
+  const projectExtent = (axis: vec3, axes: vec3[], extents: vec3): number => {
+    return (
+      Math.abs(vec3.dot(axis, axes[0])) * extents.x +
+      Math.abs(vec3.dot(axis, axes[1])) * extents.y +
+      Math.abs(vec3.dot(axis, axes[2])) * extents.z
+    )
+  }
+
+  const testAxis = (candidate: vec3) => {
+    const axisLength = candidate.length
+
+    if (axisLength < Epsilon) {
       return true
     }
 
-    const x = vec3.absolute(axis)
+    const axis = vec3.scale(candidate, 1 / axisLength, new vec3())
 
-    const m1 = [
-      vec3.dot(c1, axis) - vec3.dot(e1, x),
-      vec3.dot(c1, axis) + vec3.dot(e1, x)
-    ]
+    const projection1 = projectExtent(axis, axes1, extents1)
+    const projection2 = projectExtent(axis, axes2, extents2)
 
-    const m2 = [
-      vec3.dot(c2, axis) - vec3.dot(e2, x),
-      vec3.dot(c2, axis) + vec3.dot(e2, x)
-    ]
+    const centerProjection1 = vec3.dot(center1, axis)
+    const centerProjection2 = vec3.dot(center2, axis)
 
-    if (m1[1] < m2[0] || m2[1] < m1[0]) {
+    const min1 = centerProjection1 - projection1
+    const max1 = centerProjection1 + projection1
+    const min2 = centerProjection2 - projection2
+    const max2 = centerProjection2 + projection2
+
+    if (max1 < min2 || max2 < min1) {
       return false
     }
 
-    const o = min(m1[1], m2[1]) - max(m1[0], m2[0])
+    const overlap = Math.min(max1, max2) - Math.max(min1, min2)
 
-    if (o < d) {
-      d = o
-      n = axis
+    if (overlap < penetration) {
+      penetration = overlap
+
+      const alignment = vec3.dot(centerDelta, axis)
+      normal = alignment < 0 ? vec3.scale(axis, -1, new vec3()) : axis
     }
 
     return true
   }
 
   for (let i = 0; i < 3; i++) {
+    if (!testAxis(axes1[i])) {
+      return null
+    }
+
+    if (!testAxis(axes2[i])) {
+      return null
+    }
+  }
+
+  for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
-      const axis = vec3.cross(
-        cuboid1.axes[i],
-        cuboid2.axes[j]
-      )
+      const axis = vec3.cross(axes1[i], axes2[j])
 
       if (!testAxis(axis)) {
         return null
@@ -55,17 +79,12 @@ export const collideCuboidWithCuboid = (cuboid1: Cuboid, cuboid2: Cuboid): Colli
     }
   }
 
-  for (let i = 0; i < 3; i++) {
-    if (!testAxis(cuboid1.axes[i])) {
-      return null
-    }
-
-    if (!testAxis(cuboid2.axes[i])) {
-      return null
-    }
+  if (!normal || penetration === Infinity) {
+    return null
   }
 
-  const p = vec3.add(c1, c2).scale(0.5)
+  const contact = vec3.add(center1, center2, new vec3())
+  contact.scale(0.5)
 
-  return { normal: n!, contact: p, distance: d }
+  return { normal, contact, distance: penetration }
 }

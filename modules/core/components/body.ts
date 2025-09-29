@@ -19,8 +19,9 @@ export class Body extends Component {
   readonly linearVelocity: vec3
   readonly angularVelocity: vec3
 
-  readonly linearCorrection: vec3
   readonly angularCorrection: vec3
+
+  private transformRef: Transform | null = null
 
   constructor({ mass = 1.0 } = {}) {
     super()
@@ -33,14 +34,23 @@ export class Body extends Component {
     this.linearVelocity = vec3.zero.copy()
     this.angularVelocity = vec3.zero.copy()
 
-    this.linearCorrection = vec3.zero.copy()
     this.angularCorrection = vec3.zero.copy()
   }
 
   transform(transform: Transform) {
     const { volume } = this
 
+    this.transformRef = transform
     volume.transform(transform)
+  }
+
+  applyPositionCorrection(delta: vec3) {
+    if (!this.transformRef) {
+      return
+    }
+
+    this.transformRef.translation.add(delta)
+    this.volume.transform(this.transformRef)
   }
 
   update(transform: Transform, deltaTime: number) {
@@ -59,9 +69,7 @@ export class Body extends Component {
 
     transform.translation.add(vec3.scale(this.linearVelocity, deltaTime))
 
-    transform.translation.add(this.linearCorrection)
-
-    this.linearCorrection.reset()
+    this.volume.transform(transform)
 
     this.force.reset()
   }

@@ -1,30 +1,89 @@
-import { vec3 } from '@luz/vectors'
+﻿import { vec3 } from '@luz/vectors'
 import { Ray } from '../../colliders/ray'
 import { Collision } from '../../collision'
 import { Cuboid } from '../../volumes/cuboid'
 
-const { min, max } = Math
+const EPSILON = 1e-6
 
 export const collideRayWithCuboid = (ray: Ray, cuboid: Cuboid): Collision | null => {
-  const { origin: o, direction: n } = ray
-  const { center: c, extents: e } = cuboid
-  
-  const maximum = vec3.add(c, e)
-  const minimum = vec3.subtract(c, e)
+  const axes = cuboid.axes
+  const extents = [cuboid.extents.x, cuboid.extents.y, cuboid.extents.z]
 
-  const s1 = vec3.subtract(minimum, o).divide(n)
-  const s2 = vec3.subtract(maximum, o).divide(n)
+  const relativeOrigin = vec3.subtract(ray.origin, cuboid.center)
 
-  const m1 = max(min(s1.x, s2.x), min(s1.y, s2.y), min(s1.z, s2.z))
-  const m2 = min(max(s1.x, s2.x), max(s1.y, s2.y), max(s1.z, s2.z))
+  let tMin = -Infinity
+  let tMax = Infinity
+  let entryAxis = -1
+  let exitAxis = -1
+  let entrySign = 1
+  let exitSign = 1
 
-  if (m2 < 0 || m1 > m2) {
+  for (let i = 0; i < 3; i++) {
+    const axis = axes[i]
+    const extent = extents[i]
+
+    const originProjection = vec3.dot(relativeOrigin, axis)
+    const directionProjection = vec3.dot(ray.direction, axis)
+
+    if (Math.abs(directionProjection) < EPSILON) {
+      if (originProjection < -extent || originProjection > extent) {
+        return null
+      }
+
+      continue
+    }
+
+    const inverseDirection = 1 / directionProjection
+
+    let t1 = (-extent - originProjection) * inverseDirection
+    let t2 = (extent - originProjection) * inverseDirection
+
+    let faceEntrySign = -1
+    let faceExitSign = 1
+
+    if (t1 > t2) {
+      ;[t1, t2] = [t2, t1]
+      ;[faceEntrySign, faceExitSign] = [faceExitSign, faceEntrySign]
+    }
+
+    if (t1 > tMin) {
+      tMin = t1
+      entryAxis = i
+      entrySign = faceEntrySign
+    }
+
+    if (t2 < tMax) {
+      tMax = t2
+      exitAxis = i
+      exitSign = faceExitSign
+    }
+
+    if (tMin > tMax) {
+      return null
+    }
+  }
+
+  if (tMax < 0) {
     return null
   }
 
-  const d = (m1 < 0) ? m2 : m1
+  const distance = tMin >= 0 ? tMin : tMax
 
-  const p = vec3.add(o, n).scale(d)
+  if (distance < 0) {
+    return null
+  }
 
-  return { contact: p, normal: n, distance: d }
+  const axisIndex = tMin >= 0 ? entryAxis : exitAxis
+  const sign = tMin >= 0 ? entrySign : exitSign
+
+  if (axisIndex < 0) {
+    return null
+  }
+
+  const contactOffset = vec3.scale(ray.direction, distance, new vec3())
+  const contact = vec3.add(ray.origin, contactOffset, new vec3())
+
+  const normal = axes[axisIndex].copy().scale(-sign)
+
+  return { contact, normal, distance }
 }
