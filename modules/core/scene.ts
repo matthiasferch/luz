@@ -19,7 +19,7 @@ export class Scene extends Serializable {
   readonly gravity: vec3
 
   @Serialize()
-  readonly friction: number = 0.6
+  readonly friction: number = 0.2
 
   @Serialize()
   readonly restitution: number = 0.2
@@ -223,9 +223,9 @@ export class Scene extends Serializable {
           b2.linearVelocity.add(vec3.scale(normalImpulse, inverseMass2, new vec3()))
         }
 
-        // --- Simplified Rolling Without Slipping ---
+        // --- Tangential Friction Response ---
 
-        if (b1.volume instanceof Sphere && tangentLength > 0) {
+        if (tangentLength > 0) {
           const normalImpulseMagnitude = normalImpulse.length
           const maxFrictionImpulse = this.friction * normalImpulseMagnitude
           const desiredFrictionImpulse = Math.min(tangentLength / totalInverseMass, maxFrictionImpulse)
@@ -241,23 +241,26 @@ export class Scene extends Serializable {
               b2.linearVelocity.add(vec3.scale(frictionImpulse, inverseMass2, new vec3()))
             }
 
-            const sphereRadius = b1.volume.radius
+            // --- Rolling Adjustment For Spheres ---
+            if (b1.volume instanceof Sphere) {
+              const sphereRadius = b1.volume.radius
 
-            if (sphereRadius > 0) {
-              const tangentialVelocity = vec3.subtract(
-                b1.linearVelocity,
-                vec3.scale(normal, vec3.dot(b1.linearVelocity, normal), new vec3()),
-                new vec3()
-              )
-              const tangentialSpeed = tangentialVelocity.length
+              if (sphereRadius > 0) {
+                const tangentialVelocity = vec3.subtract(
+                  b1.linearVelocity,
+                  vec3.scale(normal, vec3.dot(b1.linearVelocity, normal), new vec3()),
+                  new vec3()
+                )
+                const tangentialSpeed = tangentialVelocity.length
 
-              const contactRadiusSq = r1.squaredLength
+                const contactRadiusSq = r1.squaredLength
 
-              if (tangentialSpeed > 0 && contactRadiusSq > 0) {
-                const rollingAngularVelocity = vec3
-                  .cross(r1, tangentialVelocity, new vec3())
-                  .scale(-1 / contactRadiusSq)
-                b1.angularVelocity.set(rollingAngularVelocity)
+                if (tangentialSpeed > 0 && contactRadiusSq > 0) {
+                  const rollingAngularVelocity = vec3
+                    .cross(r1, tangentialVelocity, new vec3())
+                    .scale(-1 / contactRadiusSq)
+                  b1.angularVelocity.set(rollingAngularVelocity)
+                }
               }
             }
           }
