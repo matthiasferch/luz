@@ -205,41 +205,54 @@ export class Scene extends Serializable {
         }
 
         // Calculate impulse for the normal direction
-        const normalImpulse = vec3.scale(normal, impulseScalar / totalInverseMass)
+        const normalImpulse = vec3.scale(normal, impulseScalar / totalInverseMass, new vec3())
 
         if (inverseMass1 > 0) {
-          b1.linearVelocity.subtract(vec3.scale(normalImpulse, inverseMass1))
+          b1.linearVelocity.subtract(vec3.scale(normalImpulse, inverseMass1, new vec3()))
         }
 
         if (b2 && inverseMass2 > 0) {
-          b2.linearVelocity.add(vec3.scale(normalImpulse, inverseMass2))
+          b2.linearVelocity.add(vec3.scale(normalImpulse, inverseMass2, new vec3()))
         }
 
         // --- Simplified Rolling Without Slipping ---
 
-        // Apply friction impulse to reduce sliding and create rolling
         if (b1.volume instanceof Sphere && tangentLength > 0) {
-          const frictionImpulseScalar = Math.min(friction * impulseScalar, tangentLength / totalInverseMass)
-          const frictionImpulse = vec3.scale(tangentDirection, frictionImpulseScalar)
+          const normalImpulseMagnitude = normalImpulse.length
+          const maxFrictionImpulse = friction * normalImpulseMagnitude
+          const desiredFrictionImpulse = Math.min(tangentLength / totalInverseMass, maxFrictionImpulse)
 
-          if (inverseMass1 > 0) {
-            b1.linearVelocity.subtract(vec3.scale(frictionImpulse, inverseMass1))
+          if (desiredFrictionImpulse > 0) {
+            const frictionImpulse = vec3.scale(tangentDirection, -desiredFrictionImpulse, new vec3())
+
+            if (inverseMass1 > 0) {
+              b1.linearVelocity.subtract(vec3.scale(frictionImpulse, inverseMass1, new vec3()))
+            }
+
+            if (b2 && inverseMass2 > 0) {
+              b2.linearVelocity.add(vec3.scale(frictionImpulse, inverseMass2, new vec3()))
+            }
+
+            const sphereRadius = b1.volume.radius
+
+            if (sphereRadius > 0) {
+              const tangentialVelocity = vec3.subtract(
+                b1.linearVelocity,
+                vec3.scale(normal, vec3.dot(b1.linearVelocity, normal), new vec3()),
+                new vec3()
+              )
+              const tangentialSpeed = tangentialVelocity.length
+
+              const contactRadiusSq = r1.squaredLength
+
+              if (tangentialSpeed > 0 && contactRadiusSq > 0) {
+                const rollingAngularVelocity = vec3
+                  .cross(r1, tangentialVelocity, new vec3())
+                  .scale(-1 / contactRadiusSq)
+                b1.angularVelocity.set(rollingAngularVelocity)
+              }
+            }
           }
-
-          if (b2 && inverseMass2 > 0) {
-            b2.linearVelocity.add(vec3.scale(frictionImpulse, inverseMass2))
-          }
-
-          // Calculate the angular velocity based on linear velocity for rolling without slipping
-          const sphereRadius = b1.volume.radius // Assuming b1 is a sphere
-          const linearVelocity = b1.linearVelocity.length
-
-          // Apply angular velocity to match rolling condition: v = r * ω
-          const rollingAngularVelocity = vec3
-            .cross(normal, b1.linearVelocity)
-            .normalize()
-            .scale(linearVelocity / sphereRadius)
-          b1.angularVelocity.set(rollingAngularVelocity)
         }
 
         // --- End of Rolling Calculation ---
