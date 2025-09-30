@@ -5,9 +5,24 @@ import { Body } from './components/body'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 
+const timestep: number = 1000 / 60
+
+const velocityIterations: number = 8
+const positionIterations: number = 8
+
+const contactRestVelocity: number = 0.001
+const penetrationTolerance: number = 0.0005
+const positionCorrectionFactor: number = 0.2
+
 export class Scene extends Serializable {
   @Serialize()
   readonly gravity: vec3
+
+  @Serialize()
+  readonly friction: number = 0.6
+
+  @Serialize()
+  readonly restitution: number = 0.2
 
   @Serialize(Entity)
   readonly entities: Record<string, Entity> = {}
@@ -20,13 +35,6 @@ export class Scene extends Serializable {
   private collisionDispatcher: CollisionDispatcher
 
   private elapsedTime: number = 0
-
-  private readonly timestep: number = 1000 / 60
-  private readonly velocityIterations: number = 8
-  private readonly positionIterations: number = 8
-  private readonly penetrationAllowance: number = 0.0005
-  private readonly positionCorrectionFactor: number = 0.2
-  private readonly contactRestVelocity: number = 0.001
 
   constructor() {
     super()
@@ -52,7 +60,7 @@ export class Scene extends Serializable {
       })
     })
 
-    while (this.elapsedTime >= this.timestep) {
+    while (this.elapsedTime >= timestep) {
       const bodies = entities.reduce((acc: Body[], entity) => {
         return [...acc, ...Object.values(entity.bodies)]
       }, [])
@@ -60,12 +68,12 @@ export class Scene extends Serializable {
       this.applyGravity(bodies)
 
       entities.forEach((entity) => {
-        entity.fixedUpdate(this.timestep)
+        entity.fixedUpdate(timestep)
       })
 
       this.solveCollisions(bodies)
 
-      this.elapsedTime -= this.timestep
+      this.elapsedTime -= timestep
     }
 
     // variable update
@@ -75,17 +83,17 @@ export class Scene extends Serializable {
   }
 
   private solveCollisions(bodies: Body[]) {
-    for (let iteration = 0; iteration < this.velocityIterations; iteration++) {
+    for (let iteration = 0; iteration < velocityIterations; iteration++) {
       this.detectCollisions(bodies)
 
       if (this.collisionManifolds.length === 0) {
         break
       }
 
-      this.resolveVelocities(0.1, 0.4)
+      this.resolveVelocities()
     }
 
-    for (let iteration = 0; iteration < this.positionIterations; iteration++) {
+    for (let iteration = 0; iteration < positionIterations; iteration++) {
       this.detectCollisions(bodies)
 
       if (this.collisionManifolds.length === 0) {
@@ -142,7 +150,7 @@ export class Scene extends Serializable {
     })
   }
 
-  private resolveVelocities(friction: number, restitution: number) {
+  private resolveVelocities() {
     this.collisionManifolds.forEach(({ bodies, collisions }) => {
       const [b1, b2] = bodies // b1 is dynamic, b2 could be null (static geometry)
 
@@ -166,10 +174,10 @@ export class Scene extends Serializable {
 
         const contactVelocity2 = b2
           ? vec3.add(
-              b2.linearVelocity,
-              vec3.cross(b2.angularVelocity, vec3.subtract(contact, b2.volume.center, new vec3()), new vec3()),
-              new vec3()
-            )
+            b2.linearVelocity,
+            vec3.cross(b2.angularVelocity, vec3.subtract(contact, b2.volume.center, new vec3()), new vec3()),
+            new vec3()
+          )
           : null
 
         // Calculate relative velocity at the contact point
@@ -189,7 +197,7 @@ export class Scene extends Serializable {
         const tangentDirection = tangentLength > 0 ? tangent.normalize() : vec3.zero
 
         // Calculate restitution impulse (only along the normal direction)
-        const impulseScalar = -(1.0 + restitution) * velocityAlongNormal
+        const impulseScalar = -(1.0 + this.restitution) * velocityAlongNormal
 
         const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
         const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
@@ -200,7 +208,7 @@ export class Scene extends Serializable {
           return // No response needed if both bodies are static
         }
 
-        if (Math.abs(velocityAlongNormal) < this.contactRestVelocity && distance <= this.penetrationAllowance) {
+        if (Math.abs(velocityAlongNormal) < contactRestVelocity && distance <= penetrationTolerance) {
           return
         }
 
@@ -219,7 +227,7 @@ export class Scene extends Serializable {
 
         if (b1.volume instanceof Sphere && tangentLength > 0) {
           const normalImpulseMagnitude = normalImpulse.length
-          const maxFrictionImpulse = friction * normalImpulseMagnitude
+          const maxFrictionImpulse = this.friction * normalImpulseMagnitude
           const desiredFrictionImpulse = Math.min(tangentLength / totalInverseMass, maxFrictionImpulse)
 
           if (desiredFrictionImpulse > 0) {
@@ -275,13 +283,13 @@ export class Scene extends Serializable {
           return
         }
 
-        const correctedDistance = Math.max(distance - this.penetrationAllowance, 0)
+        const correctedDistance = Math.max(distance - penetrationTolerance, 0)
 
         if (correctedDistance <= 0) {
           return
         }
 
-        const correctionMagnitude = (correctedDistance * this.positionCorrectionFactor) / totalInverseMass
+        const correctionMagnitude = (correctedDistance * positionCorrectionFactor) / totalInverseMass
         const correction = vec3.scale(normal, correctionMagnitude, new vec3())
 
         if (inverseMass1 > 0) {
