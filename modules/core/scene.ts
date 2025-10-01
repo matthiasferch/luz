@@ -1,4 +1,4 @@
-import { Collider, CollisionDispatcher, Sphere } from '@luz/physics'
+import { Collider, CollisionDispatcher } from '@luz/physics'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
@@ -22,7 +22,7 @@ export class Scene extends Serializable {
   readonly friction: number = 0.2
 
   @Serialize()
-  readonly restitution: number = 0.2
+  readonly restitution: number = 0.1
 
   @Serialize(Entity)
   readonly entities: Record<string, Entity> = {}
@@ -172,10 +172,12 @@ export class Scene extends Serializable {
           new vec3()
         )
 
+        const r2 = b2 ? vec3.subtract(contact, b2.volume.center, new vec3()) : null
+
         const contactVelocity2 = b2
           ? vec3.add(
             b2.linearVelocity,
-            vec3.cross(b2.angularVelocity, vec3.subtract(contact, b2.volume.center, new vec3()), new vec3()),
+            vec3.cross(b2.angularVelocity, r2!, new vec3()),
             new vec3()
           )
           : null
@@ -196,7 +198,6 @@ export class Scene extends Serializable {
         const tangentLength = tangent.length
         const tangentDirection = tangentLength > 0 ? tangent.normalize() : vec3.zero
 
-        // Calculate restitution impulse (only along the normal direction)
         const impulseScalar = -(1.0 + this.restitution) * velocityAlongNormal
 
         const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
@@ -212,61 +213,77 @@ export class Scene extends Serializable {
           return
         }
 
-        // Calculate impulse for the normal direction
-        const normalImpulse = vec3.scale(normal, impulseScalar / totalInverseMass, new vec3())
+        const inverseInertia1 = b1.volume.inverseInertia
+        const inverseInertia2 = b2 ? b2.volume.inverseInertia : null
+
+        const computeEffectiveMass = (direction: vec3) => {
+          let denominator = totalInverseMass
+
+          if (inverseMass1 > 0) {
+            const r1CrossDir = vec3.cross(r1, direction, new vec3())
+            const angularComponent1 = vec3.cross(inverseInertia1.transform(r1CrossDir, new vec3()), r1, new vec3())
+            denominator += vec3.dot(angularComponent1, direction)
+          }
+
+          if (b2 && inverseMass2 > 0 && r2 && inverseInertia2) {
+            const r2CrossDir = vec3.cross(r2, direction, new vec3())
+            const angularComponent2 = vec3.cross(inverseInertia2.transform(r2CrossDir, new vec3()), r2, new vec3())
+            denominator += vec3.dot(angularComponent2, direction)
+          }
+
+          return denominator
+        }
+
+        const normalEffectiveMass = computeEffectiveMass(normal)
+
+        if (normalEffectiveMass <= 0) {
+          return
+        }
+
+        const normalImpulseMagnitude = impulseScalar / normalEffectiveMass
+        const normalImpulse = vec3.scale(normal, normalImpulseMagnitude, new vec3())
 
         if (inverseMass1 > 0) {
           b1.linearVelocity.subtract(vec3.scale(normalImpulse, inverseMass1, new vec3()))
+          const angularImpulse1 = inverseInertia1.transform(vec3.cross(r1, normalImpulse, new vec3()), new vec3())
+          b1.angularVelocity.subtract(angularImpulse1)
         }
 
-        if (b2 && inverseMass2 > 0) {
+        if (b2 && inverseMass2 > 0 && r2 && inverseInertia2) {
           b2.linearVelocity.add(vec3.scale(normalImpulse, inverseMass2, new vec3()))
+          const angularImpulse2 = inverseInertia2.transform(vec3.cross(r2, normalImpulse, new vec3()), new vec3())
+          b2.angularVelocity.add(angularImpulse2)
         }
 
         // --- Tangential Friction Response ---
 
         if (tangentLength > 0) {
-          const normalImpulseMagnitude = normalImpulse.length
-          const maxFrictionImpulse = this.friction * normalImpulseMagnitude
-          const desiredFrictionImpulse = Math.min(tangentLength / totalInverseMass, maxFrictionImpulse)
+          const frictionEffectiveMass = computeEffectiveMass(tangentDirection)
 
-          if (desiredFrictionImpulse > 0) {
-            const frictionImpulse = vec3.scale(tangentDirection, -desiredFrictionImpulse, new vec3())
+          if (frictionEffectiveMass > 0) {
+            let frictionImpulseMagnitude = -vec3.dot(relativeVelocity, tangentDirection) / frictionEffectiveMass
+            const maxFrictionImpulse = this.friction * Math.abs(normalImpulseMagnitude)
+            frictionImpulseMagnitude = Math.max(-maxFrictionImpulse, Math.min(frictionImpulseMagnitude, maxFrictionImpulse))
 
-            if (inverseMass1 > 0) {
-              b1.linearVelocity.subtract(vec3.scale(frictionImpulse, inverseMass1, new vec3()))
-            }
+            if (frictionImpulseMagnitude !== 0) {
+              const frictionImpulse = vec3.scale(tangentDirection, frictionImpulseMagnitude, new vec3())
 
-            if (b2 && inverseMass2 > 0) {
-              b2.linearVelocity.add(vec3.scale(frictionImpulse, inverseMass2, new vec3()))
-            }
+              if (inverseMass1 > 0) {
+                b1.linearVelocity.subtract(vec3.scale(frictionImpulse, inverseMass1, new vec3()))
+                const angularImpulse1 = inverseInertia1.transform(vec3.cross(r1, frictionImpulse, new vec3()), new vec3())
+                b1.angularVelocity.subtract(angularImpulse1)
+              }
 
-            // --- Rolling Adjustment For Spheres ---
-            if (b1.volume instanceof Sphere) {
-              const sphereRadius = b1.volume.radius
-
-              if (sphereRadius > 0) {
-                const tangentialVelocity = vec3.subtract(
-                  b1.linearVelocity,
-                  vec3.scale(normal, vec3.dot(b1.linearVelocity, normal), new vec3()),
-                  new vec3()
-                )
-                const tangentialSpeed = tangentialVelocity.length
-
-                const contactRadiusSq = r1.squaredLength
-
-                if (tangentialSpeed > 0 && contactRadiusSq > 0) {
-                  const rollingAngularVelocity = vec3
-                    .cross(r1, tangentialVelocity, new vec3())
-                    .scale(-1 / contactRadiusSq)
-                  b1.angularVelocity.set(rollingAngularVelocity)
-                }
+              if (b2 && inverseMass2 > 0 && r2 && inverseInertia2) {
+                b2.linearVelocity.add(vec3.scale(frictionImpulse, inverseMass2, new vec3()))
+                const angularImpulse2 = inverseInertia2.transform(vec3.cross(r2, frictionImpulse, new vec3()), new vec3())
+                b2.angularVelocity.add(angularImpulse2)
               }
             }
           }
         }
 
-        // --- End of Rolling Calculation ---
+        // --- End of Tangential Response ---
       })
     })
   }
