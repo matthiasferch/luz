@@ -5,7 +5,9 @@ import { Body } from './components/body'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 
-const timestep: number = 1000 / 60
+const MAXIMUM_STEPS: number = 4
+
+const timestep: number = 1 / 60
 
 const velocityIterations: number = 8
 const positionIterations: number = 8
@@ -59,6 +61,8 @@ export class Scene extends Serializable {
 
     this.elapsedTime += deltaTime
 
+    let steps = 0
+
     // transform bodies
     entities.forEach((entity) => {
       Object.values(entity.bodies).forEach((body) => {
@@ -66,7 +70,7 @@ export class Scene extends Serializable {
       })
     })
 
-    while (this.elapsedTime >= timestep) {
+    while (this.elapsedTime >= timestep && steps++ < MAXIMUM_STEPS) {
       const bodies = entities.reduce((acc: Body[], entity) => {
         return [...acc, ...Object.values(entity.bodies)]
       }, [])
