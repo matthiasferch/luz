@@ -16,6 +16,9 @@ const contactRestVelocity: number = 0.001
 const penetrationTolerance: number = 0.0005
 const positionCorrectionFactor: number = 0.2
 
+const baumgarteFactor: number = 0.15
+const maxPenetrationBias: number = 5
+
 export class Scene extends Serializable {
   @Serialize()
   readonly gravity: vec3
@@ -76,9 +79,9 @@ export class Scene extends Serializable {
       }, [])
 
       this.applyGravity(bodies)
-
       this.applyDamping(bodies, timestep)
 
+      // fixed update
       entities.forEach((entity) => {
         entity.fixedUpdate(timestep)
       })
@@ -121,8 +124,15 @@ export class Scene extends Serializable {
   }
 
   private applyGravity(bodies: Body[]) {
+    const gravityForce = new vec3()
+
     bodies.forEach((body) => {
-      body.force.add(vec3.scale(this.gravity, body.mass))
+      if (body.mass <= 0) {
+        return
+      }
+
+      vec3.scale(this.gravity, body.mass, gravityForce)
+      body.force.add(gravityForce)
     })
   }
 
@@ -236,7 +246,11 @@ export class Scene extends Serializable {
         const tangentLength = tangent.length
         const tangentDirection = tangentLength > 0 ? tangent.normalize() : vec3.zero
 
-        const impulseScalar = -(1.0 + this.restitution) * velocityAlongNormal
+        const penetrationDepth = Math.max(distance - penetrationTolerance, 0)
+        const restitution = Math.abs(velocityAlongNormal) < contactRestVelocity ? 0 : this.restitution
+        const baumgarteBias =
+          penetrationDepth > 0 ? Math.min((penetrationDepth * baumgarteFactor) / timestep, maxPenetrationBias) : 0
+        const impulseScalar = Math.max(-((1.0 + restitution) * velocityAlongNormal + baumgarteBias), 0)
 
         const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
         const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
@@ -245,10 +259,6 @@ export class Scene extends Serializable {
 
         if (totalInverseMass === 0) {
           return // No response needed if both bodies are static
-        }
-
-        if (Math.abs(velocityAlongNormal) < contactRestVelocity && distance <= penetrationTolerance) {
-          return
         }
 
         const inverseInertia1 = b1.volume.inverseInertia
@@ -278,7 +288,7 @@ export class Scene extends Serializable {
           return
         }
 
-        const normalImpulseMagnitude = impulseScalar / normalEffectiveMass
+        const normalImpulseMagnitude = impulseScalar > 0 ? impulseScalar / normalEffectiveMass : 0
         const normalImpulse = vec3.scale(normal, normalImpulseMagnitude, new vec3())
 
         if (inverseMass1 > 0) {
@@ -365,3 +375,4 @@ export class Scene extends Serializable {
     return appliedCorrection
   }
 }
+

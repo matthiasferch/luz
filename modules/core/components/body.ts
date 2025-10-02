@@ -57,6 +57,19 @@ export class Body extends Component {
   update(transform: Transform, deltaTime: number) {
     const { mass, volume } = this
 
+    if (mass <= 0) {
+      this.force.reset()
+      this.torque.reset()
+
+      this.linearVelocity.reset()
+      this.angularVelocity.reset()
+
+      volume.inverseInertia.reset()
+      this.angularCorrection.reset()
+
+      return
+    }
+
     volume.calculateInverseInertia(mass, transform)
 
     this.integrateLinearVelocity(transform, deltaTime)
@@ -94,3 +107,4 @@ export class Body extends Component {
     this.angularCorrection.reset()
   }
 }
+
