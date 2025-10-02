@@ -22,7 +22,13 @@ export class Scene extends Serializable {
   readonly friction: number = 0.2
 
   @Serialize()
-  readonly restitution: number = 0.1
+  readonly restitution: number = 0.4
+
+  @Serialize()
+  readonly linearDamping: number = 0.001
+
+  @Serialize()
+  readonly angularDamping: number = 0.001
 
   @Serialize(Entity)
   readonly entities: Record<string, Entity> = {}
@@ -66,6 +72,8 @@ export class Scene extends Serializable {
       }, [])
 
       this.applyGravity(bodies)
+
+      this.applyDamping(bodies, timestep)
 
       entities.forEach((entity) => {
         entity.fixedUpdate(timestep)
@@ -111,6 +119,32 @@ export class Scene extends Serializable {
   private applyGravity(bodies: Body[]) {
     bodies.forEach((body) => {
       body.force.add(vec3.scale(this.gravity, body.mass))
+    })
+  }
+
+  private applyDamping(bodies: Body[], deltaTime: number) {
+    const hasLinear = this.linearDamping > 0
+    const hasAngular = this.angularDamping > 0
+
+    if (!hasLinear && !hasAngular) {
+      return
+    }
+
+    const linearFactor = hasLinear ? Math.exp(-this.linearDamping * deltaTime) : 1
+    const angularFactor = hasAngular ? Math.exp(-this.angularDamping * deltaTime) : 1
+
+    bodies.forEach((body) => {
+      if (body.mass <= 0) {
+        return
+      }
+
+      if (hasLinear) {
+        body.linearVelocity.scale(linearFactor)
+      }
+
+      if (hasAngular) {
+        body.angularVelocity.scale(angularFactor)
+      }
     })
   }
 
