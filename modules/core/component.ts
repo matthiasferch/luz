@@ -9,5 +9,5 @@ export abstract class Component extends Serializable {
 }
 
 export namespace Component {
-  export type Type = 'Body' | 'Model' | 'Camera' | 'Light'
+  export type Type = 'Body' | 'Biped' | 'Model' | 'Camera' | 'Light'
 }
