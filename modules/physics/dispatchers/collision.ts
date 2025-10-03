@@ -36,6 +36,6 @@ export class CollisionDispatcher extends Dispatcher<Collider, Collider.Type, Col
     this.register('Sphere', 'Cuboid', collideSphereWithCuboid)
 
     // cuboid
-    //this.register('Cuboid', 'Cuboid', collideCuboidWithCuboid)
+    this.register('Cuboid', 'Cuboid', collideCuboidWithCuboid)
   }
 }

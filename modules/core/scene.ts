@@ -5,19 +5,17 @@ import { Body } from './components/body'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 
-const MAXIMUM_STEPS: number = 4
-
-const timestep: number = 1 / 60
+const STEP_COUNT: number = 4
+const FRAME_RATE: number = 1 / 60
 
 const velocityIterations: number = 8
 const positionIterations: number = 8
 
-const contactRestVelocity: number = 0.001
-const penetrationTolerance: number = 0.0005
-const positionCorrectionFactor: number = 0.2
+const contactRestVelocity: number = 0.002
+const penetrationTolerance: number = 0.001
 
-const baumgarteFactor: number = 0.15
-const maxPenetrationBias: number = 5
+const positionCorrectionFactor: number = 0.25
+const positionCorrectionPerStep: number = 0.005
 
 export class Scene extends Serializable {
   @Serialize()
@@ -30,10 +28,10 @@ export class Scene extends Serializable {
   readonly restitution: number = 0.2
 
   @Serialize()
-  readonly linearDamping: number = 0.001
+  readonly linearDamping: number = 0.01
 
   @Serialize()
-  readonly angularDamping: number = 0.001
+  readonly angularDamping: number = 0.01
 
   @Serialize(Entity)
   readonly entities: Record<string, Entity> = {}
@@ -44,14 +42,11 @@ export class Scene extends Serializable {
   readonly collisionManifolds: CollisionManifold[] = []
 
   private collisionDispatcher: CollisionDispatcher
-
   private elapsedTime: number = 0
 
   constructor() {
     super()
-
     this.gravity = new vec3([0, -9.81, 0])
-
     this.collisionDispatcher = new CollisionDispatcher()
   }
 
@@ -61,7 +56,6 @@ export class Scene extends Serializable {
 
   update(deltaTime: number) {
     const entities = Object.values(this.entities)
-
     this.elapsedTime += deltaTime
 
     let steps = 0
@@ -73,22 +67,22 @@ export class Scene extends Serializable {
       })
     })
 
-    while (this.elapsedTime >= timestep && steps++ < MAXIMUM_STEPS) {
+    while (this.elapsedTime >= FRAME_RATE && steps++ < STEP_COUNT) {
       const bodies = entities.reduce((acc: Body[], entity) => {
         return [...acc, ...Object.values(entity.bodies)]
       }, [])
 
       this.applyGravity(bodies)
-      this.applyDamping(bodies, timestep)
+      this.applyDamping(bodies, FRAME_RATE)
 
       // fixed update
       entities.forEach((entity) => {
-        entity.fixedUpdate(timestep)
+        entity.fixedUpdate(FRAME_RATE)
       })
 
       this.solveCollisions(bodies)
 
-      this.elapsedTime -= timestep
+      this.elapsedTime -= FRAME_RATE
     }
 
     // variable update
@@ -98,39 +92,26 @@ export class Scene extends Serializable {
   }
 
   private solveCollisions(bodies: Body[]) {
+    // Velocity phase
     for (let iteration = 0; iteration < velocityIterations; iteration++) {
       this.detectCollisions(bodies)
-
-      if (this.collisionManifolds.length === 0) {
-        break
-      }
-
+      if (this.collisionManifolds.length === 0) break
       this.resolveVelocities()
     }
 
+    // Position phase
     for (let iteration = 0; iteration < positionIterations; iteration++) {
       this.detectCollisions(bodies)
-
-      if (this.collisionManifolds.length === 0) {
-        break
-      }
-
+      if (this.collisionManifolds.length === 0) break
       const applied = this.resolvePositions()
-
-      if (!applied) {
-        break
-      }
+      if (!applied) break
     }
   }
 
   private applyGravity(bodies: Body[]) {
     const gravityForce = new vec3()
-
     bodies.forEach((body) => {
-      if (body.mass <= 0) {
-        return
-      }
-
+      if (body.mass <= 0) return
       vec3.scale(this.gravity, body.mass, gravityForce)
       body.force.add(gravityForce)
     })
@@ -139,81 +120,72 @@ export class Scene extends Serializable {
   private applyDamping(bodies: Body[], deltaTime: number) {
     const hasLinear = this.linearDamping > 0
     const hasAngular = this.angularDamping > 0
-
-    if (!hasLinear && !hasAngular) {
-      return
-    }
+    if (!hasLinear && !hasAngular) return
 
     const linearFactor = hasLinear ? Math.exp(-this.linearDamping * deltaTime) : 1
     const angularFactor = hasAngular ? Math.exp(-this.angularDamping * deltaTime) : 1
 
     bodies.forEach((body) => {
-      if (body.mass <= 0) {
-        return
-      }
-
-      if (hasLinear) {
-        body.linearVelocity.scale(linearFactor)
-      }
-
-      if (hasAngular) {
-        body.angularVelocity.scale(angularFactor)
-      }
+      if (body.mass <= 0) return
+      if (hasLinear) body.linearVelocity.scale(linearFactor)
+      if (hasAngular) body.angularVelocity.scale(angularFactor)
     })
   }
 
   private detectCollisions(bodies: Body[]) {
-    this.collisionManifolds.length = 0 // Reset the collisions array for each frame
+    this.collisionManifolds.length = 0
 
+    // body-vs-body
     for (let i = 0; i < bodies.length; i++) {
       const b1 = bodies[i]
-
       for (let j = i + 1; j < bodies.length; j++) {
         const b2 = bodies[j]
-
         const collisions = this.collisionDispatcher.dispatch(b1.volume, b2.volume)
-
         if (collisions && collisions.length > 0) {
-          this.collisionManifolds.push({
-            bodies: [b1, b2],
-            collisions
-          })
+          this.collisionManifolds.push({ bodies: [b1, b2], collisions })
         }
       }
     }
 
+    // body-vs-static
     bodies.forEach((body) => {
       const colliders = Object.values(this.colliders)
-
       colliders.forEach((collider) => {
         const collisions = this.collisionDispatcher.dispatch(body.volume, collider)
-
         if (collisions && collisions.length > 0) {
-          this.collisionManifolds.push({
-            bodies: [body, null],
-            collisions
-          })
+          this.collisionManifolds.push({ bodies: [body, null], collisions })
         }
       })
     })
   }
 
+  // Stable per-pair normal orientation (shared by both solvers)
+  private orientNormalForPair(
+    nIn: vec3,
+    contact: vec3,
+    b1: Body,
+    b2: Body | null
+  ): vec3 {
+    const n = nIn.copy()
+    const r1 = vec3.subtract(contact, b1.volume.center, new vec3())
+    if (b2) {
+      const c12 = vec3.subtract(b2.volume.center, b1.volume.center, new vec3())
+      if (vec3.dot(n, c12) < 0) n.scale(-1)
+    } else {
+      if (vec3.dot(n, r1) < 0) n.scale(-1)
+    }
+    return n
+  }
+
   private resolveVelocities() {
     this.collisionManifolds.forEach(({ bodies, collisions }) => {
-      const [b1, b2] = bodies // b1 is dynamic, b2 could be null (static geometry)
+      const [b1, b2] = bodies
 
       collisions.forEach(({ contact, normal: collisionNormal, distance }) => {
-        const r1 = vec3.subtract(contact, b1.volume.center, new vec3()) // Vector from b1's center of mass to contact point
+        const normal = this.orientNormalForPair(collisionNormal, contact, b1, b2)
 
-        const normal = collisionNormal.copy()
-        const directionToOther = b2
-          ? vec3.subtract(b2.volume.center, b1.volume.center, new vec3())
-          : r1.copy(new vec3())
-
-        if (directionToOther.length > 0 && vec3.dot(normal, directionToOther) < 0) {
-          normal.scale(-1)
-        }
-
+        // Contact point offsets
+        const r1 = vec3.subtract(contact, b1.volume.center, new vec3())
         const contactVelocity1 = vec3.add(
           b1.linearVelocity,
           vec3.cross(b1.angularVelocity, r1, new vec3()),
@@ -221,107 +193,100 @@ export class Scene extends Serializable {
         )
 
         const r2 = b2 ? vec3.subtract(contact, b2.volume.center, new vec3()) : null
-
         const contactVelocity2 = b2
-          ? vec3.add(
-            b2.linearVelocity,
-            vec3.cross(b2.angularVelocity, r2!, new vec3()),
-            new vec3()
-          )
+          ? vec3.add(b2.linearVelocity, vec3.cross(b2.angularVelocity, r2!, new vec3()), new vec3())
           : null
 
-        // Calculate relative velocity at the contact point
+        // Relative velocity
         const relativeVelocity = contactVelocity2
           ? vec3.subtract(contactVelocity2, contactVelocity1, new vec3())
           : vec3.subtract(vec3.zero, contactVelocity1, new vec3())
 
-        // Decompose relative velocity into normal and tangential components
         const velocityAlongNormal = vec3.dot(relativeVelocity, normal)
+        if (velocityAlongNormal > 0) return // separating
 
-        if (velocityAlongNormal > 0) {
-          return // Bodies are moving apart, no need to resolve the collision
-        }
-
+        // Tangent
         const tangent = vec3.subtract(relativeVelocity, vec3.scale(normal, velocityAlongNormal, new vec3()))
         const tangentLength = tangent.length
         const tangentDirection = tangentLength > 0 ? tangent.normalize() : vec3.zero
 
-        const penetrationDepth = Math.max(distance - penetrationTolerance, 0)
         const restitution = Math.abs(velocityAlongNormal) < contactRestVelocity ? 0 : this.restitution
-        const baumgarteBias =
-          penetrationDepth > 0 ? Math.min((penetrationDepth * baumgarteFactor) / timestep, maxPenetrationBias) : 0
-        const impulseScalar = Math.max(-((1.0 + restitution) * velocityAlongNormal + baumgarteBias), 0)
 
+        const impulseScalar = Math.max(-((1.0 + restitution) * velocityAlongNormal), 0)
+
+        // Mass/inertia
         const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
         const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
-
         const totalInverseMass = inverseMass1 + inverseMass2
-
-        if (totalInverseMass === 0) {
-          return // No response needed if both bodies are static
-        }
+        if (totalInverseMass === 0) return
 
         const inverseInertia1 = b1.volume.inverseInertia
         const inverseInertia2 = b2 ? b2.volume.inverseInertia : null
 
         const computeEffectiveMass = (direction: vec3) => {
           let denominator = totalInverseMass
-
           if (inverseMass1 > 0) {
             const r1CrossDir = vec3.cross(r1, direction, new vec3())
             const angularComponent1 = vec3.cross(inverseInertia1.transform(r1CrossDir, new vec3()), r1, new vec3())
             denominator += vec3.dot(angularComponent1, direction)
           }
-
           if (b2 && inverseMass2 > 0 && r2 && inverseInertia2) {
             const r2CrossDir = vec3.cross(r2, direction, new vec3())
             const angularComponent2 = vec3.cross(inverseInertia2.transform(r2CrossDir, new vec3()), r2, new vec3())
             denominator += vec3.dot(angularComponent2, direction)
           }
-
           return denominator
         }
 
         const normalEffectiveMass = computeEffectiveMass(normal)
-
-        if (normalEffectiveMass <= 0) {
-          return
-        }
+        if (normalEffectiveMass <= 0) return
 
         const normalImpulseMagnitude = impulseScalar > 0 ? impulseScalar / normalEffectiveMass : 0
-        const normalImpulse = vec3.scale(normal, normalImpulseMagnitude, new vec3())
+        if (normalImpulseMagnitude > 0) {
+          const normalImpulse = vec3.scale(normal, normalImpulseMagnitude, new vec3())
 
-        if (inverseMass1 > 0) {
-          b1.linearVelocity.subtract(vec3.scale(normalImpulse, inverseMass1, new vec3()))
-          const angularImpulse1 = inverseInertia1.transform(vec3.cross(r1, normalImpulse, new vec3()), new vec3())
-          b1.angularVelocity.subtract(angularImpulse1)
+          if (inverseMass1 > 0) {
+            b1.linearVelocity.subtract(vec3.scale(normalImpulse, inverseMass1, new vec3()))
+            const angularImpulse1 = inverseInertia1.transform(vec3.cross(r1, normalImpulse, new vec3()), new vec3())
+            b1.angularVelocity.subtract(angularImpulse1)
+          }
+
+          if (b2 && inverseMass2 > 0 && r2 && inverseInertia2) {
+            b2.linearVelocity.add(vec3.scale(normalImpulse, inverseMass2, new vec3()))
+            const angularImpulse2 = inverseInertia2.transform(vec3.cross(r2, normalImpulse, new vec3()), new vec3())
+            b2.angularVelocity.add(angularImpulse2)
+          }
         }
 
-        if (b2 && inverseMass2 > 0 && r2 && inverseInertia2) {
-          b2.linearVelocity.add(vec3.scale(normalImpulse, inverseMass2, new vec3()))
-          const angularImpulse2 = inverseInertia2.transform(vec3.cross(r2, normalImpulse, new vec3()), new vec3())
-          b2.angularVelocity.add(angularImpulse2)
-        }
-
-        // --- Tangential Friction Response ---
-
+        // Friction
+        // --- Tangential Friction (stick–slip) ---
         if (tangentLength > 0) {
           const frictionEffectiveMass = computeEffectiveMass(tangentDirection)
-
           if (frictionEffectiveMass > 0) {
-            let frictionImpulseMagnitude = -vec3.dot(relativeVelocity, tangentDirection) / frictionEffectiveMass
-            const maxFrictionImpulse = this.friction * Math.abs(normalImpulseMagnitude)
-            frictionImpulseMagnitude = Math.max(-maxFrictionImpulse, Math.min(frictionImpulseMagnitude, maxFrictionImpulse))
+            // Desired impulse to zero tangential velocity (static attempt)
+            let jt = -vec3.dot(relativeVelocity, tangentDirection) / frictionEffectiveMass
 
-            if (frictionImpulseMagnitude !== 0) {
-              const frictionImpulse = vec3.scale(tangentDirection, frictionImpulseMagnitude, new vec3())
+            const jn = Math.abs(normalImpulseMagnitude)
+            const mu_s = this.friction * 1.5   // static friction coefficient (tune)
+            const mu_d = this.friction         // dynamic friction coefficient
+
+            // Clamp for stick or slip
+            if (Math.abs(jt) <= mu_s * jn) {
+              // Static friction: use exactly what's needed to stop tangential motion
+              // (jt already computed)
+            } else {
+              // Dynamic friction: clamp to Coulomb bound
+              jt = Math.sign(jt) * mu_d * jn
+            }
+
+            if (jt !== 0) {
+              const frictionImpulse = vec3.scale(tangentDirection, jt, new vec3())
 
               if (inverseMass1 > 0) {
                 b1.linearVelocity.subtract(vec3.scale(frictionImpulse, inverseMass1, new vec3()))
                 const angularImpulse1 = inverseInertia1.transform(vec3.cross(r1, frictionImpulse, new vec3()), new vec3())
                 b1.angularVelocity.subtract(angularImpulse1)
               }
-
               if (b2 && inverseMass2 > 0 && r2 && inverseInertia2) {
                 b2.linearVelocity.add(vec3.scale(frictionImpulse, inverseMass2, new vec3()))
                 const angularImpulse2 = inverseInertia2.transform(vec3.cross(r2, frictionImpulse, new vec3()), new vec3())
@@ -331,7 +296,6 @@ export class Scene extends Serializable {
           }
         }
 
-        // --- End of Tangential Response ---
       })
     })
   }
@@ -339,40 +303,54 @@ export class Scene extends Serializable {
   private resolvePositions(): boolean {
     let appliedCorrection = false
 
+    // IMPORTANT: one correction per manifold (pair), using MAX penetration across contacts.
     this.collisionManifolds.forEach(({ bodies, collisions }) => {
       const [b1, b2] = bodies
 
-      collisions.forEach(({ normal, distance }) => {
-        const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
-        const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
-        const totalInverseMass = inverseMass1 + inverseMass2
+      // Pick the deepest contact and a stable normal for the pair
+      let maxDepth = 0
+      let chosenNormal: vec3 | null = null
+      let chosenContact: vec3 | null = null
 
-        if (totalInverseMass === 0) {
-          return
+      for (const { contact, normal: nIn, distance } of collisions) {
+        const depth = Math.max(distance - penetrationTolerance, 0)
+        if (depth > maxDepth) {
+          maxDepth = depth
+          chosenContact = contact
+          // Orient normal deterministically
+          chosenNormal = this.orientNormalForPair(nIn, contact, b1, b2)
         }
+      }
 
-        const correctedDistance = Math.max(distance - penetrationTolerance, 0)
+      if (!chosenNormal || !chosenContact || maxDepth <= 0) {
+        return
+      }
 
-        if (correctedDistance <= 0) {
-          return
-        }
+      const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
+      const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
+      const totalInverseMass = inverseMass1 + inverseMass2
+      if (totalInverseMass === 0) return
 
-        const correctionMagnitude = (correctedDistance * positionCorrectionFactor) / totalInverseMass
-        const correction = vec3.scale(normal, correctionMagnitude, new vec3())
+      // Single correction for the pair
+      let correctionMagnitude = (maxDepth * positionCorrectionFactor) / totalInverseMass
+      // Clamp per-step correction
+      if (correctionMagnitude > positionCorrectionPerStep) {
+        correctionMagnitude = positionCorrectionPerStep
+      }
 
-        if (inverseMass1 > 0) {
-          b1.applyPositionCorrection(vec3.scale(correction, inverseMass1, new vec3()))
-          appliedCorrection = true
-        }
+      const correction = vec3.scale(chosenNormal, correctionMagnitude, new vec3())
 
-        if (b2 && inverseMass2 > 0) {
-          b2.applyPositionCorrection(vec3.scale(correction, -inverseMass2, new vec3()))
-          appliedCorrection = true
-        }
-      })
+      // Move b1 opposite n, b2 along n (same pairing as velocity impulses)
+      if (inverseMass1 > 0) {
+        b1.applyPositionCorrection(vec3.scale(correction, -inverseMass1, new vec3()))
+        appliedCorrection = true
+      }
+      if (b2 && inverseMass2 > 0) {
+        b2.applyPositionCorrection(vec3.scale(correction, +inverseMass2, new vec3()))
+        appliedCorrection = true
+      }
     })
 
     return appliedCorrection
   }
 }
-
