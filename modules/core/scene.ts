@@ -19,8 +19,9 @@ const penetrationTolerance: number = 0.001
 const positionCorrectionFactor: number = 0.25
 const positionCorrectionPerStep: number = 0.005
 // Consider surfaces with upward normal above this threshold as "ground".
-// cos(maxSlopeAngle). 0.7 ~= 45 degrees.
-const groundMinNormalY: number = 0.7
+// Express the threshold via a slope angle in degrees for easier tuning.
+const groundMaxSlopeDegrees: number = 45 // degrees
+const groundMinNormalY: number = Math.cos((groundMaxSlopeDegrees * Math.PI) / 180)
 // Allow larger per-step separation for dynamic pairs involving a Biped
 // (applied to the non-biped body), to reduce tunneling.
 const bipedDynamicCorrectionPerStep: number = 0.02
