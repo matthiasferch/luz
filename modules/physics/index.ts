@@ -27,6 +27,7 @@ export { collidePlaneWithCylinder } from './collisions/plane/cylinder'
 export { collideSphereWithSphere } from './collisions/sphere/sphere'
 export { collideSphereWithCuboid } from './collisions/sphere/cuboid'
 export { collideSphereWithEllipsoid } from './collisions/sphere/ellipsoid'
+export { collideSphereWithCylinder } from './collisions/sphere/cylinder'
 
 export { collidePolygonWithSphere } from './collisions/polygon/sphere'
 export { collidePolygonWithCuboid } from './collisions/polygon/cuboid'
@@ -35,3 +36,5 @@ export { collidePolygonWithCylinder } from './collisions/polygon/cylinder'
 
 export { collideCuboidWithCuboid } from './collisions/cuboid/cuboid'
 export { collideEllipsoidWithCuboid } from './collisions/ellipsoid/cuboid'
+export { collideEllipsoidWithCylinder } from './collisions/ellipsoid/cylinder'
+export { collideCylinderWithCylinder } from './collisions/cylinder/cylinder'

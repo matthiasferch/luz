@@ -45,10 +45,10 @@ export class Scene extends Serializable {
   readonly restitution: number = 0.2
 
   @Serialize()
-  readonly linearDamping: number = 0.01
+  readonly linearDamping: number = 0.02
 
   @Serialize()
-  readonly angularDamping: number = 0.01
+  readonly angularDamping: number = 0.05
 
   @Serialize(Entity)
   readonly entities: Record<string, Entity> = {}

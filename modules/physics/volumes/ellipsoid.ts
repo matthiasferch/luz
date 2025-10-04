@@ -4,21 +4,21 @@ import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
 
-// General ellipsoid with three semi-axes radii along local X, Y, Z.
+// General ellipsoid with three semi-axes radius along local X, Y, Z.
 @Register()
 export class Ellipsoid extends Volume {
   readonly type: Collider.Type = 'Ellipsoid'
 
   @Serialize()
-  readonly radii: vec3 // [a, b, c] along local X, Y, Z
+  readonly radius: vec3 // [a, b, c] along local X, Y, Z
 
   // World-space unit axes corresponding to local X, Y, Z
   readonly axes: vec3[]
 
-  constructor({ origin = vec3.zero, radii = vec3.one } = {}) {
+  constructor({ origin = vec3.zero, radius = vec3.one } = {}) {
     super({ origin })
 
-    this.radii = radii.copy()
+    this.radius = radius.copy()
     this.axes = vec3.axes.map((axis) => axis.copy())
   }
 
@@ -36,7 +36,7 @@ export class Ellipsoid extends Volume {
 
   calculateInverseInertia(mass: number, transform: Transform) {
     const { rotationMatrix } = transform
-    const { x: a, y: b, z: c } = this.radii
+    const { x: a, y: b, z: c } = this.radius
 
     // Principal moments of inertia for a solid ellipsoid (about principal axes)
     const Ixx = (1 / 5) * mass * (b * b + c * c)
@@ -61,7 +61,7 @@ export class Ellipsoid extends Volume {
 
   // Effective radius along a given world-space direction.
   effectiveRadius(direction: vec3): number {
-    const { x: ax, y: ay, z: az } = this.radii
+    const { x: ax, y: ay, z: az } = this.radius
 
     // Components of direction along local axes
     const dx = vec3.dot(direction, this.axes[0])

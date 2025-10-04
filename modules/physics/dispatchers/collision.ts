@@ -13,12 +13,15 @@ import { collideRayWithSphere } from '../collisions/ray/sphere'
 import { collideRayWithEllipsoid } from '../collisions/ray/ellipsoid'
 import { collideSphereWithCuboid } from '../collisions/sphere/cuboid'
 import { collideSphereWithEllipsoid } from '../collisions/sphere/ellipsoid'
+import { collideSphereWithCylinder } from '../collisions/sphere/cylinder'
 import { collideSphereWithSphere } from '../collisions/sphere/sphere'
 import { collidePolygonWithSphere } from '../collisions/polygon/sphere'
 import { collidePolygonWithCuboid } from '../collisions/polygon/cuboid'
 import { collidePolygonWithEllipsoid } from '../collisions/polygon/ellipsoid'
 import { collidePolygonWithCylinder } from '../collisions/polygon/cylinder'
 import { collideEllipsoidWithCuboid } from '../collisions/ellipsoid/cuboid'
+import { collideEllipsoidWithCylinder } from '../collisions/ellipsoid/cylinder'
+import { collideCylinderWithCylinder } from '../collisions/cylinder/cylinder'
 
 export class CollisionDispatcher extends Dispatcher<Collider, Collider.Type, Collision[]> {
   constructor() {
@@ -47,9 +50,12 @@ export class CollisionDispatcher extends Dispatcher<Collider, Collider.Type, Col
     this.register('Sphere', 'Sphere', collideSphereWithSphere)
     this.register('Sphere', 'Cuboid', collideSphereWithCuboid)
     this.register('Sphere', 'Ellipsoid', collideSphereWithEllipsoid)
+    this.register('Sphere', 'Cylinder', collideSphereWithCylinder)
 
     // cuboid
     this.register('Cuboid', 'Cuboid', collideCuboidWithCuboid)
     this.register('Ellipsoid', 'Cuboid', collideEllipsoidWithCuboid)
+    this.register('Ellipsoid', 'Cylinder', collideEllipsoidWithCylinder)
+    this.register('Cylinder', 'Cylinder', collideCylinderWithCylinder)
   }
 }

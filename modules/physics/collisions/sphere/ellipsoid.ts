@@ -12,16 +12,16 @@ export function collideSphereWithEllipsoid(sphere: Sphere, ellipsoid: Ellipsoid)
   // Vector from ellipsoid center to sphere center
   const d = vec3.subtract(cS, cE, new vec3())
 
-  const a = ellipsoid.radii.x
-  const b = ellipsoid.radii.y
-  const c = ellipsoid.radii.z
+  const a = ellipsoid.radius.x
+  const b = ellipsoid.radius.y
+  const c = ellipsoid.radius.z
 
   // Inflate ellipsoid by sphere radius (Minkowski sum)
   const A = a + sphere.radius
   const B = b + sphere.radius
   const C = c + sphere.radius
 
-  // Express d in ellipsoid's local basis and scale by inflated radii
+  // Express d in ellipsoid's local basis and scale by inflated radius
   const u0 = vec3.dot(d, ellipsoid.axes[0]) / A
   const u1 = vec3.dot(d, ellipsoid.axes[1]) / B
   const u2 = vec3.dot(d, ellipsoid.axes[2]) / C

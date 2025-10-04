@@ -7,7 +7,7 @@ import { Ellipsoid } from '../../volumes/ellipsoid'
 export const collideRayWithEllipsoid = (ray: Ray, ellipsoid: Ellipsoid): Collision[] | null => {
   const { origin: o, direction: d } = ray
   const { center: c } = ellipsoid
-  const { x: a, y: b, z: zc } = ellipsoid.radii
+  const { x: a, y: b, z: zc } = ellipsoid.radius
 
   // Build orthonormal basis (axes) U from ellipsoid
   const ux = ellipsoid.axes[0]

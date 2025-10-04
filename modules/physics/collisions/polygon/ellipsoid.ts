@@ -53,7 +53,7 @@ export const collidePolygonWithEllipsoid = (polygon: Polygon, ellipsoid: Ellipso
   const ux = ellipsoid.axes[0]
   const uy = ellipsoid.axes[1]
   const uz = ellipsoid.axes[2]
-  const { x: a, y: b, z: cr } = ellipsoid.radii
+  const { x: a, y: b, z: cr } = ellipsoid.radius
 
   const toScaled = (p: vec3, out: vec3 = new vec3()) => {
     const r = vec3.subtract(p, c, new vec3())
@@ -87,7 +87,7 @@ export const collidePolygonWithEllipsoid = (polygon: Polygon, ellipsoid: Ellipso
     const penetration = 1 - dist
     // Use polygon normal in world for stable ground contacts
     const normal = polygon.normal.copy()
-    return [ { contact, normal, distance: penetration } ]
+    return [{ contact, normal, distance: penetration }]
   }
 
   return null
