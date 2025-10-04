@@ -411,10 +411,23 @@ export class Scene extends Serializable {
         // Compute contact height relative to the biped's bottom if we can
         let isWithinStepHeight = false
         const vol: any = b1.volume as any
-        if (vol && vol.type === 'Cuboid' && vol.extents) {
-          const bottomY = b1.volume.center.y - vol.extents.y
-          const contactHeightAboveBottom = chosenContact.y - bottomY
-          isWithinStepHeight = contactHeightAboveBottom >= -1e-3 && contactHeightAboveBottom <= bipedStepHeight
+        if (vol) {
+          let bottomY: number | null = null
+          if (vol.type === 'Cuboid' && vol.extents) {
+            bottomY = b1.volume.center.y - vol.extents.y
+          } else if (vol.type === 'Sphere' && typeof vol.radius === 'number') {
+            bottomY = b1.volume.center.y - vol.radius
+          } else if (vol.type === 'Spheroid' && typeof vol.polarRadius === 'number') {
+            // Approximate: assume polar axis is vertical for step height
+            bottomY = b1.volume.center.y - vol.polarRadius
+          } else if (vol.type === 'Ellipsoid' && typeof vol.effectiveRadius === 'function') {
+            // Use effective radius along world up direction
+            bottomY = b1.volume.center.y - vol.effectiveRadius(vec3.up)
+          }
+          if (bottomY !== null) {
+            const contactHeightAboveBottom = chosenContact.y - bottomY
+            isWithinStepHeight = contactHeightAboveBottom >= -1e-3 && contactHeightAboveBottom <= bipedStepHeight
+          }
         }
 
         if (
@@ -427,10 +440,23 @@ export class Scene extends Serializable {
           // Blend the normal upward. Stronger bias when step is small.
           const vol: any = b1.volume as any
           let weight = 1.0
-          if (vol && vol.type === 'Cuboid' && vol.extents) {
-            const bottomY = b1.volume.center.y - vol.extents.y
-            const h = Math.max(0, Math.min(bipedStepHeight, chosenContact.y - bottomY))
-            weight = 1.0 + bipedStepUpBias * (1.0 - h / bipedStepHeight)
+          if (vol) {
+            let bottomY: number | null = null
+            if (vol.type === 'Cuboid' && vol.extents) {
+              bottomY = b1.volume.center.y - vol.extents.y
+            } else if (vol.type === 'Sphere' && typeof vol.radius === 'number') {
+              bottomY = b1.volume.center.y - vol.radius
+            } else if (vol.type === 'Spheroid' && typeof vol.polarRadius === 'number') {
+              bottomY = b1.volume.center.y - vol.polarRadius
+            } else if (vol.type === 'Ellipsoid' && typeof vol.effectiveRadius === 'function') {
+              bottomY = b1.volume.center.y - vol.effectiveRadius(vec3.up)
+            }
+            if (bottomY !== null) {
+              const h = Math.max(0, Math.min(bipedStepHeight, chosenContact.y - bottomY))
+              weight = 1.0 + bipedStepUpBias * (1.0 - h / bipedStepHeight)
+            } else {
+              weight = 1.0 + bipedStepUpBias * 0.5
+            }
           } else {
             weight = 1.0 + bipedStepUpBias * 0.5
           }
