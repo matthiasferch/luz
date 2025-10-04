@@ -1,6 +1,6 @@
 import { Transform } from '@luz/core'
 import { Serialize, Register } from '@luz/utilities'
-import { vec3 } from '@luz/vectors'
+import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
 
@@ -38,13 +38,25 @@ export class Ellipsoid extends Volume {
     const { rotationMatrix } = transform
     const { x: a, y: b, z: c } = this.radii
 
-    // Principal moments of inertia for a solid ellipsoid
+    // Principal moments of inertia for a solid ellipsoid (about principal axes)
     const Ixx = (1 / 5) * mass * (b * b + c * c)
     const Iyy = (1 / 5) * mass * (a * a + c * c)
     const Izz = (1 / 5) * mass * (a * a + b * b)
 
-    this.inverseInertia.set([Ixx, 0, 0, 0, Iyy, 0, 0, 0, Izz])
-    this.inverseInertia.multiply(rotationMatrix).invert()
+    // Inverse in body space
+    const invIxx = Ixx > 0 ? 1 / Ixx : 0
+    const invIyy = Iyy > 0 ? 1 / Iyy : 0
+    const invIzz = Izz > 0 ? 1 / Izz : 0
+    const IbodyInv = new mat3([invIxx, 0, 0, 0, invIyy, 0, 0, 0, invIzz])
+
+    // World-space inverse inertia: R * IbodyInv * R^T
+    const Rt = rotationMatrix.copy().transpose()
+    this.inverseInertia.reset()
+    this.inverseInertia[0] = Rt[0]; this.inverseInertia[1] = Rt[1]; this.inverseInertia[2] = Rt[2]
+    this.inverseInertia[3] = Rt[3]; this.inverseInertia[4] = Rt[4]; this.inverseInertia[5] = Rt[5]
+    this.inverseInertia[6] = Rt[6]; this.inverseInertia[7] = Rt[7]; this.inverseInertia[8] = Rt[8]
+    this.inverseInertia.multiply(IbodyInv)
+    this.inverseInertia.multiply(rotationMatrix)
   }
 
   // Effective radius along a given world-space direction.
@@ -63,4 +75,3 @@ export class Ellipsoid extends Volume {
     return Math.sqrt(len2) / Math.sqrt(invR2)
   }
 }
-

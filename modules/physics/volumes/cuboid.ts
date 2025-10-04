@@ -1,6 +1,6 @@
 import { Transform } from '@luz/core'
 import { Serialize, Register } from '@luz/utilities'
-import { vec3 } from '@luz/vectors'
+import { mat3, vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
 import { Volume } from '../volume'
 
@@ -34,14 +34,29 @@ export class Cuboid extends Volume {
 
   calculateInverseInertia(mass: number, transform: Transform) {
     const { rotationMatrix } = transform
-    const { x, y, z } = this.extents
+    const { x, y, z } = this.extents // half-extents
 
-    const t1 = (1 / 12) * mass * (y * y + z * z)
-    const t2 = (1 / 12) * mass * (x * x + z * z)
-    const t3 = (1 / 12) * mass * (x * x + y * y)
+    // Solid box inertia about center, using half-extents: Ixx = (1/3) m (y^2 + z^2), etc.
+    const Ixx = (1 / 3) * mass * (y * y + z * z)
+    const Iyy = (1 / 3) * mass * (x * x + z * z)
+    const Izz = (1 / 3) * mass * (x * x + y * y)
 
-    this.inverseInertia.set([t1, 0, 0, 0, t2, 0, 0, 0, t3])
-    this.inverseInertia.multiply(rotationMatrix).invert()
+    // Inverse in body space (diagonal)
+    const invIxx = Ixx > 0 ? 1 / Ixx : 0
+    const invIyy = Iyy > 0 ? 1 / Iyy : 0
+    const invIzz = Izz > 0 ? 1 / Izz : 0
+
+    const IbodyInv = new mat3([invIxx, 0, 0, 0, invIyy, 0, 0, 0, invIzz])
+
+    // World-space inverse inertia: R * IbodyInv * R^T
+    const Rt = rotationMatrix.copy().transpose()
+    // Start with Rt so that multiply order (dest = other * this) yields Rt * IbodyInv then R * (Rt * IbodyInv)
+    this.inverseInertia.reset()
+    this.inverseInertia[0] = Rt[0]; this.inverseInertia[1] = Rt[1]; this.inverseInertia[2] = Rt[2]
+    this.inverseInertia[3] = Rt[3]; this.inverseInertia[4] = Rt[4]; this.inverseInertia[5] = Rt[5]
+    this.inverseInertia[6] = Rt[6]; this.inverseInertia[7] = Rt[7]; this.inverseInertia[8] = Rt[8]
+    this.inverseInertia.multiply(IbodyInv)
+    this.inverseInertia.multiply(rotationMatrix)
   }
 
   // New method to get the 8 vertices of the cuboid
