@@ -21,6 +21,9 @@ const positionCorrectionPerStep: number = 0.005
 // Consider surfaces with upward normal above this threshold as "ground".
 // cos(maxSlopeAngle). 0.7 ~= 45 degrees.
 const groundMinNormalY: number = 0.7
+// Allow larger per-step separation for dynamic pairs involving a Biped
+// (applied to the non-biped body), to reduce tunneling.
+const bipedDynamicCorrectionPerStep: number = 0.02
 
 const isBodyComponent = (component: Component): component is Body => {
   return component.type === 'Body' || component.type === 'Biped'
@@ -370,9 +373,21 @@ export class Scene extends Serializable {
 
       // Single correction for the pair
       let correctionMagnitude = (maxDepth * positionCorrectionFactor) / totalInverseMass
-      // Clamp per-step correction
-      if (correctionMagnitude > positionCorrectionPerStep) {
-        correctionMagnitude = positionCorrectionPerStep
+
+      // Clamp per-step correction. For biped-vs-dynamic pairs, scale the clamp so that the
+      // non-biped body can move up to a fixed amount regardless of its mass.
+      let perStepClamp = positionCorrectionPerStep
+      if (b2 && b1IsBiped && inverseMass2 > 0) {
+        // Ensure b2 can move up to bipedDynamicCorrectionPerStep this iteration
+        perStepClamp = Math.max(perStepClamp, bipedDynamicCorrectionPerStep / inverseMass2)
+      } else if (!b2 && b1IsBiped) {
+        // biped vs static: keep default clamp
+      } else if (b2IsBiped && inverseMass1 > 0) {
+        // Ensure b1 can move up to bipedDynamicCorrectionPerStep this iteration
+        perStepClamp = Math.max(perStepClamp, bipedDynamicCorrectionPerStep / inverseMass1)
+      }
+      if (correctionMagnitude > perStepClamp) {
+        correctionMagnitude = perStepClamp
       }
 
       const correction = vec3.scale(chosenNormal, correctionMagnitude, new vec3())
