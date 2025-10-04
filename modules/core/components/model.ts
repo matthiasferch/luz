@@ -1,10 +1,12 @@
 import { Material, Partition, Armature, Animation } from '@luz/graphics'
-import { Serialize, Uniform } from '@luz/utilities'
+import { Serialize, Uniform, Register } from '@luz/utilities'
 import { Component } from '../component'
 import { Transform } from '../transform'
 
+@Register()
 export class Model extends Component {
   readonly type: Component.Type = 'Model'
+  readonly timestep: Component.Timestep = 'Variable'
 
   @Serialize(Material)
   readonly materials: Record<string, Material> = {}

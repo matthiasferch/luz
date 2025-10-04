@@ -4,6 +4,7 @@ import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
+import { Component } from './component'
 
 const STEP_COUNT: number = 4
 const FRAME_RATE: number = 1 / 60
@@ -16,6 +17,10 @@ const penetrationTolerance: number = 0.001
 
 const positionCorrectionFactor: number = 0.25
 const positionCorrectionPerStep: number = 0.005
+
+const isBodyComponent = (component: Component): component is Body => {
+  return component.type === 'Body' || component.type === 'Biped'
+}
 
 export class Scene extends Serializable {
   @Serialize()
@@ -62,15 +67,21 @@ export class Scene extends Serializable {
 
     // transform bodies
     entities.forEach((entity) => {
-      Object.values(entity.bodies).forEach((body) => {
-        body.applyTransform(entity)
+      Object.values(entity.components).forEach((component) => {
+        if (isBodyComponent(component)) {
+          component.applyTransform(entity)
+        }
       })
     })
 
     while (this.elapsedTime >= FRAME_RATE && steps++ < STEP_COUNT) {
-      const bodies = entities.reduce((acc: Body[], entity) => {
-        return [...acc, ...Object.values(entity.bodies)]
+      const components = entities.reduce((components: Component[], entity) => {
+        return [...components, ...Object.values(entity.components)]
       }, [])
+
+      const bodies = components.filter((component) => {
+        return isBodyComponent(component)
+      }) as Body[]
 
       this.applyGravity(bodies)
       this.applyDamping(bodies, FRAME_RATE)

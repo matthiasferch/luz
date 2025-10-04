@@ -1,11 +1,13 @@
 import { Volume } from '@luz/physics'
-import { Serialize } from '@luz/utilities'
+import { Serialize, Register } from '@luz/utilities'
 import { quat, vec3 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
 
+@Register()
 export class Body extends Component {
   readonly type: Component.Type = 'Body'
+  readonly timestep: Component.Timestep = 'Fixed'
 
   @Serialize()
   mass: number

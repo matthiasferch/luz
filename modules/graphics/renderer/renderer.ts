@@ -125,8 +125,12 @@ export class Renderer {
 
     // render entities
     Object.values(entities).forEach((entity) => {
-      Object.values(entity.models).forEach((model) => {
-        this.renderModel(camera, entity, model, light, program, uniforms)
+      Object.values(entity.components).forEach((component) => {
+        if (component.type !== 'Model') {
+          return
+        }
+
+        this.renderModel(camera, entity, component as Model, light, program, uniforms)
       })
     })
   }

@@ -1,10 +1,12 @@
-import { Serialize, Uniform } from '@luz/utilities'
+import { Serialize, Uniform, Register } from '@luz/utilities'
 import { mat3, mat4, vec2 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
 
+@Register()
 export class Camera extends Component {
   readonly type: Component.Type = 'Camera'
+  readonly timestep: Component.Timestep = 'Variable'
 
   @Serialize()
   aspect: number = 1.0

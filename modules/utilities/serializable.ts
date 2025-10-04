@@ -100,7 +100,8 @@ export class Serializable {
               const response = await fetch(item)
               const jsonData = await response.json()
 
-              return await itemValueType.deserialize(jsonData)
+              const resolvedType = getRegisteredClass(jsonData) || itemValueType
+              return await resolvedType.deserialize(jsonData)
             } else {
               return isDeserializable(itemValueType) ? await itemValueType.deserialize(item) : item
             }
@@ -119,7 +120,8 @@ export class Serializable {
               const response = await fetch(entryValue)
               const jsonData = await response.json()
 
-              return [entryKey, await entryValueType.deserialize(jsonData)]
+              const resolvedType = getRegisteredClass(jsonData) || entryValueType
+              return [entryKey, await resolvedType.deserialize(jsonData)]
             } else {
               return [
                 entryKey,

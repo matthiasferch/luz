@@ -1,9 +1,10 @@
-import { Serialize, Uniform } from '@luz/utilities'
+import { Serialize, Uniform, Register } from '@luz/utilities'
 import { mat4, vec3 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
 import { Camera } from './camera'
 
+@Register()
 export class Light extends Camera {
   readonly type: Component.Type = 'Light'
 
