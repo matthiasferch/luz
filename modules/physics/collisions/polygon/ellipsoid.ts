@@ -3,80 +3,92 @@ import { Collision } from '../../collision'
 import { Ellipsoid } from '../../volumes/ellipsoid'
 import { Polygon } from '../../colliders/polygon'
 
-const { min, max, sqrt } = Math
+// Closest point from point p to triangle abc
+const closestPointOnTriangle = (p: vec3, a: vec3, b: vec3, c: vec3): vec3 => {
+  const ab = vec3.subtract(b, a, new vec3())
+  const ac = vec3.subtract(c, a, new vec3())
+  const ap = vec3.subtract(p, a, new vec3())
 
-const findClosestPointOnEdge = (point: vec3, v1: vec3, v2: vec3) => {
-  const e1 = vec3.subtract(v2, v1)
-  const l2 = vec3.dot(e1, e1)
+  const d1 = vec3.dot(ab, ap)
+  const d2 = vec3.dot(ac, ap)
+  if (d1 <= 0 && d2 <= 0) return a.copy()
 
-  if (l2 === 0) {
-    return v1.copy()
+  const bp = vec3.subtract(p, b, new vec3())
+  const d3 = vec3.dot(ab, bp)
+  const d4 = vec3.dot(ac, bp)
+  if (d3 >= 0 && d4 <= d3) return b.copy()
+
+  const vc = d1 * d4 - d3 * d2
+  if (vc <= 0 && d1 >= 0 && d3 <= 0) {
+    const v = d1 / (d1 - d3)
+    return vec3.add(a, vec3.scale(ab, v, new vec3()), new vec3())
   }
 
-  const t = max(0, min(1, vec3.dot(vec3.subtract(point, v1), e1) / l2))
+  const cp = vec3.subtract(p, c, new vec3())
+  const d5 = vec3.dot(ab, cp)
+  const d6 = vec3.dot(ac, cp)
+  if (d6 >= 0 && d5 <= d6) return c.copy()
 
-  return vec3.add(v1, vec3.scale(e1, t))
-}
-
-const findClosestPointOnPolygon = (point: vec3, polygon: Polygon) => {
-  const [v1, v2, v3] = polygon.vertices
-
-  const e1 = vec3.subtract(v2, v1)
-  const e2 = vec3.subtract(v3, v1)
-
-  const p = vec3.subtract(point, v1)
-
-  const e1p = vec3.dot(e1, p)
-  const e2p = vec3.dot(e2, p)
-
-  const e1e1 = vec3.dot(e1, e1)
-  const e1e2 = vec3.dot(e1, e2)
-  const e2e2 = vec3.dot(e2, e2)
-
-  const d = e1e1 * e2e2 - e1e2 * e1e2
-
-  const u = (e2e2 * e1p - e1e2 * e2p) / d
-  const v = (e1e1 * e2p - e1e2 * e1p) / d
-
-  if (u >= 0 && v >= 0 && u + v <= 1) {
-    return vec3.add(v1, vec3.scale(vec3.add(vec3.scale(e1, u), vec3.scale(e2, v)), 1))
+  const vb = d5 * d2 - d1 * d6
+  if (vb <= 0 && d2 >= 0 && d6 <= 0) {
+    const w = d2 / (d2 - d6)
+    return vec3.add(a, vec3.scale(ac, w, new vec3()), new vec3())
   }
 
-  const p1 = findClosestPointOnEdge(point, v1, v2)
-  const p2 = findClosestPointOnEdge(point, v2, v3)
-  const p3 = findClosestPointOnEdge(point, v3, v1)
-
-  const d1 = vec3.dot(vec3.subtract(point, p1), vec3.subtract(point, p1))
-  const d2 = vec3.dot(vec3.subtract(point, p2), vec3.subtract(point, p2))
-  const d3 = vec3.dot(vec3.subtract(point, p3), vec3.subtract(point, p3))
-
-  if (d1 < d2 && d1 < d3) {
-    return p1
+  const va = d3 * d6 - d5 * d4
+  if (va <= 0 && (d4 - d3) >= 0 && (d5 - d6) >= 0) {
+    const w = (d4 - d3) / ((d4 - d3) + (d5 - d6))
+    const bc = vec3.subtract(c, b, new vec3())
+    return vec3.add(b, vec3.scale(bc, w, new vec3()), new vec3())
   }
 
-  if (d2 < d3) {
-    return p2
-  }
-
-  return p3
+  const denom = 1 / (va + vb + vc)
+  const v = vb * denom
+  const w = vc * denom
+  return vec3.add(a, vec3.add(vec3.scale(ab, v, new vec3()), vec3.scale(ac, w, new vec3()), new vec3()), new vec3())
 }
 
 export const collidePolygonWithEllipsoid = (polygon: Polygon, ellipsoid: Ellipsoid): Collision[] | null => {
-  const center = ellipsoid.center
-  const contact = findClosestPointOnPolygon(center, polygon)
+  const c = ellipsoid.center
+  const ux = ellipsoid.axes[0]
+  const uy = ellipsoid.axes[1]
+  const uz = ellipsoid.axes[2]
+  const { x: a, y: b, z: cr } = ellipsoid.radii
 
-  const dir = vec3.subtract(contact, center)
-  const distance = sqrt(vec3.dot(dir, dir))
+  const toScaled = (p: vec3, out: vec3 = new vec3()) => {
+    const r = vec3.subtract(p, c, new vec3())
+    out.x = vec3.dot(r, ux) / a
+    out.y = vec3.dot(r, uy) / b
+    out.z = vec3.dot(r, uz) / cr
+    return out
+  }
 
-  const direction = distance > 0 ? vec3.scale(dir, 1 / distance, new vec3()) : polygon.normal
-  const r = ellipsoid.effectiveRadius(direction)
+  const toWorld = (pS: vec3, out: vec3 = new vec3()) => {
+    return vec3.add(
+      c,
+      vec3.add(
+        vec3.add(vec3.scale(ux, a * pS.x, new vec3()), vec3.scale(uy, b * pS.y, new vec3()), new vec3()),
+        vec3.scale(uz, cr * pS.z, new vec3()),
+        new vec3()
+      ),
+      out
+    )
+  }
 
-  if (distance <= r) {
-    return [
-      { contact, normal: polygon.normal.copy(), distance: r - distance }
-    ]
+  const v1S = toScaled(polygon.vertices[0])
+  const v2S = toScaled(polygon.vertices[1])
+  const v3S = toScaled(polygon.vertices[2])
+
+  const closestS = closestPointOnTriangle(vec3.zero, v1S, v2S, v3S)
+  const dist = closestS.length
+
+  if (dist <= 1) {
+    const contact = toWorld(closestS)
+    const penetration = 1 - dist
+    // Use polygon normal in world for stable ground contacts
+    const normal = polygon.normal.copy()
+    return [ { contact, normal, distance: penetration } ]
   }
 
   return null
 }
-

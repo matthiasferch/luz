@@ -417,9 +417,6 @@ export class Scene extends Serializable {
             bottomY = b1.volume.center.y - vol.extents.y
           } else if (vol.type === 'Sphere' && typeof vol.radius === 'number') {
             bottomY = b1.volume.center.y - vol.radius
-          } else if (vol.type === 'Spheroid' && typeof vol.polarRadius === 'number') {
-            // Approximate: assume polar axis is vertical for step height
-            bottomY = b1.volume.center.y - vol.polarRadius
           } else if (vol.type === 'Ellipsoid' && typeof vol.effectiveRadius === 'function') {
             // Use effective radius along world up direction
             bottomY = b1.volume.center.y - vol.effectiveRadius(vec3.up)
@@ -446,8 +443,6 @@ export class Scene extends Serializable {
               bottomY = b1.volume.center.y - vol.extents.y
             } else if (vol.type === 'Sphere' && typeof vol.radius === 'number') {
               bottomY = b1.volume.center.y - vol.radius
-            } else if (vol.type === 'Spheroid' && typeof vol.polarRadius === 'number') {
-              bottomY = b1.volume.center.y - vol.polarRadius
             } else if (vol.type === 'Ellipsoid' && typeof vol.effectiveRadius === 'function') {
               bottomY = b1.volume.center.y - vol.effectiveRadius(vec3.up)
             }
