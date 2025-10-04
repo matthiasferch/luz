@@ -18,6 +18,10 @@ const penetrationTolerance: number = 0.001
 
 const positionCorrectionFactor: number = 0.25
 const positionCorrectionPerStep: number = 0.005
+// Additional clamp for static (body vs collider) resolution to avoid creep
+const positionCorrectionPerStepStatic: number = 0.02
+// Baumgarte factor to convert penetration depth into velocity bias
+const baumgarteFactor: number = 0.2
 // Consider surfaces with upward normal above this threshold as "ground".
 // Express the threshold via a slope angle in degrees for easier tuning.
 const groundMaxSlopeDegrees: number = 45 // degrees
@@ -25,11 +29,6 @@ const groundMinNormalY: number = Math.cos((groundMaxSlopeDegrees * Math.PI) / 18
 // Allow larger per-step separation for dynamic pairs involving a Biped
 // (applied to the non-biped body), to reduce tunneling.
 const bipedDynamicCorrectionPerStep: number = 0.02
-// Step climbing tuning
-const bipedStepHeight: number = 0.02 // max height that can be stepped onto
-const bipedStepNormalMaxY: number = 0.2 // consider near-vertical faces only
-const bipedStepMinSpeed: number = 0.25 // require some forward motion
-const bipedStepUpBias: number = 1.5 // how strongly to bias correction upward
 
 const isBodyComponent = (component: Component): component is Body => {
   return component.type === 'Body' || component.type === 'Biped'
@@ -242,8 +241,11 @@ export class Scene extends Serializable {
         const tangentDirection = tangentLength > 0 ? tangent.normalize() : vec3.zero
 
         const restitution = Math.abs(velocityAlongNormal) < contactRestVelocity ? 0 : this.restitution
+        // Baumgarte positional bias to fight penetration creep
+        const depth = Math.max(distance - penetrationTolerance, 0)
+        const bias = (baumgarteFactor / FRAME_RATE) * depth
 
-        const impulseScalar = Math.max(-((1.0 + restitution) * velocityAlongNormal), 0)
+        const impulseScalar = Math.max(-((1.0 + restitution) * velocityAlongNormal) + bias, 0)
 
         // Mass/inertia
         // Treat Biped as immovable for dynamic collisions, but allow
@@ -383,6 +385,10 @@ export class Scene extends Serializable {
       // Clamp per-step correction. For biped-vs-dynamic pairs, scale the clamp so that the
       // non-biped body can move up to a fixed amount regardless of its mass.
       let perStepClamp = positionCorrectionPerStep
+      // Allow larger correction for static pairs (body vs collider)
+      if (!b2) {
+        perStepClamp = Math.max(perStepClamp, positionCorrectionPerStepStatic)
+      }
       if (b2 && b1IsBiped && inverseMass2 > 0) {
         // Ensure b2 can move up to bipedDynamicCorrectionPerStep this iteration
         perStepClamp = Math.max(perStepClamp, bipedDynamicCorrectionPerStep / inverseMass2)
@@ -394,70 +400,6 @@ export class Scene extends Serializable {
       }
       if (correctionMagnitude > perStepClamp) {
         correctionMagnitude = perStepClamp
-      }
-
-      // Biped step handling against static geometry: if the biped hits a near-vertical
-      // face within step height while moving forward and is grounded, bias the correction
-      // upward to allow stepping onto the obstacle instead of just pushing back.
-      if (!b2 && b1IsBiped) {
-        const biped = b1 as Biped
-        // Use horizontal movement direction as intent
-        const horizVelocity = new vec3([b1.linearVelocity.x, 0, b1.linearVelocity.z])
-        const horizSpeed = horizVelocity.length
-        const facingIntoWall = horizSpeed > 0
-          ? vec3.dot(horizVelocity.normalize(), vec3.scale(chosenNormal, -1, new vec3())) > 0.25
-          : false
-
-        // Compute contact height relative to the biped's bottom if we can
-        let isWithinStepHeight = false
-        const vol: any = b1.volume as any
-        if (vol) {
-          let bottomY: number | null = null
-          if (vol.type === 'Cuboid' && vol.extents) {
-            bottomY = b1.volume.center.y - vol.extents.y
-          } else if (vol.type === 'Sphere' && typeof vol.radius === 'number') {
-            bottomY = b1.volume.center.y - vol.radius
-          } else if (vol.type === 'Ellipsoid' && typeof vol.effectiveRadius === 'function') {
-            // Use effective radius along world up direction
-            bottomY = b1.volume.center.y - vol.effectiveRadius(vec3.up)
-          }
-          if (bottomY !== null) {
-            const contactHeightAboveBottom = chosenContact.y - bottomY
-            isWithinStepHeight = contactHeightAboveBottom >= -1e-3 && contactHeightAboveBottom <= bipedStepHeight
-          }
-        }
-
-        if (
-          biped.onGround &&
-          chosenNormal.y <= bipedStepNormalMaxY &&
-          horizSpeed >= bipedStepMinSpeed &&
-          facingIntoWall &&
-          isWithinStepHeight
-        ) {
-          // Blend the normal upward. Stronger bias when step is small.
-          const vol: any = b1.volume as any
-          let weight = 1.0
-          if (vol) {
-            let bottomY: number | null = null
-            if (vol.type === 'Cuboid' && vol.extents) {
-              bottomY = b1.volume.center.y - vol.extents.y
-            } else if (vol.type === 'Sphere' && typeof vol.radius === 'number') {
-              bottomY = b1.volume.center.y - vol.radius
-            } else if (vol.type === 'Ellipsoid' && typeof vol.effectiveRadius === 'function') {
-              bottomY = b1.volume.center.y - vol.effectiveRadius(vec3.up)
-            }
-            if (bottomY !== null) {
-              const h = Math.max(0, Math.min(bipedStepHeight, chosenContact.y - bottomY))
-              weight = 1.0 + bipedStepUpBias * (1.0 - h / bipedStepHeight)
-            } else {
-              weight = 1.0 + bipedStepUpBias * 0.5
-            }
-          } else {
-            weight = 1.0 + bipedStepUpBias * 0.5
-          }
-          const stepped = vec3.add(chosenNormal, vec3.scale(vec3.up, weight, new vec3()), new vec3()).normalize()
-          chosenNormal = stepped
-        }
       }
 
       const correction = vec3.scale(chosenNormal, correctionMagnitude, new vec3())
