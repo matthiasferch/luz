@@ -2,6 +2,7 @@ import { Collider, CollisionDispatcher } from '@luz/physics'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
+import { Biped } from './components/biped'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 import { Component } from './component'
@@ -17,6 +18,9 @@ const penetrationTolerance: number = 0.001
 
 const positionCorrectionFactor: number = 0.25
 const positionCorrectionPerStep: number = 0.005
+// Consider surfaces with upward normal above this threshold as "ground".
+// cos(maxSlopeAngle). 0.7 ~= 45 degrees.
+const groundMinNormalY: number = 0.7
 
 const isBodyComponent = (component: Component): component is Body => {
   return component.type === 'Body' || component.type === 'Biped'
@@ -103,10 +107,16 @@ export class Scene extends Serializable {
   }
 
   private solveCollisions(bodies: Body[]) {
+    // Reset onGround for all bipeds before solving
+    (bodies.filter((b): b is Biped => b.type === 'Biped') as Biped[]).forEach((b) => {
+      b.onGround = false
+    })
+
     // Velocity phase
     for (let iteration = 0; iteration < velocityIterations; iteration++) {
       this.detectCollisions(bodies)
       if (this.collisionManifolds.length === 0) break
+      this.updateBipedGroundState()
       this.resolveVelocities()
     }
 
@@ -114,6 +124,7 @@ export class Scene extends Serializable {
     for (let iteration = 0; iteration < positionIterations; iteration++) {
       this.detectCollisions(bodies)
       if (this.collisionManifolds.length === 0) break
+      this.updateBipedGroundState()
       const applied = this.resolvePositions()
       if (!applied) break
     }
@@ -226,8 +237,14 @@ export class Scene extends Serializable {
         const impulseScalar = Math.max(-((1.0 + restitution) * velocityAlongNormal), 0)
 
         // Mass/inertia
-        const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
-        const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
+        // Treat Biped as immovable for dynamic collisions, but allow
+        // normal impulses vs static colliders (b2 === null) to prevent tunneling.
+        const b1IsBiped = b1.type === 'Biped'
+        const b2IsBiped = b2 ? b2.type === 'Biped' : false
+        const invMass1Base = b1.mass > 0 ? 1.0 / b1.mass : 0
+        const invMass2Base = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
+        const inverseMass1 = b1IsBiped && b2 ? 0 : invMass1Base
+        const inverseMass2 = b2 ? (b2IsBiped ? 0 : invMass2Base) : 0
         const totalInverseMass = inverseMass1 + inverseMass2
         if (totalInverseMass === 0) return
 
@@ -337,8 +354,17 @@ export class Scene extends Serializable {
         return
       }
 
-      const inverseMass1 = b1.mass > 0 ? 1.0 / b1.mass : 0
-      const inverseMass2 = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
+      // For position correction:
+      // - Do not move Biped in dynamic-dynamic pairs (let the other body move)
+      // - Allow Biped to be corrected against static colliders (b2 === null)
+      const b1IsBiped = b1.type === 'Biped'
+      const b2IsBiped = b2 ? b2.type === 'Biped' : false
+
+      const invMass1Base = b1.mass > 0 ? 1.0 / b1.mass : 0
+      const invMass2Base = b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0
+
+      const inverseMass1 = b1IsBiped && b2 ? 0 : invMass1Base
+      const inverseMass2 = b2 ? (b2IsBiped ? 0 : invMass2Base) : 0
       const totalInverseMass = inverseMass1 + inverseMass2
       if (totalInverseMass === 0) return
 
@@ -363,5 +389,29 @@ export class Scene extends Serializable {
     })
 
     return appliedCorrection
+  }
+
+  private updateBipedGroundState() {
+    // Mark bipeds as onGround only if contact is below center AND
+    // the surface normal is sufficiently upward (not a wall).
+    this.collisionManifolds.forEach(({ bodies, collisions }) => {
+      const [b1, b2] = bodies
+      const b1IsBiped = b1.type === 'Biped'
+      const b2IsBiped = b2 ? b2.type === 'Biped' : false
+
+      if (!b1IsBiped && !b2IsBiped) return
+
+      collisions.forEach(({ contact, normal }) => {
+        const isGroundish = normal.y >= groundMinNormalY
+        if (b1IsBiped) {
+          const r1 = vec3.subtract(contact, b1.volume.center, new vec3())
+          if (r1.y < 0 && isGroundish) (b1 as Biped).onGround = true
+        }
+        if (b2 && b2IsBiped) {
+          const r2 = vec3.subtract(contact, b2.volume.center, new vec3())
+          if (r2.y < 0 && isGroundish) (b2 as Biped).onGround = true
+        }
+      })
+    })
   }
 }

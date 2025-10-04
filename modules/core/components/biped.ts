@@ -7,6 +7,8 @@ import { Component } from '../component'
 @Register()
 export class Biped extends Body {
   readonly type: Component.Type = 'Biped'
+  // True when a contact exists below the biped this step
+  onGround: boolean = false
 
   update(transform: Transform, deltaTime: number) {
     this.torque.reset()
