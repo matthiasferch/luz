@@ -59,6 +59,7 @@ export class Scene extends Serializable {
   readonly collisionManifolds: CollisionManifold[] = []
 
   private collisionDispatcher: CollisionDispatcher
+
   private elapsedTime: number = 0
 
   constructor() {
@@ -73,6 +74,7 @@ export class Scene extends Serializable {
 
   update(deltaTime: number) {
     const entities = Object.values(this.entities)
+
     this.elapsedTime += deltaTime
 
     let steps = 0
