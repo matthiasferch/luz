@@ -1,4 +1,5 @@
 import { Collider, CollisionDispatcher } from '@luz/physics'
+import { AABB, aabbFromVolume, aabbFromCollider, sweepAndPrunePairs, sweepAndPrunePairsAB, AABBEntry } from '@luz/physics/broadphase'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
@@ -62,6 +63,15 @@ export class Scene extends Serializable {
 
   private elapsedTime: number = 0
 
+  // Debug: last broadphase stats
+  lastBroadphaseStats: {
+    bodies: number
+    colliders: number
+    candidateBodyPairs: number
+    candidateBodyColliderPairs: number
+    manifolds: number
+  } | null = null
+
   constructor() {
     super()
     this.gravity = new vec3([0, -9.81, 0])
@@ -122,9 +132,10 @@ export class Scene extends Serializable {
       b.onGround = false
     })
 
-    // Velocity phase
+    // Velocity phase (positions fixed). Cache broadphase once across iterations.
+    const velocityBroadphase = this.buildBroadphaseCache(bodies)
     for (let iteration = 0; iteration < velocityIterations; iteration++) {
-      this.detectCollisions(bodies)
+      this.detectCollisions(bodies, velocityBroadphase)
       if (this.collisionManifolds.length === 0) break
       this.updateBipedGroundState()
       this.resolveVelocities()
@@ -132,6 +143,7 @@ export class Scene extends Serializable {
 
     // Position phase
     for (let iteration = 0; iteration < positionIterations; iteration++) {
+      // Positions may change each iteration; recompute broadphase per iteration
       this.detectCollisions(bodies)
       if (this.collisionManifolds.length === 0) break
       this.updateBipedGroundState()
@@ -164,31 +176,92 @@ export class Scene extends Serializable {
     })
   }
 
-  private detectCollisions(bodies: Body[]) {
+  private detectCollisions(bodies: Body[], cache?: {
+    bodySorted: Array<AABBEntry<Body>>
+    finiteSorted: Array<AABBEntry<Collider>>
+    infinite: Collider[]
+  }) {
     this.collisionManifolds.length = 0
 
-    // body-vs-body
-    for (let i = 0; i < bodies.length; i++) {
-      const b1 = bodies[i]
-      for (let j = i + 1; j < bodies.length; j++) {
-        const b2 = bodies[j]
-        const collisions = this.collisionDispatcher.dispatch(b1.volume, b2.volume)
-        if (collisions && collisions.length > 0) {
-          this.collisionManifolds.push({ bodies: [b1, b2], collisions })
-        }
+    // Prepare or use cache
+    const bodySorted: Array<AABBEntry<Body>> = cache?.bodySorted ?? bodies
+      .map((body) => ({ item: body, aabb: aabbFromVolume(body.volume) }))
+      .sort((a, b) => a.aabb.minX - b.aabb.minX)
+
+    const allColliders = Object.values(this.colliders)
+
+    const finiteSorted: Array<AABBEntry<Collider>> = cache?.finiteSorted ?? allColliders
+      .map((c) => ({ item: c, aabb: aabbFromCollider(c) }))
+      .filter((e): e is AABBEntry<Collider> => !!e.aabb)
+      .sort((a, b) => a.aabb.minX - b.aabb.minX)
+
+    const infinite: Collider[] = cache?.infinite ?? allColliders.filter((c) => aabbFromCollider(c) === null)
+
+    // Broadphase: pairs
+    const bodyPairs: Array<[Body, Body]> = sweepAndPrunePairs(bodySorted)
+    const colliderPairs: Array<[Body, Collider]> = sweepAndPrunePairsAB(bodySorted, finiteSorted)
+    // Add body pairs with infinite colliders
+    const colliderPairsWithInfinite: Array<[Body, Collider]> = []
+    for (const be of bodySorted) {
+      for (const ic of infinite) colliderPairsWithInfinite.push([be.item, ic])
+    }
+
+    // Narrowphase
+    let manifoldCount = 0
+    for (const [b1, b2] of bodyPairs) {
+      if (b1 === b2) continue
+      const collisions = this.collisionDispatcher.dispatch(b1.volume, b2.volume)
+      if (collisions && collisions.length > 0) {
+        this.collisionManifolds.push({ bodies: [b1, b2], collisions })
+        manifoldCount++
+      }
+    }
+    for (const [b, c] of colliderPairs) {
+      const collisions = this.collisionDispatcher.dispatch(b.volume, c)
+      if (collisions && collisions.length > 0) {
+        this.collisionManifolds.push({ bodies: [b, null], collisions })
+        manifoldCount++
+      }
+    }
+    for (const [b, c] of colliderPairsWithInfinite) {
+      const collisions = this.collisionDispatcher.dispatch(b.volume, c)
+      if (collisions && collisions.length > 0) {
+        this.collisionManifolds.push({ bodies: [b, null], collisions })
+        manifoldCount++
       }
     }
 
-    // body-vs-static
-    bodies.forEach((body) => {
-      const colliders = Object.values(this.colliders)
-      colliders.forEach((collider) => {
-        const collisions = this.collisionDispatcher.dispatch(body.volume, collider)
-        if (collisions && collisions.length > 0) {
-          this.collisionManifolds.push({ bodies: [body, null], collisions })
-        }
-      })
-    })
+    // Debug stats
+    this.lastBroadphaseStats = {
+      bodies: bodies.length,
+      colliders: allColliders.length,
+      candidateBodyPairs: bodyPairs.length,
+      candidateBodyColliderPairs: colliderPairs.length + colliderPairsWithInfinite.length,
+      manifolds: manifoldCount,
+    }
+    // If needed, timing can be measured by users from outside using Date.now()
+  }
+
+  private buildBroadphaseCache(bodies: Body[]): {
+    bodySorted: Array<AABBEntry<Body>>
+    finiteSorted: Array<AABBEntry<Collider>>
+    infinite: Collider[]
+  } {
+    const bodySorted: Array<AABBEntry<Body>> = bodies
+      .map((body) => ({ item: body, aabb: aabbFromVolume(body.volume) }))
+      .sort((a, b) => a.aabb.minX - b.aabb.minX)
+
+    const allColliders = Object.values(this.colliders)
+    const finite: Array<AABBEntry<Collider>> = []
+    const infinite: Collider[] = []
+    for (const c of allColliders) {
+      const aabb = aabbFromCollider(c)
+      if (aabb) finite.push({ item: c, aabb })
+      else infinite.push(c)
+    }
+    const finiteSorted = finite.sort((a, b) => a.aabb.minX - b.aabb.minX)
+
+    return { bodySorted, finiteSorted, infinite }
   }
 
   // Stable per-pair normal orientation (shared by both solvers)
