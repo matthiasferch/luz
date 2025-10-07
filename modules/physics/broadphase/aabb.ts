@@ -106,7 +106,7 @@ export class BoundingBox {
       case 'Frustum': {
         const frustum = collider as Frustum
 
-        const corners = frustum.getCorners()
+        const corners = frustum.getVertices()
 
         this.minimum.x = this.minimum.y = this.minimum.z = Infinity
         this.maximum.x = this.maximum.y = this.maximum.z = -Infinity
