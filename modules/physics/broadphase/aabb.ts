@@ -8,14 +8,13 @@ import { Cylinder } from '../volumes/cylinder'
 import { Polygon } from '../colliders/polygon'
 
 export class AABB {
-  minX: number
-  minY: number
-  minZ: number
-  maxX: number
-  maxY: number
-  maxZ: number
+  min: vec3
+  max: vec3
 
   constructor(collider: Collider) {
+    this.min = vec3.zero.copy()
+    this.max = vec3.zero.copy()
+
     // Build from collider type. Infinite primitives (Plane) are not representable; use fromCollider for null.
     switch (collider.type) {
       case 'Sphere': {
@@ -25,13 +24,13 @@ export class AABB {
         const centerY = sphere.center.y
         const centerZ = sphere.center.z
 
-        this.minX = centerX - radius
-        this.minY = centerY - radius
-        this.minZ = centerZ - radius
+        this.min.x = centerX - radius
+        this.min.y = centerY - radius
+        this.min.z = centerZ - radius
 
-        this.maxX = centerX + radius
-        this.maxY = centerY + radius
-        this.maxZ = centerZ + radius
+        this.max.x = centerX + radius
+        this.max.y = centerY + radius
+        this.max.z = centerZ + radius
 
         break
       }
@@ -54,13 +53,13 @@ export class AABB {
         const centerY = cuboid.center.y
         const centerZ = cuboid.center.z
 
-        this.minX = centerX - halfX
-        this.minY = centerY - halfY
-        this.minZ = centerZ - halfZ
+        this.min.x = centerX - halfX
+        this.min.y = centerY - halfY
+        this.min.z = centerZ - halfZ
 
-        this.maxX = centerX + halfX
-        this.maxY = centerY + halfY
-        this.maxZ = centerZ + halfZ
+        this.max.x = centerX + halfX
+        this.max.y = centerY + halfY
+        this.max.z = centerZ + halfZ
 
         break
       }
@@ -75,13 +74,13 @@ export class AABB {
         const centerY = ellipsoid.center.y
         const centerZ = ellipsoid.center.z
 
-        this.minX = centerX - halfX
-        this.minY = centerY - halfY
-        this.minZ = centerZ - halfZ
+        this.min.x = centerX - halfX
+        this.min.y = centerY - halfY
+        this.min.z = centerZ - halfZ
 
-        this.maxX = centerX + halfX
-        this.maxY = centerY + halfY
-        this.maxZ = centerZ + halfZ
+        this.max.x = centerX + halfX
+        this.max.y = centerY + halfY
+        this.max.z = centerZ + halfZ
 
         break
       }
@@ -96,21 +95,21 @@ export class AABB {
         const centerY = cylinder.center.y
         const centerZ = cylinder.center.z
 
-        this.minX = centerX - halfX
-        this.minY = centerY - halfY
-        this.minZ = centerZ - halfZ
+        this.min.x = centerX - halfX
+        this.min.y = centerY - halfY
+        this.min.z = centerZ - halfZ
 
-        this.maxX = centerX + halfX
-        this.maxY = centerY + halfY
-        this.maxZ = centerZ + halfZ
+        this.max.x = centerX + halfX
+        this.max.y = centerY + halfY
+        this.max.z = centerZ + halfZ
 
         break
       }
       case 'Polygon': {
         const polygon = collider as Polygon
         if (!polygon.vertices || polygon.vertices.length === 0) {
-          this.minX = this.minY = this.minZ = 0
-          this.maxX = this.maxY = this.maxZ = 0
+          this.min.x = this.min.y = this.min.z = 0
+          this.max.x = this.max.y = this.max.z = 0
 
           break
         }
@@ -127,28 +126,28 @@ export class AABB {
           if (vertex.z > maxZ) maxZ = vertex.z
         }
 
-        this.minX = minX
-        this.minY = minY
-        this.minZ = minZ
+        this.min.x = minX
+        this.min.y = minY
+        this.min.z = minZ
 
-        this.maxX = maxX
-        this.maxY = maxY
-        this.maxZ = maxZ
+        this.max.x = maxX
+        this.max.y = maxY
+        this.max.z = maxZ
 
         break
       }
       default: {
         // Fallback: zero-sized at origin
-        this.minX = this.minY = this.minZ = 0
-        this.maxX = this.maxY = this.maxZ = 0
+        this.min.x = this.min.y = this.min.z = 0
+        this.max.x = this.max.y = this.max.z = 0
       }
     }
   }
 
   static overlap(a: AABB, b: AABB): boolean {
-    if (a.maxX < b.minX || b.maxX < a.minX) return false
-    if (a.maxY < b.minY || b.maxY < a.minY) return false
-    if (a.maxZ < b.minZ || b.maxZ < a.minZ) return false
+    if (a.max.x < b.min.x || b.max.x < a.min.x) return false
+    if (a.max.y < b.min.y || b.max.y < a.min.y) return false
+    if (a.max.z < b.min.z || b.max.z < a.min.z) return false
     return true
   }
 
