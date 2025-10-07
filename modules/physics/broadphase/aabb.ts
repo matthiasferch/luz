@@ -1,161 +1,170 @@
 import { vec3 } from '@luz/vectors'
 import { Collider } from '../collider'
-import { Volume } from '../volume'
 import { Sphere } from '../volumes/sphere'
 import { Cuboid } from '../volumes/cuboid'
 import { Ellipsoid } from '../volumes/ellipsoid'
 import { Cylinder } from '../volumes/cylinder'
 import { Polygon } from '../colliders/polygon'
 
-export class AABB {
-  min: vec3
-  max: vec3
+const { abs } = Math
+
+export class BoundingBox {
+  readonly minimum: vec3
+  readonly maximum: vec3
 
   constructor(collider: Collider) {
-    this.min = vec3.zero.copy()
-    this.max = vec3.zero.copy()
+    this.minimum = vec3.zero.copy()
+    this.maximum = vec3.zero.copy()
 
-    // Build from collider type. Infinite primitives (Plane) are not representable; use fromCollider for null.
-    switch (collider.type) {
+    const { type } = collider
+
+    switch (type) {
       case 'Sphere': {
         const sphere = collider as Sphere
-        const radius = sphere.radius
-        const centerX = sphere.center.x
-        const centerY = sphere.center.y
-        const centerZ = sphere.center.z
 
-        this.min.x = centerX - radius
-        this.min.y = centerY - radius
-        this.min.z = centerZ - radius
+        const { center, radius } = sphere
 
-        this.max.x = centerX + radius
-        this.max.y = centerY + radius
-        this.max.z = centerZ + radius
+        this.minimum.x = center.x - radius
+        this.minimum.y = center.y - radius
+        this.minimum.z = center.z - radius
+
+        this.maximum.x = center.x + radius
+        this.maximum.y = center.y + radius
+        this.maximum.z = center.z + radius
 
         break
       }
+
       case 'Cuboid': {
         const cuboid = collider as Cuboid
 
-        const halfExtentX = cuboid.extents.x
-        const halfExtentY = cuboid.extents.y
-        const halfExtentZ = cuboid.extents.z
+        const { extents, center, axes } = cuboid
 
-        const axisX = cuboid.axes[0]
-        const axisY = cuboid.axes[1]
-        const axisZ = cuboid.axes[2]
+        const halfExtents = new vec3([
+          abs(axes[0].x) * extents.x + abs(axes[1].x) * extents.y + abs(axes[2].x) * extents.z,
+          abs(axes[0].y) * extents.x + abs(axes[1].y) * extents.y + abs(axes[2].y) * extents.z,
+          abs(axes[0].z) * extents.x + abs(axes[1].z) * extents.y + abs(axes[2].z) * extents.z
+        ])
 
-        const halfX = Math.abs(axisX.x) * halfExtentX + Math.abs(axisY.x) * halfExtentY + Math.abs(axisZ.x) * halfExtentZ
-        const halfY = Math.abs(axisX.y) * halfExtentX + Math.abs(axisY.y) * halfExtentY + Math.abs(axisZ.y) * halfExtentZ
-        const halfZ = Math.abs(axisX.z) * halfExtentX + Math.abs(axisY.z) * halfExtentY + Math.abs(axisZ.z) * halfExtentZ
+        this.minimum.x = center.x - halfExtents.x
+        this.minimum.y = center.y - halfExtents.y
+        this.minimum.z = center.z - halfExtents.z
 
-        const centerX = cuboid.center.x
-        const centerY = cuboid.center.y
-        const centerZ = cuboid.center.z
-
-        this.min.x = centerX - halfX
-        this.min.y = centerY - halfY
-        this.min.z = centerZ - halfZ
-
-        this.max.x = centerX + halfX
-        this.max.y = centerY + halfY
-        this.max.z = centerZ + halfZ
+        this.maximum.x = center.x + halfExtents.x
+        this.maximum.y = center.y + halfExtents.y
+        this.maximum.z = center.z + halfExtents.z
 
         break
       }
+
       case 'Ellipsoid': {
         const ellipsoid = collider as Ellipsoid
 
-        const halfX = ellipsoid.effectiveRadius(vec3.right)
-        const halfY = ellipsoid.effectiveRadius(vec3.up)
-        const halfZ = ellipsoid.effectiveRadius(vec3.forward)
+        const { center } = ellipsoid
 
-        const centerX = ellipsoid.center.x
-        const centerY = ellipsoid.center.y
-        const centerZ = ellipsoid.center.z
+        const halfExtents = new vec3([
+          ellipsoid.effectiveRadius(vec3.right),
+          ellipsoid.effectiveRadius(vec3.up),
+          ellipsoid.effectiveRadius(vec3.forward)
+        ])
 
-        this.min.x = centerX - halfX
-        this.min.y = centerY - halfY
-        this.min.z = centerZ - halfZ
 
-        this.max.x = centerX + halfX
-        this.max.y = centerY + halfY
-        this.max.z = centerZ + halfZ
+        this.minimum.x = center.x - halfExtents.x
+        this.minimum.y = center.y - halfExtents.y
+        this.minimum.z = center.z - halfExtents.z
+
+        this.maximum.x = center.x + halfExtents.x
+        this.maximum.y = center.y + halfExtents.y
+        this.maximum.z = center.z + halfExtents.z
 
         break
       }
+
       case 'Cylinder': {
         const cylinder = collider as Cylinder
 
-        const halfX = cylinder.effectiveRadius(vec3.right)
-        const halfY = cylinder.effectiveRadius(vec3.up)
-        const halfZ = cylinder.effectiveRadius(vec3.forward)
+        const { center } = cylinder
 
-        const centerX = cylinder.center.x
-        const centerY = cylinder.center.y
-        const centerZ = cylinder.center.z
+        const halfExtents = new vec3([
+          cylinder.effectiveRadius(vec3.right),
+          cylinder.effectiveRadius(vec3.up),
+          cylinder.effectiveRadius(vec3.forward)
+        ])
 
-        this.min.x = centerX - halfX
-        this.min.y = centerY - halfY
-        this.min.z = centerZ - halfZ
+        this.minimum.x = center.x - halfExtents.x
+        this.minimum.y = center.y - halfExtents.y
+        this.minimum.z = center.z - halfExtents.z
 
-        this.max.x = centerX + halfX
-        this.max.y = centerY + halfY
-        this.max.z = centerZ + halfZ
+        this.maximum.x = center.x + halfExtents.x
+        this.maximum.y = center.y + halfExtents.y
+        this.maximum.z = center.z + halfExtents.z
 
         break
       }
+
       case 'Polygon': {
         const polygon = collider as Polygon
-        if (!polygon.vertices || polygon.vertices.length === 0) {
-          this.min.x = this.min.y = this.min.z = 0
-          this.max.x = this.max.y = this.max.z = 0
+
+        const { vertices } = polygon
+
+        if (!vertices || vertices.length === 0) {
+          this.minimum.x = this.minimum.y = this.minimum.z = 0
+          this.maximum.x = this.maximum.y = this.maximum.z = 0
 
           break
         }
-        let minX = Infinity, minY = Infinity, minZ = Infinity
-        let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity
 
-        for (const vertex of polygon.vertices) {
-          if (vertex.x < minX) minX = vertex.x
-          if (vertex.y < minY) minY = vertex.y
-          if (vertex.z < minZ) minZ = vertex.z
+        this.minimum.x = this.minimum.y = this.minimum.z = Infinity
+        this.maximum.x = this.maximum.y = this.maximum.z = -Infinity
 
-          if (vertex.x > maxX) maxX = vertex.x
-          if (vertex.y > maxY) maxY = vertex.y
-          if (vertex.z > maxZ) maxZ = vertex.z
+        for (const vertex of vertices) {
+          if (vertex.x < this.minimum.x) {
+            this.minimum.x = vertex.x
+          }
+
+          if (vertex.y < this.minimum.y) {
+            this.minimum.y = vertex.y
+          }
+
+          if (vertex.z < this.minimum.z) {
+            this.minimum.z = vertex.z
+          }
+
+          if (vertex.x > this.maximum.x) {
+            this.maximum.x = vertex.x
+          }
+
+          if (vertex.y > this.maximum.y) {
+            this.maximum.y = vertex.y
+          }
+
+          if (vertex.z > this.maximum.z) {
+            this.maximum.z = vertex.z
+          }
         }
-
-        this.min.x = minX
-        this.min.y = minY
-        this.min.z = minZ
-
-        this.max.x = maxX
-        this.max.y = maxY
-        this.max.z = maxZ
 
         break
       }
+
       default: {
-        // Fallback: zero-sized at origin
-        this.min.x = this.min.y = this.min.z = 0
-        this.max.x = this.max.y = this.max.z = 0
+        throw new Error(`AABB not implemented for collider type: ${type}`)
       }
     }
   }
 
-  static overlap(a: AABB, b: AABB): boolean {
-    if (a.max.x < b.min.x || b.max.x < a.min.x) return false
-    if (a.max.y < b.min.y || b.max.y < a.min.y) return false
-    if (a.max.z < b.min.z || b.max.z < a.min.z) return false
+  static intersect(c1: BoundingBox, c2: BoundingBox): boolean {
+    if (c1.maximum.x < c2.minimum.x || c2.maximum.x < c1.minimum.x) {
+      return false
+    }
+
+    if (c1.maximum.y < c2.minimum.y || c2.maximum.y < c1.minimum.y) {
+      return false
+    }
+
+    if (c1.maximum.z < c2.minimum.z || c2.maximum.z < c1.minimum.z) {
+      return false
+    }
+
     return true
-  }
-
-  static fromVolume(volume: Volume): AABB {
-    return new AABB(volume as unknown as Collider)
-  }
-
-  static fromCollider(collider: Collider): AABB {
-    return new AABB(collider)
   }
 }

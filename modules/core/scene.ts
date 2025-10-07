@@ -1,5 +1,5 @@
 import { Collider, CollisionDispatcher } from '@luz/physics'
-import { AABB, sweepAndPrunePairs, sweepAndPrunePairsAB, AABBEntry } from '@luz/physics/broadphase'
+import { BoundingBox, sweepAndPrunePairs, sweepAndPrunePairsAB, AABBEntry } from '@luz/physics/broadphase'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
@@ -191,15 +191,15 @@ export class Scene extends Serializable {
 
     // Prepare or use cache
     const sortedBodyEntries: Array<AABBEntry<Body>> = cache?.bodySorted ?? bodies
-      .map((body) => ({ item: body, aabb: AABB.fromVolume(body.volume) }))
-      .sort((a, b) => a.aabb.min.x - b.aabb.min.x)
+      .map((body) => ({ item: body, aabb: new BoundingBox(body.volume) }))
+      .sort((a, b) => a.aabb.minimum.x - b.aabb.minimum.x)
 
     const allColliders = Object.values(this.colliders)
 
     const finiteColliders = allColliders.filter((c) => c.type !== 'Plane')
     const sortedFiniteColliderEntries: Array<AABBEntry<Collider>> = cache?.finiteSorted ?? finiteColliders
-      .map((c) => ({ item: c, aabb: AABB.fromCollider(c) }))
-      .sort((a, b) => a.aabb.min.x - b.aabb.min.x)
+      .map((c) => ({ item: c, aabb: new BoundingBox(c) }))
+      .sort((a, b) => a.aabb.minimum.x - b.aabb.minimum.x)
 
     const infiniteColliders: Collider[] = cache?.infinite ?? allColliders.filter((c) => c.type === 'Plane')
 
@@ -256,10 +256,10 @@ export class Scene extends Serializable {
   } {
     // Precompute and sort AABBs for bodies along X
     const bodySorted: Array<AABBEntry<Body>> = bodies
-      .map((body) => ({ item: body, aabb: AABB.fromVolume(body.volume) }))
-      .sort((a, b) => a.aabb.min.x - b.aabb.min.x)
+      .map((body) => ({ item: body, aabb: new BoundingBox(body.volume) }))
+      .sort((a, b) => a.aabb.minimum.x - b.aabb.minimum.x)
 
-    // Partition colliders into finite (AABB) and infinite (planes)
+    // Partition colliders into finite (BoundingBox) and infinite (planes)
     const allColliders = Object.values(this.colliders)
 
     const finite: Array<AABBEntry<Collider>> = []
@@ -269,12 +269,12 @@ export class Scene extends Serializable {
       if (collider.type === 'Plane') {
         infinite.push(collider)
       } else {
-        const aabb = AABB.fromCollider(collider)
+        const aabb = new BoundingBox(collider)
         finite.push({ item: collider, aabb })
       }
     }
 
-    const finiteSorted = finite.sort((a, b) => a.aabb.min.x - b.aabb.min.x)
+    const finiteSorted = finite.sort((a, b) => a.aabb.minimum.x - b.aabb.minimum.x)
 
     return { bodySorted, finiteSorted, infinite }
   }
