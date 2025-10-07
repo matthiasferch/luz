@@ -24,6 +24,15 @@ export class Programs {
     this.gl.attachShader(program, vertexShader)
     this.gl.attachShader(program, fragmentShader)
 
+    // Bind attribute locations to match VAO layout
+    // 0: a_position, 1: a_normal, 2: a_coordinates, 3: a_boneIndices, 4: a_boneWeights
+    // Safe even if a given shader doesn't declare all attributes.
+    this.gl.bindAttribLocation(program, 0, 'a_position')
+    this.gl.bindAttribLocation(program, 1, 'a_normal')
+    this.gl.bindAttribLocation(program, 2, 'a_coordinates')
+    this.gl.bindAttribLocation(program, 3, 'a_boneIndices')
+    this.gl.bindAttribLocation(program, 4, 'a_boneWeights')
+
     this.gl.linkProgram(program)
 
     const linked = this.gl.getProgramParameter(program, this.gl.LINK_STATUS) as boolean

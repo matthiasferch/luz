@@ -30,6 +30,9 @@ export class Bone extends Serializable {
 
   readonly inverseBindMatrix: mat4 = mat4.identity.copy()
 
+  // Global (object-space) pose without skinning (used for hierarchy propagation)
+  readonly globalMatrix: mat4 = mat4.identity.copy()
+
   constructor({ name, parent, head, tail, bindMatrix }: Partial<Bone> = {}) {
     super()
 
@@ -68,15 +71,17 @@ export class Bone extends Serializable {
 
     mat4.construct(translation, rotation, scale, this.localMatrix)
 
+    // First, build hierarchical global pose (object/model space) without skinning
     if (this.parentBone) {
-      const { poseMatrix } = this.parentBone
+      const { globalMatrix } = this.parentBone
 
-      mat4.multiply(this.localMatrix, poseMatrix, this.poseMatrix)
+      mat4.multiply(this.localMatrix, globalMatrix, this.globalMatrix) // global = parentGlobal * local
     } else {
-      this.poseMatrix.copy(this.localMatrix)
+      this.globalMatrix.copy(this.localMatrix)
     }
 
-    this.poseMatrix.multiply(this.inverseBindMatrix)
+    // Then compute final skin matrix: global pose * inverse bind
+    mat4.multiply(this.inverseBindMatrix, this.globalMatrix, this.poseMatrix)
 
     this.childBones.forEach((bone) => bone.update(deltaTime, animations))
   }
