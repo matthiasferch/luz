@@ -1,47 +1,76 @@
 import { AABB } from './aabb'
 
+// Input entry for sweep algorithms: the item and its AABB
 export type AABBEntry<T> = { item: T; aabb: AABB }
 
-// Sweep-and-prune along X axis, generating candidate pairs within the same set.
-export function sweepAndPrunePairs<T>(entries: Array<AABBEntry<T>>): Array<[T, T]> {
-  if (entries.length <= 1) return []
-  const sorted = entries.slice().sort((a, b) => a.aabb.min.x - b.aabb.min.x)
-  const active: Array<AABBEntry<T>> = []
-  const pairs: Array<[T, T]> = []
+// Sweep-and-prune along X axis within a single set.
+// Returns candidate pairs that potentially overlap in 3D (exact check via AABB.overlap).
+export function sweepAndPrunePairs<T>(unsortedEntries: Array<AABBEntry<T>>): Array<[T, T]> {
+  if (unsortedEntries.length <= 1) return []
 
-  for (const e of sorted) {
-    for (let i = active.length - 1; i >= 0; i--) {
-      if (active[i].aabb.max.x < e.aabb.min.x) active.splice(i, 1)
+  // Sort by min.x for 1D sweeping
+  const sortedEntries = unsortedEntries.slice().sort((lhs, rhs) => lhs.aabb.min.x - rhs.aabb.min.x)
+
+  // Active set contains entries whose X-interval overlaps the current entry's min.x
+  const activeSet: Array<AABBEntry<T>> = []
+
+  // Collected candidate pairs
+  const candidatePairs: Array<[T, T]> = []
+
+  for (const current of sortedEntries) {
+    // Prune from the back while entries no longer overlap on X
+    for (let i = activeSet.length - 1; i >= 0; i--) {
+      if (activeSet[i].aabb.max.x < current.aabb.min.x) activeSet.splice(i, 1)
     }
-    for (const cand of active) {
-      if (AABB.overlap(e.aabb, cand.aabb)) pairs.push([e.item, cand.item])
+
+    // Exact 3D AABB overlap test for remaining active entries
+    for (const candidate of activeSet) {
+      if (AABB.overlap(current.aabb, candidate.aabb)) {
+        candidatePairs.push([current.item, candidate.item])
+      }
     }
-    active.push(e)
+
+    // Add current to the active set
+    activeSet.push(current)
   }
-  return pairs
+
+  return candidatePairs
 }
 
-// Sweep-and-prune along X axis for pairs across two sets.
-export function sweepAndPrunePairsAB<A, B>(aEntries: Array<AABBEntry<A>>, bEntries: Array<AABBEntry<B>>): Array<[A, B]> {
-  if (aEntries.length === 0 || bEntries.length === 0) return []
-  const aSorted = aEntries.slice().sort((a, b) => a.aabb.min.x - b.aabb.min.x)
-  const bSorted = bEntries.slice().sort((a, b) => a.aabb.min.x - b.aabb.min.x)
+// Sweep-and-prune along X axis across two sets (A against B).
+// Returns candidate cross-set pairs that potentially overlap in 3D.
+export function sweepAndPrunePairsAB<A, B>(setAEntries: Array<AABBEntry<A>>, setBEntries: Array<AABBEntry<B>>): Array<[A, B]> {
+  if (setAEntries.length === 0 || setBEntries.length === 0) return []
 
-  const pairs: Array<[A, B]> = []
-  let bStart = 0
-  const active: Array<AABBEntry<B>> = []
+  const sortedAEntries = setAEntries.slice().sort((lhs, rhs) => lhs.aabb.min.x - rhs.aabb.min.x)
+  const sortedBEntries = setBEntries.slice().sort((lhs, rhs) => lhs.aabb.min.x - rhs.aabb.min.x)
 
-  for (const ae of aSorted) {
-    while (bStart < bSorted.length && bSorted[bStart].aabb.min.x <= ae.aabb.max.x) {
-      active.push(bSorted[bStart++])
+  const candidatePairs: Array<[A, B]> = []
+
+  // Window start into B for the current A entry
+  let bWindowStart = 0
+
+  // Active window of B entries overlapping current A's min.x on X
+  const activeBSet: Array<AABBEntry<B>> = []
+
+  for (const aEntry of sortedAEntries) {
+    // Expand the B window to include any B whose min.x is <= A's max.x
+    while (bWindowStart < sortedBEntries.length && sortedBEntries[bWindowStart].aabb.min.x <= aEntry.aabb.max.x) {
+      activeBSet.push(sortedBEntries[bWindowStart++])
     }
-    for (let i = active.length - 1; i >= 0; i--) {
-      if (active[i].aabb.max.x < ae.aabb.min.x) active.splice(i, 1)
+
+    // Prune Bs whose max.x is before A's min.x
+    for (let i = activeBSet.length - 1; i >= 0; i--) {
+      if (activeBSet[i].aabb.max.x < aEntry.aabb.min.x) activeBSet.splice(i, 1)
     }
-    for (const be of active) {
-      if (AABB.overlap(ae.aabb, be.aabb)) pairs.push([ae.item, be.item])
+
+    // Exact 3D AABB overlap for remaining active Bs
+    for (const bEntry of activeBSet) {
+      if (AABB.overlap(aEntry.aabb, bEntry.aabb)) {
+        candidatePairs.push([aEntry.item, bEntry.item])
+      }
     }
   }
 
-  return pairs
+  return candidatePairs
 }

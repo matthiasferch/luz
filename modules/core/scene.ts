@@ -83,14 +83,16 @@ export class Scene extends Serializable {
   }
 
   update(deltaTime: number) {
-    const entities = Object.values(this.entities)
+    // Gather entities for this frame
+    const sceneEntities = Object.values(this.entities)
 
+    // Accumulate time for fixed-step simulation
     this.elapsedTime += deltaTime
 
-    let steps = 0
+    let fixedStepsExecuted = 0
 
-    // transform bodies
-    entities.forEach((entity) => {
+    // Update world-space transforms on body components before simulation
+    sceneEntities.forEach((entity) => {
       Object.values(entity.components).forEach((component) => {
         if (isBodyComponent(component)) {
           component.applyTransform(entity)
@@ -98,30 +100,33 @@ export class Scene extends Serializable {
       })
     })
 
-    while (this.elapsedTime >= FRAME_RATE && steps++ < STEP_COUNT) {
-      const components = entities.reduce((components: Component[], entity) => {
-        return [...components, ...Object.values(entity.components)]
+    // Fixed timestep simulation loop
+    while (this.elapsedTime >= FRAME_RATE && fixedStepsExecuted++ < STEP_COUNT) {
+      // Flatten components and collect dynamic bodies
+      const components = sceneEntities.reduce((all: Component[], entity) => {
+        return [...all, ...Object.values(entity.components)]
       }, [])
 
-      const bodies = components.filter((component) => {
-        return isBodyComponent(component)
-      }) as Body[]
+      const bodies = components.filter((component) => isBodyComponent(component)) as Body[]
 
+      // Apply per-step forces and damping
       this.applyGravity(bodies)
       this.applyDamping(bodies, FRAME_RATE)
 
-      // fixed update
-      entities.forEach((entity) => {
+      // Allow components to run fixed updates (controllers, animations, etc.)
+      sceneEntities.forEach((entity) => {
         entity.fixedUpdate(FRAME_RATE)
       })
 
+      // Run collision detection and resolution for this step
       this.solveCollisions(bodies)
 
+      // Consume one fixed frame worth of accumulated time
       this.elapsedTime -= FRAME_RATE
     }
 
-    // variable update
-    entities.forEach((entity) => {
+    // Variable-rate updates
+    sceneEntities.forEach((entity) => {
       entity.update(deltaTime)
     })
   }
@@ -133,9 +138,10 @@ export class Scene extends Serializable {
     })
 
     // Velocity phase (positions fixed). Cache broadphase once across iterations.
-    const velocityBroadphase = this.buildBroadphaseCache(bodies)
+    const velocityBroadphaseCache = this.buildBroadphaseCache(bodies)
     for (let iteration = 0; iteration < velocityIterations; iteration++) {
-      this.detectCollisions(bodies, velocityBroadphase)
+      // Broadphase + narrowphase populate collisionManifolds
+      this.detectCollisions(bodies, velocityBroadphaseCache)
       if (this.collisionManifolds.length === 0) break
       this.updateBipedGroundState()
       this.resolveVelocities()
@@ -184,50 +190,51 @@ export class Scene extends Serializable {
     this.collisionManifolds.length = 0
 
     // Prepare or use cache
-    const bodySorted: Array<AABBEntry<Body>> = cache?.bodySorted ?? bodies
+    const sortedBodyEntries: Array<AABBEntry<Body>> = cache?.bodySorted ?? bodies
       .map((body) => ({ item: body, aabb: AABB.fromVolume(body.volume) }))
       .sort((a, b) => a.aabb.min.x - b.aabb.min.x)
 
     const allColliders = Object.values(this.colliders)
 
-    const finiteSorted: Array<AABBEntry<Collider>> = cache?.finiteSorted ?? allColliders
+    const finiteColliders = allColliders.filter((c) => c.type !== 'Plane')
+    const sortedFiniteColliderEntries: Array<AABBEntry<Collider>> = cache?.finiteSorted ?? finiteColliders
       .map((c) => ({ item: c, aabb: AABB.fromCollider(c) }))
-      .filter((e): e is AABBEntry<Collider> => !!e.aabb)
       .sort((a, b) => a.aabb.min.x - b.aabb.min.x)
 
-    const infinite: Collider[] = cache?.infinite ?? allColliders.filter((c) => AABB.fromCollider(c) === null)
+    const infiniteColliders: Collider[] = cache?.infinite ?? allColliders.filter((c) => c.type === 'Plane')
 
-    // Broadphase: pairs
-    const bodyPairs: Array<[Body, Body]> = sweepAndPrunePairs(bodySorted)
-    const colliderPairs: Array<[Body, Collider]> = sweepAndPrunePairsAB(bodySorted, finiteSorted)
-    // Add body pairs with infinite colliders
-    const colliderPairsWithInfinite: Array<[Body, Collider]> = []
-    for (const be of bodySorted) {
-      for (const ic of infinite) colliderPairsWithInfinite.push([be.item, ic])
+    // Broadphase candidate pairs
+    const candidateBodyPairs: Array<[Body, Body]> = sweepAndPrunePairs(sortedBodyEntries)
+    const candidateFiniteBodyColliderPairs: Array<[Body, Collider]> = sweepAndPrunePairsAB(sortedBodyEntries, sortedFiniteColliderEntries)
+
+    // Always-candidate body pairs with infinite colliders (e.g., planes)
+    const candidateInfiniteBodyColliderPairs: Array<[Body, Collider]> = []
+    for (const bodyEntry of sortedBodyEntries) {
+      for (const infinite of infiniteColliders) candidateInfiniteBodyColliderPairs.push([bodyEntry.item, infinite])
     }
 
     // Narrowphase
-    let manifoldCount = 0
-    for (const [b1, b2] of bodyPairs) {
+    let totalManifoldCount = 0
+    for (const [b1, b2] of candidateBodyPairs) {
       if (b1 === b2) continue
       const collisions = this.collisionDispatcher.dispatch(b1.volume, b2.volume)
       if (collisions && collisions.length > 0) {
         this.collisionManifolds.push({ bodies: [b1, b2], collisions })
-        manifoldCount++
+        totalManifoldCount++
       }
     }
-    for (const [b, c] of colliderPairs) {
+    for (const [b, c] of candidateFiniteBodyColliderPairs) {
       const collisions = this.collisionDispatcher.dispatch(b.volume, c)
       if (collisions && collisions.length > 0) {
         this.collisionManifolds.push({ bodies: [b, null], collisions })
-        manifoldCount++
+        totalManifoldCount++
       }
     }
-    for (const [b, c] of colliderPairsWithInfinite) {
+    for (const [b, c] of candidateInfiniteBodyColliderPairs) {
       const collisions = this.collisionDispatcher.dispatch(b.volume, c)
       if (collisions && collisions.length > 0) {
         this.collisionManifolds.push({ bodies: [b, null], collisions })
-        manifoldCount++
+        totalManifoldCount++
       }
     }
 
@@ -235,9 +242,9 @@ export class Scene extends Serializable {
     this.lastBroadphaseStats = {
       bodies: bodies.length,
       colliders: allColliders.length,
-      candidateBodyPairs: bodyPairs.length,
-      candidateBodyColliderPairs: colliderPairs.length + colliderPairsWithInfinite.length,
-      manifolds: manifoldCount,
+      candidateBodyPairs: candidateBodyPairs.length,
+      candidateBodyColliderPairs: candidateFiniteBodyColliderPairs.length + candidateInfiniteBodyColliderPairs.length,
+      manifolds: totalManifoldCount,
     }
     // If needed, timing can be measured by users from outside using Date.now()
   }
@@ -247,18 +254,26 @@ export class Scene extends Serializable {
     finiteSorted: Array<AABBEntry<Collider>>
     infinite: Collider[]
   } {
+    // Precompute and sort AABBs for bodies along X
     const bodySorted: Array<AABBEntry<Body>> = bodies
       .map((body) => ({ item: body, aabb: AABB.fromVolume(body.volume) }))
       .sort((a, b) => a.aabb.min.x - b.aabb.min.x)
 
+    // Partition colliders into finite (AABB) and infinite (planes)
     const allColliders = Object.values(this.colliders)
+
     const finite: Array<AABBEntry<Collider>> = []
     const infinite: Collider[] = []
-    for (const c of allColliders) {
-      const aabb = AABB.fromCollider(c)
-      if (aabb) finite.push({ item: c, aabb })
-      else infinite.push(c)
+
+    for (const collider of allColliders) {
+      if (collider.type === 'Plane') {
+        infinite.push(collider)
+      } else {
+        const aabb = AABB.fromCollider(collider)
+        finite.push({ item: collider, aabb })
+      }
     }
+
     const finiteSorted = finite.sort((a, b) => a.aabb.min.x - b.aabb.min.x)
 
     return { bodySorted, finiteSorted, infinite }

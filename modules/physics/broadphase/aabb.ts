@@ -155,11 +155,7 @@ export class AABB {
     return new AABB(volume as unknown as Collider)
   }
 
-  static fromCollider(collider: Collider): AABB | null {
-    if (collider.type === 'Plane') {
-      return null
-    }
-
+  static fromCollider(collider: Collider): AABB {
     return new AABB(collider)
   }
 }
