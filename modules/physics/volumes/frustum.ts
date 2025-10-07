@@ -48,10 +48,10 @@ export class Frustum extends Volume {
     // Eye position is origin + translation
     const eye = vec3.add(this.origin, translation, new vec3())
 
-    // Center at the midpoint between near/far plane centers along +Z
+    // Center at the midpoint between near/far plane centers along -Z (frustum extends along -Z)
     const halfDepthAlongZ = (this.near + this.far) * 0.5
     const centerOffset = vec3.scale(this.axes[2], halfDepthAlongZ, new vec3())
-    vec3.add(eye, centerOffset, this.center)
+    vec3.subtract(eye, centerOffset, this.center)
   }
 
   calculateInverseInertia(mass: number, transform: Transform) {
@@ -96,7 +96,7 @@ export class Frustum extends Volume {
     const farHalfW = farHalfH * this.aspect
 
     // Eye position (apex)
-    const eye = vec3.subtract(this.center, vec3.scale(this.axes[2], (this.near + this.far) * 0.5, new vec3()), new vec3())
+    const eye = vec3.add(this.center, vec3.scale(this.axes[2], (this.near + this.far) * 0.5, new vec3()), new vec3())
     const nearCenter = vec3.subtract(eye, vec3.scale(this.axes[2], this.near, new vec3()), new vec3())
     const farCenter = vec3.subtract(eye, vec3.scale(this.axes[2], this.far, new vec3()), new vec3())
 
@@ -121,7 +121,7 @@ export class Frustum extends Volume {
     return corners
   }
 
-  // World-space frustum planes with inward-pointing normals.
+  // World-space frustum planes with outward-pointing normals.
   getPlanes(): Plane[] {
     const corners = this.getCorners()
 
@@ -136,9 +136,9 @@ export class Frustum extends Volume {
     const fbl = corners[7]
 
     // Eye point reconstructed from center and axisZ
-    const eye = vec3.subtract(this.center, vec3.scale(this.axes[2], (this.near + this.far) * 0.5, new vec3()), new vec3())
+    const eye = vec3.add(this.center, vec3.scale(this.axes[2], (this.near + this.far) * 0.5, new vec3()), new vec3())
 
-    const inwardReference = this.center
+    const centerReference = this.center
 
     const makePlane = (p0: vec3, p1: vec3, p2: vec3): Plane => {
       // Normal via CCW winding p0->p1->p2
@@ -147,9 +147,9 @@ export class Frustum extends Volume {
       const n = vec3.cross(e1, e2, new vec3()).normalize()
       let normal = n
       let distance = vec3.dot(p0, normal)
-      // Ensure normal points inward toward the frustum center
-      const inside = vec3.dot(inwardReference, normal) - distance
-      if (inside < 0) {
+      // Ensure normals point OUTWARD (so inside satisfies signedDistance <= 0)
+      const inside = vec3.dot(centerReference, normal) - distance
+      if (inside > 0) {
         normal = normal.scale(-1)
         distance = -distance
       }
@@ -160,8 +160,10 @@ export class Frustum extends Volume {
     const nearCenter = vec3.subtract(eye, vec3.scale(this.axes[2], this.near, new vec3()), new vec3())
     const farCenter = vec3.subtract(eye, vec3.scale(this.axes[2], this.far, new vec3()), new vec3())
 
-    // Orient normals so that signedDistance(center) >= 0 for all planes
-    // Near plane faces inward along +Z, far plane faces inward along -Z
+    // Outward-facing normals so that inside satisfies signedDistance <= 0
+    // Frustum extends along -Z from eye:
+    // - Near plane outward normal is +Z
+    // - Far plane outward normal is -Z
     const nearNormal = this.axes[2].copy()
     const farNormal = vec3.scale(this.axes[2], -1, new vec3())
     const nearPlane = new Plane({ normal: nearNormal, distance: vec3.dot(nearCenter, nearNormal) })
