@@ -2,6 +2,7 @@ import { Serialize, Uniform, Register } from '@luz/utilities'
 import { mat3, mat4, vec2 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
+import { Frustum } from '@luz/physics'
 
 @Register()
 export class Camera extends Component {
@@ -31,6 +32,21 @@ export class Camera extends Component {
   @Uniform()
   readonly reconstructionMatrix = new mat4()
 
+  // Frustum collider matching the camera parameters
+  readonly frustum: Frustum
+
+  constructor() {
+    super()
+
+    // Initialize frustum using current camera parameters
+    this.frustum = new Frustum({
+      fovY: this.aperture,
+      aspect: this.aspect,
+      near: this.clipPlanes.x,
+      far: this.clipPlanes.y,
+    })
+  }
+
   update(transform: Transform, deltaTime: number) {
     const { modelMatrix } = transform
 
@@ -45,5 +61,14 @@ export class Camera extends Component {
 
     // reconstruction matrix (to reconstruct fragment positions)
     mat4.multiply(this.projectionMatrix, this.viewMatrix, this.reconstructionMatrix).invert()
+
+    // Keep frustum collider in sync with camera
+    this.frustum.fovY = this.aperture
+    this.frustum.aspect = this.aspect
+    this.frustum.near = this.clipPlanes.x
+    this.frustum.far = this.clipPlanes.y
+
+    // Update frustum world-space center and axes based on transform
+    this.frustum.applyTransform(transform)
   }
 }

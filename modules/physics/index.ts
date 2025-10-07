@@ -10,6 +10,7 @@ export { Sphere } from './volumes/sphere'
 export { Cuboid } from './volumes/cuboid'
 export { Ellipsoid } from './volumes/ellipsoid'
 export { Cylinder } from './volumes/cylinder'
+export { Frustum } from './volumes/frustum'
 
 export { CollisionDispatcher } from './dispatchers/collision'
 
@@ -39,3 +40,4 @@ export { collideEllipsoidWithCuboid } from './collisions/ellipsoid/cuboid'
 export { collideEllipsoidWithCylinder } from './collisions/ellipsoid/cylinder'
 export { collideCylinderWithCylinder } from './collisions/cylinder/cylinder'
 export * as broadphase from './broadphase'
+export * as culling from './culling'
