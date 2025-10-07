@@ -1,5 +1,5 @@
 import { Collider, CollisionDispatcher } from '@luz/physics'
-import { AABB, aabbFromVolume, aabbFromCollider, sweepAndPrunePairs, sweepAndPrunePairsAB, AABBEntry } from '@luz/physics/broadphase'
+import { AABB, sweepAndPrunePairs, sweepAndPrunePairsAB, AABBEntry } from '@luz/physics/broadphase'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
@@ -185,17 +185,17 @@ export class Scene extends Serializable {
 
     // Prepare or use cache
     const bodySorted: Array<AABBEntry<Body>> = cache?.bodySorted ?? bodies
-      .map((body) => ({ item: body, aabb: aabbFromVolume(body.volume) }))
+      .map((body) => ({ item: body, aabb: AABB.fromVolume(body.volume) }))
       .sort((a, b) => a.aabb.minX - b.aabb.minX)
 
     const allColliders = Object.values(this.colliders)
 
     const finiteSorted: Array<AABBEntry<Collider>> = cache?.finiteSorted ?? allColliders
-      .map((c) => ({ item: c, aabb: aabbFromCollider(c) }))
+      .map((c) => ({ item: c, aabb: AABB.fromCollider(c) }))
       .filter((e): e is AABBEntry<Collider> => !!e.aabb)
       .sort((a, b) => a.aabb.minX - b.aabb.minX)
 
-    const infinite: Collider[] = cache?.infinite ?? allColliders.filter((c) => aabbFromCollider(c) === null)
+    const infinite: Collider[] = cache?.infinite ?? allColliders.filter((c) => AABB.fromCollider(c) === null)
 
     // Broadphase: pairs
     const bodyPairs: Array<[Body, Body]> = sweepAndPrunePairs(bodySorted)
@@ -248,14 +248,14 @@ export class Scene extends Serializable {
     infinite: Collider[]
   } {
     const bodySorted: Array<AABBEntry<Body>> = bodies
-      .map((body) => ({ item: body, aabb: aabbFromVolume(body.volume) }))
+      .map((body) => ({ item: body, aabb: AABB.fromVolume(body.volume) }))
       .sort((a, b) => a.aabb.minX - b.aabb.minX)
 
     const allColliders = Object.values(this.colliders)
     const finite: Array<AABBEntry<Collider>> = []
     const infinite: Collider[] = []
     for (const c of allColliders) {
-      const aabb = aabbFromCollider(c)
+      const aabb = AABB.fromCollider(c)
       if (aabb) finite.push({ item: c, aabb })
       else infinite.push(c)
     }

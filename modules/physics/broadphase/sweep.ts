@@ -1,4 +1,4 @@
-import { AABB, aabbOverlap } from './aabb'
+import { AABB } from './aabb'
 
 export type AABBEntry<T> = { item: T; aabb: AABB }
 
@@ -14,7 +14,7 @@ export function sweepAndPrunePairs<T>(entries: Array<AABBEntry<T>>): Array<[T, T
       if (active[i].aabb.maxX < e.aabb.minX) active.splice(i, 1)
     }
     for (const cand of active) {
-      if (aabbOverlap(e.aabb, cand.aabb)) pairs.push([e.item, cand.item])
+      if (AABB.overlap(e.aabb, cand.aabb)) pairs.push([e.item, cand.item])
     }
     active.push(e)
   }
@@ -39,10 +39,9 @@ export function sweepAndPrunePairsAB<A, B>(aEntries: Array<AABBEntry<A>>, bEntri
       if (active[i].aabb.maxX < ae.aabb.minX) active.splice(i, 1)
     }
     for (const be of active) {
-      if (aabbOverlap(ae.aabb, be.aabb)) pairs.push([ae.item, be.item])
+      if (AABB.overlap(ae.aabb, be.aabb)) pairs.push([ae.item, be.item])
     }
   }
 
   return pairs
 }
-
