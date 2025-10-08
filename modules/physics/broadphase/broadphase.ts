@@ -19,7 +19,7 @@ export const isFiniteCollider = (collider: Collider) => {
 }
 
 export class Broadphase {
-  static findCandidatePairs<T extends Body | Collider>(entries: Array<BroadphaseEntry<T>>): Array<[T, T]> {
+  static findCollisionCandidates<T extends Body | Collider>(entries: Array<BroadphaseEntry<T>>): Array<[T, T]> {
     if (entries.length <= 1) {
       return []
     }
@@ -50,7 +50,7 @@ export class Broadphase {
     return collisionPairs
   }
 
-  static findCandidatePairsAcrossSets<T extends Body | Collider, S extends Body | Collider>(s1: Array<BroadphaseEntry<T>>, s2: Array<BroadphaseEntry<S>>): Array<[T, S]> {
+  static findCollisionCandidatesAcrossSets<T extends Body | Collider, S extends Body | Collider>(s1: Array<BroadphaseEntry<T>>, s2: Array<BroadphaseEntry<S>>): Array<[T, S]> {
     if (s1.length === 0 || s2.length === 0) {
       return []
     }
@@ -87,7 +87,7 @@ export class Broadphase {
     return collisionPairs
   }
 
-  static buildCache(bodies: Body[], colliders: Collider[]): BroadphaseCache {
+  static createCache(bodies: Body[], colliders: Collider[]): BroadphaseCache {
     const sortedBodies: Array<BroadphaseEntry<Body>> = bodies
       .map((body) => ({
         item: body,
@@ -124,7 +124,7 @@ export class Broadphase {
     }
   }
 
-  static orientNormalForPair(normal: vec3, contact: vec3, b1: Body, b2: Body | null): vec3 {
+  static calculateOrientedNormal(normal: vec3, contact: vec3, b1: Body, b2: Body | null): vec3 {
     const orientedNormal = normal.copy()
     const contactOffset = vec3.subtract(contact, b1.volume.center, new vec3())
 

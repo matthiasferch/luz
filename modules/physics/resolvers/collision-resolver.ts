@@ -55,15 +55,15 @@ export class CollisionResolver {
       const [b1, b2] = bodies
 
       collisions.forEach(({ contact, normal: collisionNormal, distance }) => {
-        const normal = Broadphase.orientNormalForPair(collisionNormal, contact, b1, b2)
+        const normal = Broadphase.calculateOrientedNormal(collisionNormal, contact, b1, b2)
 
-        const c1 = vec3.subtract(contact, b1.volume.center, new vec3())
-        const c2 = vec3.add(b1.linearVelocity, vec3.cross(b1.angularVelocity, c1, new vec3()), new vec3())
+        const b1Contact = vec3.subtract(contact, b1.volume.center, new vec3())
+        const b2Contact = vec3.add(b1.linearVelocity, vec3.cross(b1.angularVelocity, b1Contact, new vec3()), new vec3())
 
         const p2 = b2 ? vec3.subtract(contact, b2.volume.center, new vec3()) : null
         const v2 = b2 ? vec3.add(b2.linearVelocity, vec3.cross(b2.angularVelocity, p2!, new vec3()), new vec3()) : null
 
-        const relativeVelocity = v2 ? vec3.subtract(v2, c2, new vec3()) : vec3.subtract(vec3.zero, c2, new vec3())
+        const relativeVelocity = v2 ? vec3.subtract(v2, b2Contact, new vec3()) : vec3.subtract(vec3.zero, b2Contact, new vec3())
 
         const velocityAlongNormal = vec3.dot(relativeVelocity, normal)
 
@@ -105,17 +105,17 @@ export class CollisionResolver {
           let effectiveMass = totalInverseMass
 
           if (b1InverseMass > 0) {
-            const r1CrossDir = vec3.cross(c1, direction, new vec3())
-            const angularComponent1 = vec3.cross(b1InverseInertia.transform(r1CrossDir, new vec3()), c1, new vec3())
+            const b1CrossDirection = vec3.cross(b1Contact, direction, new vec3())
+            const b1AngularComponent = vec3.cross(b1InverseInertia.transform(b1CrossDirection, new vec3()), b1Contact, new vec3())
 
-            effectiveMass += vec3.dot(angularComponent1, direction)
+            effectiveMass += vec3.dot(b1AngularComponent, direction)
           }
 
           if (b2 && b2InverseMass > 0 && p2 && b2InverseInertia) {
-            const r2CrossDir = vec3.cross(p2, direction, new vec3())
-            const angularComponent2 = vec3.cross(b2InverseInertia.transform(r2CrossDir, new vec3()), p2, new vec3())
+            const b2CrossDirection = vec3.cross(p2, direction, new vec3())
+            const b2AngularComponent = vec3.cross(b2InverseInertia.transform(b2CrossDirection, new vec3()), p2, new vec3())
 
-            effectiveMass += vec3.dot(angularComponent2, direction)
+            effectiveMass += vec3.dot(b2AngularComponent, direction)
           }
 
           return effectiveMass
@@ -134,7 +134,7 @@ export class CollisionResolver {
 
           if (b1InverseMass > 0) {
             b1.linearVelocity.subtract(vec3.scale(normalImpulse, b1InverseMass, new vec3()))
-            b1.angularVelocity.subtract(b1InverseInertia.transform(vec3.cross(c1, normalImpulse, new vec3()), new vec3()))
+            b1.angularVelocity.subtract(b1InverseInertia.transform(vec3.cross(b1Contact, normalImpulse, new vec3()), new vec3()))
           }
 
           if (b2 && b2InverseMass > 0 && p2 && b2InverseInertia) {
@@ -165,7 +165,7 @@ export class CollisionResolver {
 
               if (b1InverseMass > 0) {
                 b1.linearVelocity.subtract(vec3.scale(frictionImpulse, b1InverseMass, new vec3()))
-                b1.angularVelocity.subtract(b1InverseInertia.transform(vec3.cross(c1, frictionImpulse, new vec3()), new vec3()))
+                b1.angularVelocity.subtract(b1InverseInertia.transform(vec3.cross(b1Contact, frictionImpulse, new vec3()), new vec3()))
               }
 
               if (b2 && b2InverseMass > 0 && p2 && b2InverseInertia) {
@@ -197,7 +197,7 @@ export class CollisionResolver {
           maximumDepth = depth
           chosenContact = contact
 
-          chosenNormal = Broadphase.orientNormalForPair(normal, contact, b1, b2)
+          chosenNormal = Broadphase.calculateOrientedNormal(normal, contact, b1, b2)
         }
       }
 

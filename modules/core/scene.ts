@@ -33,8 +33,6 @@ export class Scene extends Serializable {
 
   readonly collisionManifolds: CollisionManifold[] = []
 
-  private collisionDispatcher: CollisionDispatcher
-
   private elapsedTime: number = 0
 
   lastBroadphaseStats: {
@@ -47,9 +45,8 @@ export class Scene extends Serializable {
 
   constructor() {
     super()
-    this.gravity = new vec3([0, -9.81, 0])
 
-    this.collisionDispatcher = new CollisionDispatcher()
+    this.gravity = new vec3([0, -9.81, 0])
   }
 
   static async deserialize(data: Partial<Scene>) {
@@ -107,7 +104,7 @@ export class Scene extends Serializable {
     })
 
     const collisions = Object.values(this.colliders)
-    const broadphaseCache = Broadphase.buildCache(bodies, collisions)
+    const broadphaseCache = Broadphase.createCache(bodies, collisions)
 
     // velocity phase
     for (let iteration = 0; iteration < velocityIterations; iteration++) {
@@ -198,8 +195,8 @@ export class Scene extends Serializable {
       return !isFiniteCollider(collider)
     })
 
-    const bodyPairs = Broadphase.findCandidatePairs(sortedBodies)
-    const finiteBodyColliderPairs = Broadphase.findCandidatePairsAcrossSets(sortedBodies, sortedFiniteColliders)
+    const bodyPairs = Broadphase.findCollisionCandidates(sortedBodies)
+    const finiteBodyColliderPairs = Broadphase.findCollisionCandidatesAcrossSets(sortedBodies, sortedFiniteColliders)
 
     const infiniteBodyColliderPairs: Array<[Body, Collider]> = []
 
@@ -209,8 +206,7 @@ export class Scene extends Serializable {
       }
     }
 
-    const collisionManifolds = Narrowphase.computeManifoldsForPairs(
-      this.collisionDispatcher,
+    const collisionManifolds = Narrowphase.calculateCollisionManifolds(
       bodyPairs,
       finiteBodyColliderPairs,
       infiniteBodyColliderPairs
