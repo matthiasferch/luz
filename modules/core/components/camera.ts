@@ -2,7 +2,7 @@ import { Serialize, Uniform, Register } from '@luz/utilities'
 import { mat4, vec2 } from '@luz/vectors'
 import { Component } from '../component'
 import { Transform } from '../transform'
-import { Frustum } from '@luz/physics'
+import { Frustum } from '../frustum'
 
 @Register()
 export class Camera extends Component {
@@ -32,12 +32,10 @@ export class Camera extends Component {
   @Uniform()
   readonly reconstructionMatrix = new mat4()
 
-  readonly frustum: Frustum
+  readonly frustum = new Frustum()
 
   constructor() {
     super()
-
-    this.frustum = new Frustum()
 
     this.recalculateFrustum()
   }
@@ -68,4 +66,8 @@ export class Camera extends Component {
 
     this.clipPlanes.copy(this.frustum.clipPlanes)
   }
+}
+
+export const isCameraComponent = (component: Component): component is Camera => {
+  return component.type === 'Camera' || component.type === 'Light'
 }

@@ -57,3 +57,7 @@ export class Light extends Camera {
     this.textureMatrix.multiply(this.viewMatrix)
   }
 }
+
+export const isLightComponent = (component: Component): component is Light => {
+  return component.type === 'Light'
+}

@@ -10,7 +10,6 @@ export { Sphere } from './volumes/sphere'
 export { Cuboid } from './volumes/cuboid'
 export { Ellipsoid } from './volumes/ellipsoid'
 export { Cylinder } from './volumes/cylinder'
-export { Frustum } from './volumes/frustum'
 
 export { CollisionDispatcher } from './dispatchers/collision'
 
@@ -41,4 +40,6 @@ export { collideEllipsoidWithCylinder } from './collisions/ellipsoid/cylinder'
 export { collideCylinderWithCylinder } from './collisions/cylinder/cylinder'
 
 export { Broadphase, BroadphaseEntry, BroadphaseCache, isFiniteCollider } from './broadphase/broadphase'
+export { CollisionResolver, SolverOptions } from './solver/collision-resolver'
 export { BoundingBox } from './broadphase/bounding-box'
+export { Narrowphase } from './narrowphase/narrowphase'

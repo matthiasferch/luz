@@ -1,17 +1,20 @@
 import { Transform } from '@luz/core'
 import { vec2, vec3 } from '@luz/vectors'
-import { Plane } from '../colliders/plane'
-import { BoundingBox } from '../broadphase/bounding-box'
-import { Volume } from '../volume'
 import { vec3 as _vec3 } from '@luz/vectors'
+import { Serializable, Serialize } from '@luz/utilities'
+import { BoundingBox, Plane, Volume } from '@luz/physics'
 
-export class Frustum {
+export class Frustum extends Serializable {
+  @Serialize()
   aspect: number = 1.0
 
+  @Serialize()
   aperture: number = 90.0
 
+  @Serialize()
   readonly clipPlanes: vec2 = new vec2([1.0, 100.0])
 
+  @Serialize()
   protected readonly origin: vec3 = vec3.zero.copy()
 
   readonly center: vec3 = vec3.zero.copy()
@@ -19,6 +22,8 @@ export class Frustum {
   readonly axes: vec3[]
 
   constructor() {
+    super()
+
     this.axes = vec3.axes.map((axis) => axis.copy())
   }
 

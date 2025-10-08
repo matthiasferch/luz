@@ -50,3 +50,7 @@ export class Model extends Component {
     })
   }
 }
+
+export const isModelComponent = (component: Component): component is Model => {
+  return component.type === 'Model'
+}

@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { expect } from 'chai'
 import { vec3 } from '@luz/vectors'
-import { Transform } from '@luz/core'
-import { Sphere, culling, Frustum, BoundingBox } from '@luz/physics'
+import { Transform, Frustum } from '@luz/core'
+import { Sphere, BoundingBox } from '@luz/physics'
 
 describe('Culling: AABB vs Frustum', () => {
   it('AABB inside default camera frustum should intersect', () => {
@@ -25,7 +25,7 @@ describe('Culling: AABB vs Frustum', () => {
 
     const aabb = new BoundingBox(sphere)
 
-    const result = culling.aabbIntersectsFrustum(frustum, aabb)
+    const result = frustum.intersectsBoundingBox(aabb)
     if (!result) {
       const planes = frustum.getPlanes()
       const min = aabb.minimum, max = aabb.maximum
@@ -60,7 +60,7 @@ describe('Culling: AABB vs Frustum', () => {
     sphere.applyTransform(sphereTransform)
 
     const aabb = new BoundingBox(sphere)
-    const result = culling.aabbIntersectsFrustum(frustum, aabb)
+    const result = frustum.intersectsBoundingBox(aabb)
     expect(result).to.equal(false)
   })
 })

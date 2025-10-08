@@ -23,3 +23,7 @@ export class Biped extends Body {
     quat.fromEulerAngles(yaw, 0, 0, transform.rotation)
   }
 }
+
+export const isBipedComponent = (body: Body): body is Biped => {
+  return body.type === 'Biped'
+}

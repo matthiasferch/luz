@@ -13,6 +13,12 @@ export class Body extends Component {
   mass: number
 
   @Serialize()
+  restitution: number = 0.2
+
+  @Serialize()
+  friction: number = 0.2
+
+  @Serialize()
   volume: Volume
 
   readonly force: vec3
@@ -108,5 +114,9 @@ export class Body extends Component {
 
     this.angularCorrection.reset()
   }
+}
+
+export const isBodyComponent = (component: Component): component is Body => {
+  return component.type === 'Body' || component.type === 'Biped'
 }
 
