@@ -1,6 +1,9 @@
 import { Transform } from '@luz/core'
 import { vec2, vec3 } from '@luz/vectors'
 import { Plane } from '../colliders/plane'
+import { BoundingBox } from '../broadphase/bounding-box'
+import { Volume } from '../volume'
+import { vec3 as _vec3 } from '@luz/vectors'
 
 export class Frustum {
   aspect: number = 1.0
@@ -114,5 +117,30 @@ export class Frustum {
     const bottomPlane = createPlane(viewDirection, nbl, nbr)
 
     return [leftPlane, rightPlane, topPlane, bottomPlane, nearPlane, farPlane]
+  }
+
+  // Returns true if the AABB intersects or is inside this frustum.
+  intersectsBoundingBox(aabb: BoundingBox): boolean {
+    const planes = this.getPlanes()
+
+    const vN = new _vec3()
+
+    for (const plane of planes) {
+      // Build the negative vertex (min projection along outward-pointing normal)
+      // If this vertex lies in front of the plane (positive distance), the AABB is outside.
+      vN.x = plane.normal.x >= 0 ? aabb.minimum.x : aabb.maximum.x
+      vN.y = plane.normal.y >= 0 ? aabb.minimum.y : aabb.maximum.y
+      vN.z = plane.normal.z >= 0 ? aabb.minimum.z : aabb.maximum.z
+
+      if (plane.signedDistance(vN) > 0) return false
+    }
+
+    return true
+  }
+
+  // Conservative check using the volume's axis-aligned bounding box
+  intersectsVolume(volume: Volume): boolean {
+    const aabb = new BoundingBox(volume)
+    return this.intersectsBoundingBox(aabb)
   }
 }

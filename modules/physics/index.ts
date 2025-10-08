@@ -42,5 +42,3 @@ export { collideCylinderWithCylinder } from './collisions/cylinder/cylinder'
 
 export { Broadphase, BroadphaseEntry, BroadphaseCache, isFiniteCollider } from './broadphase/broadphase'
 export { BoundingBox } from './broadphase/bounding-box'
-
-export * as culling from './culling'
