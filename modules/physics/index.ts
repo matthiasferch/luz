@@ -39,5 +39,8 @@ export { collideCuboidWithCuboid } from './collisions/cuboid/cuboid'
 export { collideEllipsoidWithCuboid } from './collisions/ellipsoid/cuboid'
 export { collideEllipsoidWithCylinder } from './collisions/ellipsoid/cylinder'
 export { collideCylinderWithCylinder } from './collisions/cylinder/cylinder'
-export * as broadphase from './broadphase'
+
+export { Broadphase, BroadphaseEntry, BroadphaseCache, isFiniteCollider } from './broadphase/broadphase'
+export { BoundingBox } from './broadphase/bounding-box'
+
 export * as culling from './culling'

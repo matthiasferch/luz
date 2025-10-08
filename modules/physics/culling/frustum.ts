@@ -1,7 +1,7 @@
 import { vec3 } from '@luz/vectors'
-import { BoundingBox } from '../broadphase'
 import { Frustum } from '../volumes/frustum'
 import { Volume } from '../volume'
+import { BoundingBox } from '../broadphase/bounding-box'
 
 // Returns true if the AABB intersects or is inside the frustum.
 export function aabbIntersectsFrustum(frustum: Frustum, aabb: BoundingBox): boolean {

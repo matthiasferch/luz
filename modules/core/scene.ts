@@ -1,5 +1,5 @@
-import { Collider, CollisionDispatcher } from '@luz/physics'
-import { BoundingBox, Broadphase, BroadphaseEntry } from '@luz/physics/broadphase'
+import { BroadphaseCache, Collider, CollisionDispatcher, isFiniteCollider } from '@luz/physics'
+import { BoundingBox, Broadphase, BroadphaseEntry } from '@luz/physics'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
@@ -7,7 +7,6 @@ import { Biped } from './components/biped'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 import { Component } from './component'
-import { BroadphaseCache } from '@luz/physics/broadphase/sweep'
 
 const STEP_COUNT: number = 4
 const FRAME_RATE: number = 1 / 60
@@ -190,18 +189,19 @@ export class Scene extends Serializable {
     this.collisionManifolds.length = 0
 
     // Prepare or use cache
-    const sortedBodyEntries: Array<BroadphaseEntry<Body>> = cache?.bodySorted ?? bodies
+    const sortedBodyEntries: Array<BroadphaseEntry<Body>> = cache?.bodies ?? bodies
       .map((body) => ({ item: body, bounds: new BoundingBox(body.volume) }))
       .sort((a, b) => a.bounds.minimum.x - b.bounds.minimum.x)
 
     const allColliders = Object.values(this.colliders)
 
-    const finiteColliders = allColliders.filter((c) => c.type !== 'Plane')
-    const sortedFiniteColliderEntries: Array<BroadphaseEntry<Collider>> = cache?.finiteSorted ?? finiteColliders
+    const finiteColliders = allColliders.filter((c) => isFiniteCollider(c))
+
+    const sortedFiniteColliderEntries: Array<BroadphaseEntry<Collider>> = cache?.finiteColliders ?? finiteColliders
       .map((c) => ({ item: c, bounds: new BoundingBox(c) }))
       .sort((a, b) => a.bounds.minimum.x - b.bounds.minimum.x)
 
-    const infiniteColliders: Collider[] = cache?.infinite ?? allColliders.filter((c) => c.type === 'Plane')
+    const infiniteColliders: Collider[] = cache?.infiniteColliders ?? allColliders.filter((c) => !isFiniteCollider(c))
 
     // Broadphase candidate pairs
     const candidateBodyPairs: Array<[Body, Body]> = Broadphase.findCandidatePairs(sortedBodyEntries)

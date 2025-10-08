@@ -147,7 +147,7 @@ export class BoundingBox {
       }
 
       default: {
-        throw new Error(`AABB not implemented for collider type: ${type}`)
+        throw new Error(`Not implemented for collider type: ${type}`)
       }
     }
   }
@@ -168,6 +168,3 @@ export class BoundingBox {
     return true
   }
 }
-
-// Back-compat alias
-export type AABB = BoundingBox
