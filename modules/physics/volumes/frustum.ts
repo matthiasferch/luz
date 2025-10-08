@@ -1,28 +1,21 @@
 import { Transform } from '@luz/core'
-import { Serialize, Register } from '@luz/utilities'
 import { vec2, vec3 } from '@luz/vectors'
-import { Collider } from '../collider'
-import { Volume } from '../volume'
 import { Plane } from '../colliders/plane'
 
-@Register()
-export class Frustum extends Volume {
-  readonly type: Collider.Type = 'Frustum'
-
-  @Serialize()
+export class Frustum {
   aspect: number = 1.0
 
-  @Serialize()
   aperture: number = 90.0
 
-  @Serialize()
   readonly clipPlanes: vec2 = new vec2([1.0, 100.0])
+
+  protected readonly origin: vec3 = vec3.zero.copy()
+
+  readonly center: vec3 = vec3.zero.copy()
 
   readonly axes: vec3[]
 
-  constructor({ origin = vec3.zero } = {}) {
-    super({ origin })
-
+  constructor() {
     this.axes = vec3.axes.map((axis) => axis.copy())
   }
 
@@ -39,10 +32,6 @@ export class Frustum extends Volume {
     const viewDirection = vec3.add(this.origin, translation, new vec3())
 
     vec3.subtract(viewDirection, centerOffset, this.center)
-  }
-
-  calculateInverseInertia(mass: number, transform: Transform) {
-    throw new Error('Not implemented')
   }
 
   getVertices() {

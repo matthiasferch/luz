@@ -1,3 +1,3 @@
 export { BoundingBox } from './aabb'
 export { AABB } from './aabb'
-export { AABBEntry, sweepAndPrunePairs, sweepAndPrunePairsAB } from './sweep'
+export { BroadphaseEntry, Broadphase } from './sweep'

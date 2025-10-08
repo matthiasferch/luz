@@ -5,7 +5,6 @@ import { Cuboid } from '../volumes/cuboid'
 import { Ellipsoid } from '../volumes/ellipsoid'
 import { Cylinder } from '../volumes/cylinder'
 import { Polygon } from '../colliders/polygon'
-import { Frustum } from '../volumes/frustum'
 
 const { abs } = Math
 
@@ -99,27 +98,6 @@ export class BoundingBox {
         this.maximum.x = center.x + halfExtents.x
         this.maximum.y = center.y + halfExtents.y
         this.maximum.z = center.z + halfExtents.z
-
-        break
-      }
-
-      case 'Frustum': {
-        const frustum = collider as Frustum
-
-        const corners = frustum.getVertices()
-
-        this.minimum.x = this.minimum.y = this.minimum.z = Infinity
-        this.maximum.x = this.maximum.y = this.maximum.z = -Infinity
-
-        for (const v of corners) {
-          if (v.x < this.minimum.x) this.minimum.x = v.x
-          if (v.y < this.minimum.y) this.minimum.y = v.y
-          if (v.z < this.minimum.z) this.minimum.z = v.z
-
-          if (v.x > this.maximum.x) this.maximum.x = v.x
-          if (v.y > this.maximum.y) this.maximum.y = v.y
-          if (v.z > this.maximum.z) this.maximum.z = v.z
-        }
 
         break
       }

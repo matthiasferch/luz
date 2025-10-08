@@ -1,5 +1,5 @@
 import { Collider, CollisionDispatcher } from '@luz/physics'
-import { BoundingBox, sweepAndPrunePairs, sweepAndPrunePairsAB, AABBEntry } from '@luz/physics/broadphase'
+import { BoundingBox, Broadphase, BroadphaseEntry } from '@luz/physics/broadphase'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body } from './components/body'
@@ -7,6 +7,7 @@ import { Biped } from './components/biped'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 import { Component } from './component'
+import { BroadphaseCache } from '@luz/physics/broadphase/sweep'
 
 const STEP_COUNT: number = 4
 const FRAME_RATE: number = 1 / 60
@@ -33,6 +34,10 @@ const bipedDynamicCorrectionPerStep: number = 0.02
 
 const isBodyComponent = (component: Component): component is Body => {
   return component.type === 'Body' || component.type === 'Biped'
+}
+
+const isBiped = (body: Body): body is Biped => {
+  return body.type === 'Biped'
 }
 
 export class Scene extends Serializable {
@@ -132,13 +137,12 @@ export class Scene extends Serializable {
   }
 
   private solveCollisions(bodies: Body[]) {
-    // Reset onGround for all bipeds before solving
-    (bodies.filter((b): b is Biped => b.type === 'Biped') as Biped[]).forEach((b) => {
-      b.onGround = false
-    })
+    const bipeds = bodies.filter((body) => isBiped(body)) as Biped[]
+
+    bipeds.forEach((biped) => biped.onGround = false)
 
     // Velocity phase (positions fixed). Cache broadphase once across iterations.
-    const velocityBroadphaseCache = this.buildBroadphaseCache(bodies)
+    const velocityBroadphaseCache = Broadphase.buildCache(bodies, Object.values(this.colliders))
     for (let iteration = 0; iteration < velocityIterations; iteration++) {
       // Broadphase + narrowphase populate collisionManifolds
       this.detectCollisions(bodies, velocityBroadphaseCache)
@@ -182,30 +186,26 @@ export class Scene extends Serializable {
     })
   }
 
-  private detectCollisions(bodies: Body[], cache?: {
-    bodySorted: Array<AABBEntry<Body>>
-    finiteSorted: Array<AABBEntry<Collider>>
-    infinite: Collider[]
-  }) {
+  private detectCollisions(bodies: Body[], cache?: BroadphaseCache) {
     this.collisionManifolds.length = 0
 
     // Prepare or use cache
-    const sortedBodyEntries: Array<AABBEntry<Body>> = cache?.bodySorted ?? bodies
-      .map((body) => ({ item: body, aabb: new BoundingBox(body.volume) }))
-      .sort((a, b) => a.aabb.minimum.x - b.aabb.minimum.x)
+    const sortedBodyEntries: Array<BroadphaseEntry<Body>> = cache?.bodySorted ?? bodies
+      .map((body) => ({ item: body, bounds: new BoundingBox(body.volume) }))
+      .sort((a, b) => a.bounds.minimum.x - b.bounds.minimum.x)
 
     const allColliders = Object.values(this.colliders)
 
     const finiteColliders = allColliders.filter((c) => c.type !== 'Plane')
-    const sortedFiniteColliderEntries: Array<AABBEntry<Collider>> = cache?.finiteSorted ?? finiteColliders
-      .map((c) => ({ item: c, aabb: new BoundingBox(c) }))
-      .sort((a, b) => a.aabb.minimum.x - b.aabb.minimum.x)
+    const sortedFiniteColliderEntries: Array<BroadphaseEntry<Collider>> = cache?.finiteSorted ?? finiteColliders
+      .map((c) => ({ item: c, bounds: new BoundingBox(c) }))
+      .sort((a, b) => a.bounds.minimum.x - b.bounds.minimum.x)
 
     const infiniteColliders: Collider[] = cache?.infinite ?? allColliders.filter((c) => c.type === 'Plane')
 
     // Broadphase candidate pairs
-    const candidateBodyPairs: Array<[Body, Body]> = sweepAndPrunePairs(sortedBodyEntries)
-    const candidateFiniteBodyColliderPairs: Array<[Body, Collider]> = sweepAndPrunePairsAB(sortedBodyEntries, sortedFiniteColliderEntries)
+    const candidateBodyPairs: Array<[Body, Body]> = Broadphase.findCandidatePairs(sortedBodyEntries)
+    const candidateFiniteBodyColliderPairs: Array<[Body, Collider]> = Broadphase.findCandidatePairsAcrossSets(sortedBodyEntries, sortedFiniteColliderEntries)
 
     // Always-candidate body pairs with infinite colliders (e.g., planes)
     const candidateInfiniteBodyColliderPairs: Array<[Body, Collider]> = []
@@ -249,60 +249,14 @@ export class Scene extends Serializable {
     // If needed, timing can be measured by users from outside using Date.now()
   }
 
-  private buildBroadphaseCache(bodies: Body[]): {
-    bodySorted: Array<AABBEntry<Body>>
-    finiteSorted: Array<AABBEntry<Collider>>
-    infinite: Collider[]
-  } {
-    // Precompute and sort AABBs for bodies along X
-    const bodySorted: Array<AABBEntry<Body>> = bodies
-      .map((body) => ({ item: body, aabb: new BoundingBox(body.volume) }))
-      .sort((a, b) => a.aabb.minimum.x - b.aabb.minimum.x)
 
-    // Partition colliders into finite (BoundingBox) and infinite (planes)
-    const allColliders = Object.values(this.colliders)
-
-    const finite: Array<AABBEntry<Collider>> = []
-    const infinite: Collider[] = []
-
-    for (const collider of allColliders) {
-      if (collider.type === 'Plane') {
-        infinite.push(collider)
-      } else {
-        const aabb = new BoundingBox(collider)
-        finite.push({ item: collider, aabb })
-      }
-    }
-
-    const finiteSorted = finite.sort((a, b) => a.aabb.minimum.x - b.aabb.minimum.x)
-
-    return { bodySorted, finiteSorted, infinite }
-  }
-
-  // Stable per-pair normal orientation (shared by both solvers)
-  private orientNormalForPair(
-    nIn: vec3,
-    contact: vec3,
-    b1: Body,
-    b2: Body | null
-  ): vec3 {
-    const n = nIn.copy()
-    const r1 = vec3.subtract(contact, b1.volume.center, new vec3())
-    if (b2) {
-      const c12 = vec3.subtract(b2.volume.center, b1.volume.center, new vec3())
-      if (vec3.dot(n, c12) < 0) n.scale(-1)
-    } else {
-      if (vec3.dot(n, r1) < 0) n.scale(-1)
-    }
-    return n
-  }
 
   private resolveVelocities() {
     this.collisionManifolds.forEach(({ bodies, collisions }) => {
       const [b1, b2] = bodies
 
       collisions.forEach(({ contact, normal: collisionNormal, distance }) => {
-        const normal = this.orientNormalForPair(collisionNormal, contact, b1, b2)
+        const normal = Broadphase.orientNormalForPair(collisionNormal, contact, b1, b2)
 
         // Contact point offsets
         const r1 = vec3.subtract(contact, b1.volume.center, new vec3())
@@ -447,7 +401,7 @@ export class Scene extends Serializable {
           maxDepth = depth
           chosenContact = contact
           // Orient normal deterministically
-          chosenNormal = this.orientNormalForPair(nIn, contact, b1, b2)
+          chosenNormal = Broadphase.orientNormalForPair(nIn, contact, b1, b2)
         }
       }
 

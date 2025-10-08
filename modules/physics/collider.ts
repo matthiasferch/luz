@@ -6,5 +6,5 @@ export abstract class Collider extends Serializable {
 }
 
 export namespace Collider {
-  export type Type = 'Ray' | 'Plane' | 'Polygon' | 'Sphere' | 'Cuboid' | 'Ellipsoid' | 'Cylinder' | 'Frustum'
+  export type Type = 'Ray' | 'Plane' | 'Polygon' | 'Sphere' | 'Cuboid' | 'Ellipsoid' | 'Cylinder'
 }

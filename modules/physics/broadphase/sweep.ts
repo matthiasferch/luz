@@ -1,76 +1,126 @@
+import { Collider } from '../collider'
 import { BoundingBox } from './aabb'
+import { Body } from '@luz/core'
+import { vec3 } from '@luz/vectors'
 
-// Input entry for sweep algorithms: the item and its AABB
-export type AABBEntry<T> = { item: T; aabb: BoundingBox }
-
-// Sweep-and-prune along X axis within a single set.
-// Returns candidate pairs that potentially overlap in 3D (exact check via AABB.overlap).
-export function sweepAndPrunePairs<T>(unsortedEntries: Array<AABBEntry<T>>): Array<[T, T]> {
-  if (unsortedEntries.length <= 1) return []
-
-  // Sort by min.x for 1D sweeping
-  const sortedEntries = unsortedEntries.slice().sort((lhs, rhs) => lhs.aabb.minimum.x - rhs.aabb.minimum.x)
-
-  // Active set contains entries whose X-interval overlaps the current entry's min.x
-  const activeSet: Array<AABBEntry<T>> = []
-
-  // Collected candidate pairs
-  const candidatePairs: Array<[T, T]> = []
-
-  for (const current of sortedEntries) {
-    // Prune from the back while entries no longer overlap on X
-    for (let i = activeSet.length - 1; i >= 0; i--) {
-      if (activeSet[i].aabb.maximum.x < current.aabb.minimum.x) activeSet.splice(i, 1)
-    }
-
-    // Exact 3D AABB overlap test for remaining active entries
-    for (const candidate of activeSet) {
-      if (BoundingBox.intersect(current.aabb, candidate.aabb)) {
-        candidatePairs.push([current.item, candidate.item])
-      }
-    }
-
-    // Add current to the active set
-    activeSet.push(current)
-  }
-
-  return candidatePairs
+// Broadphase work item: object with an associated bounding box.
+export type BroadphaseEntry<T extends Body | Collider> = {
+  item: T;
+  bounds: BoundingBox
 }
 
-// Sweep-and-prune along X axis across two sets (A against B).
-// Returns candidate cross-set pairs that potentially overlap in 3D.
-export function sweepAndPrunePairsAB<A, B>(setAEntries: Array<AABBEntry<A>>, setBEntries: Array<AABBEntry<B>>): Array<[A, B]> {
-  if (setAEntries.length === 0 || setBEntries.length === 0) return []
+export type BroadphaseCache = {
+  bodySorted: Array<BroadphaseEntry<Body>>
+  finiteSorted: Array<BroadphaseEntry<Collider>>
+  infinite: Collider[]
+}
 
-  const sortedAEntries = setAEntries.slice().sort((lhs, rhs) => lhs.aabb.minimum.x - rhs.aabb.minimum.x)
-  const sortedBEntries = setBEntries.slice().sort((lhs, rhs) => lhs.aabb.minimum.x - rhs.aabb.minimum.x)
-
-  const candidatePairs: Array<[A, B]> = []
-
-  // Window start into B for the current A entry
-  let bWindowStart = 0
-
-  // Active window of B entries overlapping current A's min.x on X
-  const activeBSet: Array<AABBEntry<B>> = []
-
-  for (const aEntry of sortedAEntries) {
-    // Expand the B window to include any B whose min.x is <= A's max.x
-    while (bWindowStart < sortedBEntries.length && sortedBEntries[bWindowStart].aabb.minimum.x <= aEntry.aabb.maximum.x) {
-      activeBSet.push(sortedBEntries[bWindowStart++])
+// Sweep-and-prune broadphase with descriptive method names.
+export class Broadphase {
+  // Find potentially overlapping pairs within a single set using sweep-and-prune (X-axis),
+  // then validate with full 3D AABB overlap.
+  static findCandidatePairs<T extends Body | Collider>(entries: Array<BroadphaseEntry<T>>): Array<[T, T]> {
+    if (entries.length <= 1) {
+      return []
     }
 
-    // Prune Bs whose max.x is before A's min.x
-    for (let i = activeBSet.length - 1; i >= 0; i--) {
-      if (activeBSet[i].aabb.maximum.x < aEntry.aabb.minimum.x) activeBSet.splice(i, 1)
-    }
+    const sortedEntries = entries.slice().sort((e1, e2) => {
+      return e1.bounds.minimum.x - e2.bounds.minimum.x
+    })
 
-    // Exact 3D AABB overlap for remaining active Bs
-    for (const bEntry of activeBSet) {
-      if (BoundingBox.intersect(aEntry.aabb, bEntry.aabb)) {
-        candidatePairs.push([aEntry.item, bEntry.item])
+    const candidates: Array<BroadphaseEntry<T>> = []
+    const collisionPairs: Array<[T, T]> = []
+
+    for (const entry of sortedEntries) {
+      for (let i = candidates.length - 1; i >= 0; i--) {
+        if (candidates[i].bounds.maximum.x < entry.bounds.minimum.x) {
+          candidates.splice(i, 1)
+        }
       }
+
+      for (const candidate of candidates) {
+        if (BoundingBox.intersect(entry.bounds, candidate.bounds)) {
+          collisionPairs.push([entry.item, candidate.item])
+        }
+      }
+
+      candidates.push(entry)
     }
+
+    return collisionPairs
   }
 
-  return candidatePairs
+  // Find potentially overlapping cross-set pairs (A vs B) using sweep-and-prune (X-axis),
+  // then validate with full 3D AABB overlap.
+  static findCandidatePairsAcrossSets<A extends Body | Collider, B extends Body | Collider>(s1: Array<BroadphaseEntry<A>>, s2: Array<BroadphaseEntry<B>>): Array<[A, B]> {
+    if (s1.length === 0 || s2.length === 0) {
+      return []
+    }
+
+    const sortedA = s1.slice().sort((lhs, rhs) => lhs.bounds.minimum.x - rhs.bounds.minimum.x)
+    const sortedB = s2.slice().sort((lhs, rhs) => lhs.bounds.minimum.x - rhs.bounds.minimum.x)
+
+    const results: Array<[A, B]> = []
+    const activeB: Array<BroadphaseEntry<B>> = []
+
+    let bStart = 0
+
+    for (const aEntry of sortedA) {
+      while (bStart < sortedB.length && sortedB[bStart].bounds.minimum.x <= aEntry.bounds.maximum.x) {
+        activeB.push(sortedB[bStart++])
+      }
+
+      for (let i = activeB.length - 1; i >= 0; i--) {
+        if (activeB[i].bounds.maximum.x < aEntry.bounds.minimum.x) activeB.splice(i, 1)
+      }
+
+      for (const bEntry of activeB) {
+        if (BoundingBox.intersect(aEntry.bounds, bEntry.bounds)) {
+          results.push([aEntry.item, bEntry.item])
+        }
+      }
+    }
+
+    return results
+  }
+
+  // Build sorted broadphase caches for bodies and colliders
+  static buildCache(
+    bodies: Body[],
+    colliders: Collider[]
+  ): BroadphaseCache {
+    const bodySorted: Array<BroadphaseEntry<Body>> = bodies
+      .map((body) => ({ item: body, bounds: new BoundingBox(body.volume) }))
+      .sort((a, b) => a.bounds.minimum.x - b.bounds.minimum.x)
+
+    const finite: Array<BroadphaseEntry<Collider>> = []
+    const infinite: Collider[] = []
+
+    for (const c of colliders) {
+      if (c.type === 'Plane') infinite.push(c)
+      else finite.push({ item: c, bounds: new BoundingBox(c) })
+    }
+
+    const finiteSorted = finite.sort((a, b) => a.bounds.minimum.x - b.bounds.minimum.x)
+
+    return { bodySorted, finiteSorted, infinite }
+  }
+
+  // Stable per-pair normal orientation (shared by both solvers)
+  static orientNormalForPair(
+    nIn: vec3,
+    contact: vec3,
+    b1: Body,
+    b2: Body | null
+  ): vec3 {
+    const n = nIn.copy()
+    const r1 = vec3.subtract(contact, b1.volume.center, new vec3())
+    if (b2) {
+      const c12 = vec3.subtract(b2.volume.center, b1.volume.center, new vec3())
+      if (vec3.dot(n, c12) < 0) n.scale(-1)
+    } else {
+      if (vec3.dot(n, r1) < 0) n.scale(-1)
+    }
+    return n
+  }
 }
