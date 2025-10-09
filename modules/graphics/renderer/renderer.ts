@@ -73,11 +73,11 @@ export class Renderer {
   }
 
   mask({ color, depth }: Partial<MaskOptions>) {
-    if (color != null) {
+    if (color !== undefined) {
       this.gl.colorMask(color[0], color[1], color[2], color[3])
     }
 
-    if (depth != null) {
+    if (depth !== undefined) {
       this.gl.depthMask(depth)
     }
   }
@@ -85,7 +85,7 @@ export class Renderer {
   clear({ color, depth, stencil }: Partial<ClearOptions>) {
     let clearMask = 0
 
-    if (color != null) {
+    if (color !== undefined) {
       const { x, y, z, w } = color
 
       this.gl.clearColor(x, y, z, w)
@@ -93,16 +93,20 @@ export class Renderer {
       clearMask |= this.gl.COLOR_BUFFER_BIT
     }
 
-    if (depth != null) {
+    if (depth !== undefined) {
       this.gl.clearDepth(depth)
 
       clearMask |= this.gl.DEPTH_BUFFER_BIT
     }
 
-    if (stencil != null) {
+    if (stencil !== undefined) {
       this.gl.clearStencil(stencil)
 
       clearMask |= this.gl.STENCIL_BUFFER_BIT
+    }
+
+    if (clearMask === 0) {
+      return
     }
 
     this.gl.clear(clearMask)
