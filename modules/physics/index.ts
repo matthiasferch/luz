@@ -2,17 +2,22 @@ export { Volume } from './volume'
 export { Collider } from './collider'
 export { Collision } from './collision'
 
-export { Ray } from './colliders/ray'
-export { Plane } from './colliders/plane'
-export { Polygon } from './colliders/polygon'
+export { Ray, isRay } from './colliders/ray'
+export { Plane, isPlane } from './colliders/plane'
+export { Polygon, isPolygon } from './colliders/polygon'
 
-export { Sphere } from './volumes/sphere'
-export { Cuboid } from './volumes/cuboid'
-export { Ellipsoid } from './volumes/ellipsoid'
-export { Cylinder } from './volumes/cylinder'
+export { Sphere, isSphere } from './volumes/sphere'
+export { Cuboid, isCuboid } from './volumes/cuboid'
+export { Ellipsoid, isEllipsoid } from './volumes/ellipsoid'
+export { Cylinder, isCylinder } from './volumes/cylinder'
 
 export { CollisionDispatcher } from './dispatchers/collision'
-export { CollisionResolver } from './resolvers/collision-resolver'
+export { CollisionSolver } from './solvers/collision-solver'
+
+export { Broadphase, BroadphaseCache, isFiniteCollider } from './broadphase/broadphase'
+
+export { BoundingBox } from './broadphase/bounding-box'
+export { Narrowphase } from './narrowphase/narrowphase'
 
 export { collideRayWithRay } from './collisions/ray/ray'
 export { collideRayWithPlane } from './collisions/ray/plane'
@@ -39,8 +44,3 @@ export { collideCuboidWithCuboid } from './collisions/cuboid/cuboid'
 export { collideEllipsoidWithCuboid } from './collisions/ellipsoid/cuboid'
 export { collideEllipsoidWithCylinder } from './collisions/ellipsoid/cylinder'
 export { collideCylinderWithCylinder } from './collisions/cylinder/cylinder'
-
-export { Broadphase, BroadphaseEntry, BroadphaseCache, isFiniteCollider } from './broadphase/broadphase'
-
-export { BoundingBox } from './broadphase/bounding-box'
-export { Narrowphase } from './narrowphase/narrowphase'

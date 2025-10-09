@@ -24,6 +24,6 @@ export class Biped extends Body {
   }
 }
 
-export const isBipedComponent = (body: Body): body is Biped => {
+export const isBiped = (body: Body): body is Biped => {
   return body.type === 'Biped'
 }

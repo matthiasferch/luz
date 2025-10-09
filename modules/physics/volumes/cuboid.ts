@@ -106,3 +106,7 @@ export class Cuboid extends Volume {
     ]
   }
 }
+
+export const isCuboid = (collider: Collider): collider is Cuboid => {
+  return collider.type === 'Cuboid'
+}

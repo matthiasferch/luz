@@ -79,3 +79,6 @@ export class Cylinder extends Volume {
   }
 }
 
+export const isCylinder = (collider: Collider): collider is Cylinder => {
+  return collider.type === 'Cylinder'
+}

@@ -68,6 +68,6 @@ export class Camera extends Component {
   }
 }
 
-export const isCameraComponent = (component: Component): component is Camera => {
+export const isCamera = (component: Component): component is Camera => {
   return component.type === 'Camera' || component.type === 'Light'
 }

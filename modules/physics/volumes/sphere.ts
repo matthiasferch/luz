@@ -32,3 +32,7 @@ export class Sphere extends Volume {
     this.inverseInertia.invert()
   }
 }
+
+export const isSphere = (collider: Collider): collider is Sphere => {
+  return collider.type === 'Sphere'
+}

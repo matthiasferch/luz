@@ -1,7 +1,7 @@
 import { vec3 } from '@luz/vectors'
 import { Broadphase } from '../broadphase/broadphase'
 import { CollisionManifold } from '../collision'
-import { Biped, isBipedComponent } from '@luz/core'
+import { Biped, isBiped } from '@luz/core'
 
 const { sqrt, sign, abs, max, cos, PI } = Math
 
@@ -16,13 +16,13 @@ const positionCorrectionFactor: number = 0.25
 const positionCorrectionThreshold: number = 0.005
 const positionCorrectionThresholdStatic: number = 0.02
 
-export class CollisionResolver {
+export class CollisionSolver {
   static updateBipedGroundState(collisionManifolds: CollisionManifold[]) {
     collisionManifolds.forEach(({ bodies, collisions }) => {
       const [b1, b2] = bodies
 
-      const b1IsBiped = isBipedComponent(b1)
-      const b2IsBiped = b2 ? isBipedComponent(b2) : false
+      const b1IsBiped = isBiped(b1)
+      const b2IsBiped = b2 ? isBiped(b2) : false
 
       if (!b1IsBiped && !b2IsBiped) {
         return
@@ -50,7 +50,7 @@ export class CollisionResolver {
     })
   }
 
-  static resolveVelocities(collisionManifolds: CollisionManifold[], frameRate: number) {
+  static solveVelocities(collisionManifolds: CollisionManifold[], frameRate: number) {
     collisionManifolds.forEach(({ bodies, collisions }) => {
       const [b1, b2] = bodies
 
@@ -86,8 +86,8 @@ export class CollisionResolver {
 
         const impulseScalar = max(-((1.0 + restitution) * velocityAlongNormal) + depthBias, 0)
 
-        const b1IsBiped = isBipedComponent(b1)
-        const b2IsBiped = b2 ? isBipedComponent(b2) : false
+        const b1IsBiped = isBiped(b1)
+        const b2IsBiped = b2 ? isBiped(b2) : false
 
         const b1InverseMass = b1IsBiped && b2 ? 0 : (b1.mass > 0 ? 1.0 / b1.mass : 0)
         const b2InverseMass = b2 ? (b2IsBiped ? 0 : (b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0)) : 0
@@ -179,7 +179,7 @@ export class CollisionResolver {
     })
   }
 
-  static resolvePositions(collisionManifolds: CollisionManifold[]) {
+  static solvePositions(collisionManifolds: CollisionManifold[]) {
     let appliedCorrection = false
 
     collisionManifolds.forEach(({ bodies, collisions }) => {
@@ -205,8 +205,8 @@ export class CollisionResolver {
         return
       }
 
-      const b1IsBiped = isBipedComponent(b1)
-      const b2IsBiped = b2 ? isBipedComponent(b2) : false
+      const b1IsBiped = isBiped(b1)
+      const b2IsBiped = b2 ? isBiped(b2) : false
 
       const b1InverseMass = b1IsBiped && b2 ? 0 : (b1.mass > 0 ? 1.0 / b1.mass : 0)
       const b2InverseMass = b2 ? (b2IsBiped ? 0 : (b2 ? (b2.mass > 0 ? 1.0 / b2.mass : 0) : 0)) : 0

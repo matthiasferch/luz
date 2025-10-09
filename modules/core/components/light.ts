@@ -58,6 +58,6 @@ export class Light extends Camera {
   }
 }
 
-export const isLightComponent = (component: Component): component is Light => {
+export const isLight = (component: Component): component is Light => {
   return component.type === 'Light'
 }

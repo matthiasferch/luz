@@ -24,3 +24,7 @@ export class Plane extends Collider {
     return vec3.dot(point, this.normal) - this.distance
   }
 }
+
+export const isPlane = (collider: Collider): collider is Plane => {
+  return collider.type === 'Plane'
+}

@@ -116,7 +116,7 @@ export class Body extends Component {
   }
 }
 
-export const isBodyComponent = (component: Component): component is Body => {
+export const isBody = (component: Component): component is Body => {
   return component.type === 'Body' || component.type === 'Biped'
 }
 

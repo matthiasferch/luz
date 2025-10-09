@@ -1,9 +1,11 @@
 import { Collider } from '../collider'
+import { isPlane } from '../colliders/plane'
+import { isRay } from '../colliders/ray'
 import { BoundingBox } from './bounding-box'
 import { Body } from '@luz/core'
 import { vec3 } from '@luz/vectors'
 
-export type BroadphaseEntry<T extends Body | Collider> = {
+type BroadphaseEntry<T extends Body | Collider> = {
   item: T;
   bounds: BoundingBox
 }
@@ -15,7 +17,7 @@ export type BroadphaseCache = {
 }
 
 export const isFiniteCollider = (collider: Collider) => {
-  return collider.type !== 'Plane'
+  return !isRay(collider) && !isPlane(collider)
 }
 
 export class Broadphase {

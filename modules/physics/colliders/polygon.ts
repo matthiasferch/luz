@@ -34,3 +34,7 @@ export class Polygon extends Collider {
     this.normal = vec3.cross(edge1, edge2).normalize()
   }
 }
+
+export const isPolygon = (collider: Collider): collider is Polygon => {
+  return collider.type === 'Polygon'
+}

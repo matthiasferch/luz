@@ -75,3 +75,7 @@ export class Ellipsoid extends Volume {
     return Math.sqrt(len2) / Math.sqrt(invR2)
   }
 }
+
+export const isEllipsoid = (collider: Collider): collider is Ellipsoid => {
+  return collider.type === 'Ellipsoid'
+}

@@ -1,9 +1,9 @@
-import { BroadphaseCache, Collider, CollisionDispatcher, isFiniteCollider, Narrowphase, CollisionResolver } from '@luz/physics'
-import { BoundingBox, Broadphase, BroadphaseEntry } from '@luz/physics'
+import { BroadphaseCache, Collider, isFiniteCollider, Narrowphase, CollisionSolver } from '@luz/physics'
+import { BoundingBox, Broadphase } from '@luz/physics'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
-import { Body, isBodyComponent } from './components/body'
-import { Biped, isBipedComponent } from './components/biped'
+import { Body, isBody } from './components/body'
+import { Biped, isBiped } from './components/biped'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 
@@ -62,7 +62,7 @@ export class Scene extends Serializable {
 
     sceneEntities.forEach((entity) => {
       Object.values(entity.components).forEach((component) => {
-        if (isBodyComponent(component)) {
+        if (isBody(component)) {
           component.applyTransform(entity)
         }
       })
@@ -74,7 +74,7 @@ export class Scene extends Serializable {
       }, [])
 
       const bodies = components.filter((component) => {
-        return isBodyComponent(component)
+        return isBody(component)
       }) as Body[]
 
       this.applyGravity(bodies)
@@ -94,9 +94,58 @@ export class Scene extends Serializable {
     })
   }
 
+  private detectCollisions(bodies: Body[], cache?: BroadphaseCache) {
+    this.collisionManifolds.length = 0
+
+    const sortedBodies = cache?.bodies ?? bodies
+      .map((body) => ({ item: body, bounds: new BoundingBox(body.volume) }))
+      .sort((e1, e2) => e1.bounds.minimum.x - e2.bounds.minimum.x)
+
+    const colliders = Object.values(this.colliders)
+
+    const finiteColliders = colliders.filter((collider) => {
+      isFiniteCollider(collider)
+    })
+
+    const sortedFiniteColliders = cache?.finiteColliders ?? finiteColliders
+      .map((collider) => ({ item: collider, bounds: new BoundingBox(collider) }))
+      .sort((e1, e2) => e1.bounds.minimum.x - e2.bounds.minimum.x)
+
+    const infiniteColliders = cache?.infiniteColliders ?? colliders.filter((collider) => {
+      return !isFiniteCollider(collider)
+    })
+
+    const bodyPairs = Broadphase.findCollisionCandidates(sortedBodies)
+    const finiteBodyColliderPairs = Broadphase.findCollisionCandidatesAcrossSets(sortedBodies, sortedFiniteColliders)
+
+    const infiniteBodyColliderPairs: Array<[Body, Collider]> = []
+
+    for (const { item } of sortedBodies) {
+      for (const collider of infiniteColliders) {
+        infiniteBodyColliderPairs.push([item, collider])
+      }
+    }
+
+    const collisionManifolds = Narrowphase.calculateCollisionManifolds({
+      bodyPairs,
+      finiteBodyColliderPairs,
+      infiniteBodyColliderPairs
+    })
+
+    this.collisionManifolds.push(...collisionManifolds)
+
+    this.lastBroadphaseStats = {
+      bodies: bodies.length,
+      colliders: colliders.length,
+      candidateBodyPairs: bodyPairs.length,
+      candidateBodyColliderPairs: finiteBodyColliderPairs.length + infiniteBodyColliderPairs.length,
+      manifolds: collisionManifolds.length
+    }
+  }
+
   private resolveCollisions(bodies: Body[]) {
     const bipeds = bodies.filter((body) => {
-      return isBipedComponent(body)
+      return isBiped(body)
     }) as Biped[]
 
     bipeds.forEach((biped) => {
@@ -114,8 +163,8 @@ export class Scene extends Serializable {
         break
       }
 
-      CollisionResolver.updateBipedGroundState(this.collisionManifolds)
-      CollisionResolver.resolveVelocities(this.collisionManifolds, FRAME_RATE)
+      CollisionSolver.updateBipedGroundState(this.collisionManifolds)
+      CollisionSolver.solveVelocities(this.collisionManifolds, FRAME_RATE)
     }
 
     // position phase
@@ -126,9 +175,9 @@ export class Scene extends Serializable {
         break
       }
 
-      CollisionResolver.updateBipedGroundState(this.collisionManifolds)
+      CollisionSolver.updateBipedGroundState(this.collisionManifolds)
 
-      if (!CollisionResolver.resolvePositions(this.collisionManifolds)) {
+      if (!CollisionSolver.solvePositions(this.collisionManifolds)) {
         break
       }
     }
@@ -172,54 +221,5 @@ export class Scene extends Serializable {
         body.angularVelocity.scale(angularDampingFactor)
       }
     })
-  }
-
-  private detectCollisions(bodies: Body[], cache?: BroadphaseCache) {
-    this.collisionManifolds.length = 0
-
-    const sortedBodies = cache?.bodies ?? bodies
-      .map((body) => ({ item: body, bounds: new BoundingBox(body.volume) }))
-      .sort((e1, e2) => e1.bounds.minimum.x - e2.bounds.minimum.x)
-
-    const colliders = Object.values(this.colliders)
-
-    const finiteColliders = colliders.filter((collider) => {
-      isFiniteCollider(collider)
-    })
-
-    const sortedFiniteColliders = cache?.finiteColliders ?? finiteColliders
-      .map((collider) => ({ item: collider, bounds: new BoundingBox(collider) }))
-      .sort((e1, e2) => e1.bounds.minimum.x - e2.bounds.minimum.x)
-
-    const infiniteColliders = cache?.infiniteColliders ?? colliders.filter((collider) => {
-      return !isFiniteCollider(collider)
-    })
-
-    const bodyPairs = Broadphase.findCollisionCandidates(sortedBodies)
-    const finiteBodyColliderPairs = Broadphase.findCollisionCandidatesAcrossSets(sortedBodies, sortedFiniteColliders)
-
-    const infiniteBodyColliderPairs: Array<[Body, Collider]> = []
-
-    for (const { item } of sortedBodies) {
-      for (const collider of infiniteColliders) {
-        infiniteBodyColliderPairs.push([item, collider])
-      }
-    }
-
-    const collisionManifolds = Narrowphase.calculateCollisionManifolds(
-      bodyPairs,
-      finiteBodyColliderPairs,
-      infiniteBodyColliderPairs
-    )
-
-    this.collisionManifolds.push(...collisionManifolds)
-
-    this.lastBroadphaseStats = {
-      bodies: bodies.length,
-      colliders: colliders.length,
-      candidateBodyPairs: bodyPairs.length,
-      candidateBodyColliderPairs: finiteBodyColliderPairs.length + infiniteBodyColliderPairs.length,
-      manifolds: collisionManifolds.length
-    }
   }
 }

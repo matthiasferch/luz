@@ -19,3 +19,7 @@ export class Ray extends Collider {
     this.direction = direction.copy().normalize()
   }
 }
+
+export const isRay = (collider: Collider): collider is Ray => {
+  return collider.type === 'Ray'
+}

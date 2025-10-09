@@ -3,15 +3,17 @@ import { Collider } from '../collider'
 import { CollisionDispatcher } from '../dispatchers/collision'
 import { CollisionManifold } from '../collision'
 
+export type CollisionCandidates = {
+  bodyPairs: Array<[Body, Body]>
+  finiteBodyColliderPairs: Array<[Body, Collider]>
+  infiniteBodyColliderPairs: Array<[Body, Collider]>
+}
+
 export class Narrowphase {
   static collisionDispatcher = new CollisionDispatcher()
 
-  static calculateCollisionManifolds(
-    bodyPairs: Array<[Body, Body]>,
-    bodyColliderPairs: Array<[Body, Collider]>,
-    infiniteBodyColliderPairs: Array<[Body, Collider]> = []
-  ): CollisionManifold[] {
-    const { dispatch } = Narrowphase.collisionDispatcher
+  static calculateCollisionManifolds(candidates: CollisionCandidates): CollisionManifold[] {
+    const { bodyPairs, finiteBodyColliderPairs, infiniteBodyColliderPairs } = candidates
 
     const collisionManifolds: CollisionManifold[] = []
 
@@ -20,7 +22,7 @@ export class Narrowphase {
         continue
       }
 
-      const collisions = dispatch(b1.volume, b2.volume)
+      const collisions = Narrowphase.collisionDispatcher.dispatch(b1.volume, b2.volume)
 
       if (collisions && collisions.length > 0) {
         collisionManifolds.push({
@@ -30,8 +32,8 @@ export class Narrowphase {
       }
     }
 
-    for (const [body, collider] of bodyColliderPairs) {
-      const collisions = dispatch(body.volume, collider)
+    for (const [body, collider] of finiteBodyColliderPairs) {
+      const collisions = Narrowphase.collisionDispatcher.dispatch(body.volume, collider)
 
       if (collisions && collisions.length > 0) {
         collisionManifolds.push({
@@ -42,7 +44,7 @@ export class Narrowphase {
     }
 
     for (const [body, collider] of infiniteBodyColliderPairs) {
-      const collisions = dispatch(body.volume, collider)
+      const collisions = Narrowphase.collisionDispatcher.dispatch(body.volume, collider)
 
       if (collisions && collisions.length > 0) {
         collisionManifolds.push({
