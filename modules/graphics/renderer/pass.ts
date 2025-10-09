@@ -5,10 +5,13 @@ import { Serializable, Serialize } from '@luz/utilities'
 
 export class RenderPass extends Serializable {
   @Serialize()
-  readonly clearColor: vec4 = vec4.zero.copy()
+  readonly clearColor: vec4 | undefined
 
   @Serialize()
-  readonly clearDepth: number = 1.0
+  readonly clearDepth: number | undefined
+
+  @Serialize()
+  readonly clearStencil: number | undefined
 
   @Serialize()
   readonly cullMode: State.CullMode = 'Back'
@@ -37,8 +40,6 @@ export class RenderPass extends Serializable {
     super()
 
     Object.assign(this, data)
-
-    this.clearColor.set(this.clearColor)
   }
 
   static async deserialize(data: Partial<RenderPass>) {

@@ -16,9 +16,16 @@ import { vec4 } from '@luz/vectors'
 import { RenderPass } from './pass'
 import { getUniformProperties } from '@luz/utilities'
 
-type MaskOptions = { color: boolean[]; depth: boolean }
+type MaskOptions = {
+  color: boolean[];
+  depth: boolean
+}
 
-type ClearOptions = { color: vec4; depth: number; stencil: number }
+type ClearOptions = {
+  color: vec4;
+  depth: number;
+  stencil: number
+}
 
 export class Renderer {
   readonly state: State
