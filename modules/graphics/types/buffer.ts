@@ -5,5 +5,5 @@ import { UniformBuffer } from '../buffers/uniform-buffer'
 export type Buffer = FrameBuffer | RenderBuffer | UniformBuffer
 
 export namespace Buffer {
-  export type Target = 'FrameBuffer' | 'RenderBuffer' | 'UniformBuffer'
+  export type Type = 'FrameBuffer' | 'RenderBuffer' | 'UniformBuffer'
 }

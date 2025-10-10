@@ -5,9 +5,9 @@ import { Buffer } from '../types/buffer'
 import { Texture } from '../types/texture'
 
 export class Buffers {
-  private buffers: Buffer[] = []
+  private readonly buffers: Buffer[] = []
 
-  private boundBuffers: Record<number, Buffer> = {}
+  private readonly activeBuffers: Partial<Record<Buffer.Type, Buffer>> = {}
 
   constructor(private gl: WebGL2RenderingContext) { }
 
@@ -17,11 +17,12 @@ export class Buffers {
 
   create(target: 'UniformBuffer', data?: any): UniformBuffer
 
-  create(target: Buffer.Target, data?: any) {
+  create(target: Buffer.Type, data?: any) {
     switch (target) {
       case 'FrameBuffer':
         const frameBuffer = this.gl.createFramebuffer() as FrameBuffer
 
+        frameBuffer.type = 'FrameBuffer'
         frameBuffer.target = this.gl.FRAMEBUFFER
 
         frameBuffer.attachments = {}
@@ -33,6 +34,7 @@ export class Buffers {
       case 'RenderBuffer':
         const renderBuffer = this.gl.createRenderbuffer() as RenderBuffer
 
+        renderBuffer.type = 'RenderBuffer'
         renderBuffer.target = this.gl.RENDERBUFFER
 
         this.buffers.push(renderBuffer)
@@ -42,7 +44,9 @@ export class Buffers {
       case 'UniformBuffer':
         const buffer = this.gl.createBuffer() as UniformBuffer
 
+        buffer.type = 'UniformBuffer'
         buffer.target = this.gl.UNIFORM_BUFFER
+
         buffer.usage = this.gl.DYNAMIC_DRAW
 
         if (data) {
@@ -93,23 +97,23 @@ export class Buffers {
     }
 
     if (this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER) !== this.gl.FRAMEBUFFER_COMPLETE) {
-      throw new Error('Framebuffer is incomplete')
+      throw new Error('Frame buffer is incomplete')
     }
 
     frameBuffer.attachments[attachment] = data
   }
 
   bind(buffer: Buffer) {
-    const { target } = buffer
+    const { type, target } = buffer
 
-    const boundBuffer = this.boundBuffers[target]
+    const activeBuffer = this.activeBuffers[type]
 
-    if (boundBuffer === buffer) {
+    if (activeBuffer === buffer) {
       return
     }
 
-    switch (target) {
-      case this.gl.FRAMEBUFFER:
+    switch (type) {
+      case 'FrameBuffer':
 
         /*const frameBuffer = buffer as FrameBuffer
 
@@ -127,7 +131,7 @@ export class Buffers {
 
         break
 
-      case this.gl.RENDERBUFFER:
+      case 'RenderBuffer':
 
         this.gl.bindRenderbuffer(target, buffer)
 
@@ -140,46 +144,42 @@ export class Buffers {
         break
     }
 
-    this.boundBuffers[target] = buffer
+    this.activeBuffers[type] = buffer
   }
 
-  unbind(target: Buffer.Target) {
-    switch (target) {
+  unbind(type: Buffer.Type) {
+    switch (type) {
       case 'FrameBuffer':
-
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
-        delete this.boundBuffers[this.gl.FRAMEBUFFER]
 
         break
 
       case 'RenderBuffer':
-
         this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null)
-        delete this.boundBuffers[this.gl.RENDERBUFFER]
 
         break
 
       case 'UniformBuffer':
-
         this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null)
-        delete this.boundBuffers[this.gl.UNIFORM_BUFFER]
 
         break
     }
+
+    delete this.activeBuffers[type]
   }
 
   unbindFrameBuffer() {
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
-    delete this.boundBuffers[this.gl.FRAMEBUFFER]
+    delete this.activeBuffers['FrameBuffer']
   }
 
   unbindRenderBuffer() {
     this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null)
-    delete this.boundBuffers[this.gl.RENDERBUFFER]
+    delete this.activeBuffers['RenderBuffer']
   }
 
   unbindUniformBuffer() {
     this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null)
-    delete this.boundBuffers[this.gl.UNIFORM_BUFFER]
+    delete this.activeBuffers['UniformBuffer']
   }
 }
