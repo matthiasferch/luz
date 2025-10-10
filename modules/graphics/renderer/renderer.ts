@@ -1,4 +1,4 @@
-import { Camera, Entity, Light, Model, Transform } from '@luz/core'
+import { Camera, Entity, isModel, Light, Model, Transform } from '@luz/core'
 
 import { Meshes } from '../managers/meshes'
 import { Buffers } from '../managers/buffers'
@@ -15,15 +15,18 @@ import { RenderTarget } from './target'
 import { vec4 } from '@luz/vectors'
 import { RenderPass } from './pass'
 import { getUniformProperties } from '@luz/utilities'
+import { UniformProperty } from '@luz/utilities/uniform'
+
+type UniformCache = Record<string, Uniform.Value>
 
 type MaskOptions = {
-  color: boolean[];
+  color: boolean[]
   depth: boolean
 }
 
 type ClearOptions = {
-  color: vec4;
-  depth: number;
+  color: vec4
+  depth: number
   stencil: number
 }
 
@@ -42,6 +45,10 @@ export class Renderer {
   readonly defaultTexture: Texture
   readonly defaultMaterial: Material
 
+  private readonly uniformCache: UniformCache
+
+  private readonly uniformProperties: Record<string, UniformProperty[]>
+
   constructor(private gl: WebGL2RenderingContext) {
     this.state = new State(this.gl)
 
@@ -58,15 +65,23 @@ export class Renderer {
 
     this.defaultTexture = this.textures.create({ data: textureData })
     this.defaultMaterial = new Material({ texture: this.defaultTexture })
+
+    this.uniformCache = Object.create(null)
+
+    this.uniformProperties = {
+      model: getUniformProperties(Model),
+      light: getUniformProperties(Light),
+      camera: getUniformProperties(Camera),
+      material: getUniformProperties(Material),
+      transform: getUniformProperties(Transform)
+    }
   }
 
-  use(target: RenderTarget) {
-    const { width, height, frameBuffer } = target
-
+  use({ width, height, frameBuffer }: RenderTarget) {
     if (frameBuffer) {
       this.buffers.bind(frameBuffer)
     } else {
-      this.buffers.unbind('FrameBuffer')
+      this.buffers.unbindFrameBuffer()
     }
 
     this.gl.viewport(0, 0, width, height)
@@ -74,7 +89,9 @@ export class Renderer {
 
   mask({ color, depth }: Partial<MaskOptions>) {
     if (color !== undefined) {
-      this.gl.colorMask(color[0], color[1], color[2], color[3])
+      const [r = true, g = true, b = true, a = true] = color
+
+      this.gl.colorMask(r, g, b, a)
     }
 
     if (depth !== undefined) {
@@ -86,33 +103,34 @@ export class Renderer {
     let clearMask = 0
 
     if (color !== undefined) {
-      const { x, y, z, w } = color
+      const { r = 0.0, g = 0.0, b = 0.0, a = 1.0 } = color
 
-      this.gl.clearColor(x, y, z, w)
-
+      this.gl.clearColor(r, g, b, a)
       clearMask |= this.gl.COLOR_BUFFER_BIT
     }
 
     if (depth !== undefined) {
       this.gl.clearDepth(depth)
-
       clearMask |= this.gl.DEPTH_BUFFER_BIT
     }
 
     if (stencil !== undefined) {
       this.gl.clearStencil(stencil)
-
       clearMask |= this.gl.STENCIL_BUFFER_BIT
     }
 
-    if (clearMask === 0) {
-      return
+    if (clearMask !== 0) {
+      this.gl.clear(clearMask)
     }
-
-    this.gl.clear(clearMask)
   }
 
-  renderPass<T extends {}>(pass: RenderPass, camera: Camera, entities: Entity[], light: Light, uniforms?: T) {
+  renderPass<T extends {}>(
+    pass: RenderPass,
+    camera: Camera,
+    entities: Entity[],
+    light: Light,
+    uniforms?: T
+  ) {
     // cull mode
     this.state.cullMode = pass.cullMode
 
@@ -122,11 +140,11 @@ export class Renderer {
     // depth test
     this.state.depthTest = pass.depthTest
 
-    // depth mask
+    // write masks
     this.mask({ color: pass.colorMask, depth: pass.depthMask })
 
     // clear buffers
-    this.clear({ color: pass.clearColor, depth: pass.clearDepth })
+    this.clear({ color: pass.clearColor, depth: pass.clearDepth, stencil: pass.clearStencil })
 
     const { program } = pass
 
@@ -135,15 +153,13 @@ export class Renderer {
     }
 
     // render entities
-    Object.values(entities).forEach((entity) => {
-      Object.values(entity.components).forEach((component) => {
-        if (component.type !== 'Model') {
-          return
+    for (const entity of entities) {
+      for (const component of Object.values(entity.components)) {
+        if (isModel(component)) {
+          this.renderModel(camera, entity, component, light, program, uniforms)
         }
-
-        this.renderModel(camera, entity, component as Model, light, program, uniforms)
-      })
-    })
+      }
+    }
   }
 
   renderModel<T extends {}>(
@@ -154,108 +170,119 @@ export class Renderer {
     program: Program,
     additionalUniforms?: T
   ) {
-    const uniforms: Record<string, Uniform.Value> = {}
+    const baseUniforms: UniformCache = Object.create(null)
+
+    const hasUniform = this.hasUniform.bind(this, program)
 
     const setUniformValue = (value: Uniform.Value, key: string, prefix?: string) => {
       const name = prefix ? `${prefix}.${key}` : key
 
-      if (program.uniforms.hasOwnProperty(name)) {
-        uniforms[name] = value
+      if (hasUniform(name)) {
+        baseUniforms[name] = value
       }
     }
 
     if (camera) {
-      getUniformProperties(Camera).forEach(({ key }) => {
+      for (const { key } of this.uniformProperties.camera) {
         setUniformValue(camera[key], key, 'camera')
-      })
+      }
     }
 
     if (transform) {
-      getUniformProperties(Transform).forEach(({ key }) => {
+      for (const { key } of this.uniformProperties.transform) {
         setUniformValue(transform[key], key, 'transform')
-      })
+      }
     }
 
     if (model) {
-      getUniformProperties(Model).forEach(({ key }) => {
+      for (const { key } of this.uniformProperties.model) {
         setUniformValue(model[key], key, 'model')
-      })
+      }
     }
 
     if (model.boneMatrices) {
-      // nested structures cannot contain arrays,
-      // so we need to place bone matrices outside
       setUniformValue(model.boneMatrices, 'boneMatrices')
     }
 
     if (light) {
-      getUniformProperties(Light).forEach(({ key }) => {
+      for (const { key } of this.uniformProperties.light) {
         setUniformValue(light[key], key, 'light')
-      })
+      }
     }
-
-    this.programs.update(program, { uniforms })
 
     if (additionalUniforms) {
-      // additional uniforms
-      this.programs.update(program, {
-        // this can get quite slow, only use sparingly!
-        uniforms: this.collectUniformValues(program, additionalUniforms)
-      })
+      const uniformValues = this.collectUniformValues(program, additionalUniforms)
+
+      for (const uniform in uniformValues) {
+        baseUniforms[uniform] = uniformValues[uniform]
+      }
     }
 
-    Object.entries(model.partitions).forEach(([name, partition]) => {
+    for (const [name, partition] of Object.entries(model.partitions)) {
       const { mesh } = partition
 
       if (!mesh) {
-        throw new Error('Partition has no mesh')
+        console.warn('Partition has no mesh:', name)
+        continue
       }
 
-      const { material } = mesh
-
-      if (!material) {
-        throw new Error('Mesh has no material')
-      }
+      const material = mesh.material ?? this.defaultMaterial
 
       if (!material.texture) {
-        throw new Error(name)
+        console.warn('Material has no texture on partition:', name)
+        continue
       }
 
-      this.programs.update(program, {
-        uniforms: getUniformProperties(Material).reduce((properties, { key }) => {
-          const name = `material.${key}`
+      const materialUniforms = this.uniformCache
 
-          if (program.uniforms.hasOwnProperty(name)) {
-            properties[name] = material[key]
-          }
+      for (const name in materialUniforms) {
+        delete materialUniforms[name]
+      }
 
-          return properties
-        }, {})
-      })
+      for (const { key } of this.uniformProperties.material) {
+        const name = `material.${key}`
+
+        if (hasUniform(name)) {
+          materialUniforms[name] = material[key]
+        }
+      }
+
+      const uniforms = Object.create(null) as UniformCache
+
+      for (const name in baseUniforms) {
+        uniforms[name] = baseUniforms[name]
+      }
+
+      for (const name in materialUniforms) {
+        uniforms[name] = materialUniforms[name]
+      }
+
+      this.programs.update(program, { uniforms })
 
       this.meshes.render(mesh)
-    })
+    }
   }
 
   private collectUniformValues(program: Program, uniformValues: any) {
-    const collectedUniformValues: Record<string, Uniform.Value> = {}
+    const uniforms: UniformCache = Object.create(null)
+    const hasUniform = this.hasUniform.bind(this, program)
 
     const collectRecursively = (values: any, prefix?: string) => {
       if (values == null || typeof values !== 'object') {
         return
       }
 
-      Object.entries(values).forEach(([name, value]: [string, any]) => {
+      for (const [name, value] of Object.entries(values)) {
         const uniformName = prefix ? `${prefix}.${name}` : name
 
-        if (program.uniforms.hasOwnProperty(uniformName)) {
-          collectedUniformValues[uniformName] = value
+        if (hasUniform(uniformName)) {
+          uniforms[uniformName] = value as Uniform.Value
         } else if (Array.isArray(value)) {
           value.forEach((element, index) => {
             const arrayIndex = `${uniformName}[${index}]`
 
-            if (program.uniforms.hasOwnProperty(arrayIndex)) {
-              collectedUniformValues[arrayIndex] = element
+            if (hasUniform(arrayIndex)) {
+              uniforms[arrayIndex] = element as Uniform.Value
             } else {
               collectRecursively(element, arrayIndex)
             }
@@ -263,11 +290,21 @@ export class Renderer {
         } else {
           collectRecursively(value, uniformName)
         }
-      })
+      }
     }
 
     collectRecursively(uniformValues)
 
-    return collectedUniformValues
+    return uniforms
+  }
+
+  private hasUniform(program: Program, name: string) {
+    const { uniforms } = program
+
+    if (!uniforms) {
+      return false
+    }
+
+    return Object.prototype.hasOwnProperty.call(uniforms, name)
   }
 }

@@ -9,7 +9,7 @@ export class Buffers {
 
   private boundBuffers: Record<number, Buffer> = {}
 
-  constructor(private gl: WebGL2RenderingContext) {}
+  constructor(private gl: WebGL2RenderingContext) { }
 
   create(target: 'FrameBuffer'): FrameBuffer
 
@@ -105,7 +105,7 @@ export class Buffers {
     const boundBuffer = this.boundBuffers[target]
 
     if (boundBuffer === buffer) {
-       return
+      return
     }
 
     switch (target) {
@@ -154,5 +154,17 @@ export class Buffers {
         this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null)
         break
     }
+  }
+
+  unbindFrameBuffer() {
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
+  }
+
+  unbindRenderBuffer() {
+    this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null)
+  }
+
+  unbindUniformBuffer() {
+    this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null)
   }
 }

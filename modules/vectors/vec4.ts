@@ -43,6 +43,38 @@ export class vec4 extends Float32Array {
     this[3] = w
   }
 
+  get r(): number {
+    return this[0]
+  }
+
+  set r(r: number) {
+    this[0] = r
+  }
+
+  get g(): number {
+    return this[1]
+  }
+
+  set g(g: number) {
+    this[1] = g
+  }
+
+  get b(): number {
+    return this[2]
+  }
+
+  set b(b: number) {
+    this[2] = b
+  }
+
+  get a(): number {
+    return this[3]
+  }
+
+  set a(a: number) {
+    this[3] = a
+  }
+
   get xyzw(): number[] {
     return Array.from(this)
   }

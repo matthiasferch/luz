@@ -1,6 +1,6 @@
 const uniformProperties = new WeakMap()
 
-type UniformProperty = { key: string; type: any }
+export type UniformProperty = { key: string; type: any }
 
 export function Uniform() {
   return function (target: Object, key: string) {
