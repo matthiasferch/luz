@@ -110,6 +110,7 @@ export class Buffers {
 
     switch (target) {
       case this.gl.FRAMEBUFFER:
+
         /*const frameBuffer = buffer as FrameBuffer
 
         Object.values(frameBuffer.attachments).forEach((attachment) => {
@@ -127,11 +128,13 @@ export class Buffers {
         break
 
       case this.gl.RENDERBUFFER:
+
         this.gl.bindRenderbuffer(target, buffer)
 
         break
 
       default:
+
         this.gl.bindBuffer(target, buffer)
 
         break
@@ -143,28 +146,40 @@ export class Buffers {
   unbind(target: Buffer.Target) {
     switch (target) {
       case 'FrameBuffer':
+
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
+        delete this.boundBuffers[this.gl.FRAMEBUFFER]
+
         break
 
       case 'RenderBuffer':
+
         this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null)
+        delete this.boundBuffers[this.gl.RENDERBUFFER]
+
         break
 
       case 'UniformBuffer':
+
         this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null)
+        delete this.boundBuffers[this.gl.UNIFORM_BUFFER]
+
         break
     }
   }
 
   unbindFrameBuffer() {
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
+    delete this.boundBuffers[this.gl.FRAMEBUFFER]
   }
 
   unbindRenderBuffer() {
     this.gl.bindRenderbuffer(this.gl.RENDERBUFFER, null)
+    delete this.boundBuffers[this.gl.RENDERBUFFER]
   }
 
   unbindUniformBuffer() {
     this.gl.bindBuffer(this.gl.UNIFORM_BUFFER, null)
+    delete this.boundBuffers[this.gl.UNIFORM_BUFFER]
   }
 }

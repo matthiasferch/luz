@@ -6,7 +6,7 @@ export class Textures {
 
   private boundTextures: Record<number, Texture> = {}
 
-  constructor(private gl: WebGL2RenderingContext) {}
+  constructor(private gl: WebGL2RenderingContext) { }
 
   create(surface: Partial<Surface>): Texture {
     const { gl } = this
@@ -165,7 +165,7 @@ export class Textures {
     }
 
     if (height === undefined) {
-      height = texture.width
+      height = texture.height
     }
 
     this.bind(texture, 0)
