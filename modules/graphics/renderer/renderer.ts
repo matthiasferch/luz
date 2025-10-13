@@ -81,7 +81,7 @@ export class Renderer {
     if (frameBuffer) {
       this.buffers.bind(frameBuffer)
     } else {
-      this.buffers.unbindFrameBuffer()
+      this.buffers.unbind('FrameBuffer')
     }
 
     this.gl.viewport(0, 0, width, height)
