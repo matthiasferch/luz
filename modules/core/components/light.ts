@@ -22,6 +22,10 @@ export class Light extends Camera {
 
   @Uniform()
   @Serialize()
+  softness: number = 1.0
+
+  @Uniform()
+  @Serialize()
   readonly color: vec3 = vec3.one.copy()
 
   @Uniform()
