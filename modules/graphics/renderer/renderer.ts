@@ -124,6 +124,17 @@ export class Renderer {
     }
   }
 
+  // Enable scissor test with given rectangle in pixels (origin bottom-left)
+  enableScissor(x: number, y: number, width: number, height: number) {
+    this.gl.enable(this.gl.SCISSOR_TEST)
+    this.gl.scissor(x, y, width, height)
+  }
+
+  // Disable scissor test
+  disableScissor() {
+    this.gl.disable(this.gl.SCISSOR_TEST)
+  }
+
   renderPass<T extends {}>(
     pass: RenderPass,
     camera: Camera,
