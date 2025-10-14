@@ -75,7 +75,7 @@ export class Scene extends Serializable {
 
       const bodies = components.filter((component) => {
         return isBody(component)
-      }) as Body[]
+      })
 
       this.applyGravity(bodies)
       this.applyDamping(bodies, FRAME_RATE)
@@ -146,7 +146,7 @@ export class Scene extends Serializable {
   private resolveCollisions(bodies: Body[]) {
     const bipeds = bodies.filter((body) => {
       return isBiped(body)
-    }) as Biped[]
+    })
 
     bipeds.forEach((biped) => {
       biped.onGround = false

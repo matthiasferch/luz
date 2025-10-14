@@ -1,6 +1,5 @@
 import { Transform } from '@luz/core'
 import { vec2, vec3 } from '@luz/vectors'
-import { vec3 as _vec3 } from '@luz/vectors'
 import { Serializable, Serialize } from '@luz/utilities'
 import { BoundingBox, Plane, Volume } from '@luz/physics'
 
@@ -128,7 +127,7 @@ export class Frustum extends Serializable {
   intersectsBoundingBox(aabb: BoundingBox): boolean {
     const planes = this.getPlanes()
 
-    const vN = new _vec3()
+    const vN = new vec3()
 
     for (const plane of planes) {
       // Build the negative vertex (min projection along outward-pointing normal)

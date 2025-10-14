@@ -1,5 +1,6 @@
 import { Serialize, Uniform, Register } from '@luz/utilities'
 import { mat4, vec3 } from '@luz/vectors'
+import { BoundingBox, Polygon } from '@luz/physics'
 import { Component } from '../component'
 import { Transform } from '../transform'
 import { Camera } from './camera'
@@ -7,6 +8,9 @@ import { Camera } from './camera'
 @Register()
 export class Light extends Camera {
   readonly type: Component.Type = 'Light'
+
+  // Axis-aligned bounding box covering the light's frustum in world space
+  boundingBox: BoundingBox | null = null
 
   @Uniform()
   @Serialize()
@@ -59,6 +63,10 @@ export class Light extends Camera {
 
     this.textureMatrix.multiply(this.projectionMatrix)
     this.textureMatrix.multiply(this.viewMatrix)
+
+    // Update the AABB based on the current frustum vertices
+    const frustumVertices = this.frustum.getVertices()
+    this.boundingBox = new BoundingBox(new Polygon({ vertices: frustumVertices }))
   }
 }
 
