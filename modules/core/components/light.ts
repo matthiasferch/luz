@@ -9,7 +9,6 @@ import { Camera } from './camera'
 export class Light extends Camera {
   readonly type: Component.Type = 'Light'
 
-  // Axis-aligned bounding box covering the light's frustum in world space
   boundingBox: BoundingBox | null = null
 
   @Uniform()
@@ -64,9 +63,9 @@ export class Light extends Camera {
     this.textureMatrix.multiply(this.projectionMatrix)
     this.textureMatrix.multiply(this.viewMatrix)
 
-    // Update the AABB based on the current frustum vertices
-    const frustumVertices = this.frustum.getVertices()
-    this.boundingBox = new BoundingBox(new Polygon({ vertices: frustumVertices }))
+    this.boundingBox = new BoundingBox(new Polygon({
+      vertices: this.frustum.getVertices()
+    }))
   }
 }
 
