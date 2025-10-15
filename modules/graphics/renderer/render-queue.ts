@@ -1,4 +1,5 @@
-import { Renderer, RenderPass } from '@luz/graphics'
+import { Renderer } from './renderer'
+import { RenderPass } from './pass'
 import { PassContext } from './contexts'
 import { Renderable } from './renderable'
 
@@ -67,9 +68,17 @@ export class RenderQueue {
       renderer.enableScissor(ctx.scissor.x, ctx.scissor.y, ctx.scissor.width, ctx.scissor.height)
     }
 
+    // Per-pass uniform grouping (camera + light + extra uniforms)
+    const passUniforms: Record<string, unknown> = Object.create(null)
+    if (ctx.uniforms) {
+      for (const [k, v] of Object.entries(ctx.uniforms)) passUniforms[k] = v
+    }
+    if (ctx.camera) passUniforms['camera'] = ctx.camera
+    if (ctx.light) passUniforms['light'] = ctx.light
+
     // Draw all items
     for (const item of this.items) {
-      renderer.renderModel(ctx.camera as any, item.transform, item.model, ctx.light as any, program, ctx.uniforms)
+      renderer.renderModel(null, item.transform, item.model, null, program, passUniforms)
     }
 
     if (ctx.scissor) {
@@ -77,4 +86,3 @@ export class RenderQueue {
     }
   }
 }
-

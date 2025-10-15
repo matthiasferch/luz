@@ -1,4 +1,5 @@
-import { Renderer, RenderPass } from '@luz/graphics'
+import { Renderer } from './renderer'
+import { RenderPass } from './pass'
 import { RenderStage } from './render-stage'
 import { FrameContext, PassContext, VisibilitySet } from './contexts'
 import { LightingTask } from './lighting-task'
@@ -47,4 +48,3 @@ export class RenderGraph {
     q.execute(renderer, pass, ctx)
   }
 }
-
