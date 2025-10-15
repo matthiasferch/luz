@@ -5,6 +5,14 @@ import { FrameContext, PassContext, VisibilitySet } from './contexts'
 import { LightingTask } from './lighting-task'
 import { RenderQueue } from './render-queue'
 import { Entity, isModel, Model } from '@luz/core'
+import { RenderTarget } from './target'
+
+export type RenderGraphExecuteOptions = {
+  // Per-stage render targets override; falls back to frame.target when missing
+  targets?: Partial<Record<RenderStage, RenderTarget>>
+  // Per-stage extra uniforms object merged into the pass uniforms
+  uniforms?: Partial<Record<RenderStage, Record<string, unknown>>>
+}
 
 // High-level orchestration of render stages. For Step 1, this is a thin
 // container around stage queues; integration and behavior changes come later.
@@ -36,7 +44,8 @@ export class RenderGraph {
     passes: Partial<Record<RenderStage, RenderPass>>,
     frame: FrameContext,
     visibility: VisibilitySet,
-    lighting: LightingTask[]
+    lighting: LightingTask[],
+    options?: RenderGraphExecuteOptions
   ) {
     const addEntitiesToQueue = (queue: RenderQueue, entities: Entity[]) => {
       for (const entity of entities) {
@@ -59,7 +68,8 @@ export class RenderGraph {
       this.runStage(renderer, RenderStage.Depth, depthPass, {
         camera: frame.camera,
         light: null,
-        target: frame.target
+        target: options?.targets?.[RenderStage.Depth] ?? frame.target,
+        uniforms: options?.uniforms?.[RenderStage.Depth]
       })
     }
 
@@ -74,7 +84,8 @@ export class RenderGraph {
       this.runStage(renderer, RenderStage.Ambient, ambientPass, {
         camera: frame.camera,
         light: null,
-        target: frame.target
+        target: options?.targets?.[RenderStage.Ambient] ?? frame.target,
+        uniforms: options?.uniforms?.[RenderStage.Ambient]
       })
     }
 
@@ -93,7 +104,8 @@ export class RenderGraph {
         this.runStage(renderer, RenderStage.Shadow, shadowPass, {
           camera: task.light as any,
           light: null,
-          target: frame.target
+          target: options?.targets?.[RenderStage.Shadow] ?? frame.target,
+          uniforms: options?.uniforms?.[RenderStage.Shadow]
         })
       }
 
@@ -106,8 +118,9 @@ export class RenderGraph {
         this.runStage(renderer, RenderStage.Light, lightPass, {
           camera: frame.camera,
           light: task.light,
-          target: frame.target,
-          scissor: task.scissor
+          target: options?.targets?.[RenderStage.Light] ?? frame.target,
+          scissor: task.scissor,
+          uniforms: options?.uniforms?.[RenderStage.Light]
         })
       }
     }
@@ -123,7 +136,8 @@ export class RenderGraph {
       this.runStage(renderer, RenderStage.Transparent, transparentPass, {
         camera: frame.camera,
         light: null,
-        target: frame.target
+        target: options?.targets?.[RenderStage.Transparent] ?? frame.target,
+        uniforms: options?.uniforms?.[RenderStage.Transparent]
       })
     }
 
