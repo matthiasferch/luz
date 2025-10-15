@@ -25,6 +25,7 @@ export { RenderStage } from './renderer/render-stage'
 export { Renderable } from './renderer/renderable'
 export { LightingTask } from './renderer/lighting-task'
 export { FrameContext, PassContext, VisibilitySet } from './renderer/contexts'
+export { Scissor } from './renderer/scissor'
 
 export { FrameBuffer } from './buffers/frame-buffer'
 export { RenderBuffer } from './buffers/render-buffer'

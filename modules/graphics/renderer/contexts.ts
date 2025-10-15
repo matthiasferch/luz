@@ -1,5 +1,6 @@
 import { Camera, Entity, Light } from '@luz/core'
 import { RenderTarget } from '../renderer/target'
+import { Scissor } from './scissor'
 
 export type FrameContext = {
   camera: Camera
@@ -18,7 +19,7 @@ export type PassContext = {
   // Render target for this pass
   target: RenderTarget
   // Optional scissor rectangle in pixels (origin bottom-left)
-  scissor?: { x: number; y: number; width: number; height: number }
+  scissor?: Scissor
   // Optional extra uniforms provided by the pass
   uniforms?: Record<string, unknown>
 }
@@ -28,4 +29,3 @@ export type VisibilitySet = {
   transparent: Entity[]
   lights: Light[]
 }
-
