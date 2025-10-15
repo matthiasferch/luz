@@ -19,6 +19,12 @@ export { VertexArray } from './types/vertex-array'
 
 export { RenderPass } from './renderer/pass'
 export { RenderTarget } from './renderer/target'
+export { RenderGraph } from './renderer/render-graph'
+export { RenderQueue } from './renderer/render-queue'
+export { RenderStage } from './renderer/render-stage'
+export { Renderable } from './renderer/renderable'
+export { LightingTask } from './renderer/lighting-task'
+export { FrameContext, PassContext, VisibilitySet } from './renderer/contexts'
 
 export { FrameBuffer } from './buffers/frame-buffer'
 export { RenderBuffer } from './buffers/render-buffer'

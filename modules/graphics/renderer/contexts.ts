@@ -1,0 +1,31 @@
+import { Camera, Entity, Light } from '@luz/core'
+import { RenderTarget } from '../renderer/target'
+
+export type FrameContext = {
+  camera: Camera
+  time: number
+  width: number
+  height: number
+  // Default target for this frame (canvas or intermediate)
+  target: RenderTarget
+}
+
+export type PassContext = {
+  // Active camera for this pass (camera or light-as-camera)
+  camera: Camera | null
+  // Active light for this pass (null for camera-only passes like Ambient/Depth)
+  light: Light | null
+  // Render target for this pass
+  target: RenderTarget
+  // Optional scissor rectangle in pixels (origin bottom-left)
+  scissor?: { x: number; y: number; width: number; height: number }
+  // Optional extra uniforms provided by the pass
+  uniforms?: Record<string, unknown>
+}
+
+export type VisibilitySet = {
+  opaque: Entity[]
+  transparent: Entity[]
+  lights: Light[]
+}
+
