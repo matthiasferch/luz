@@ -58,54 +58,55 @@ export class RenderGraph {
     }
 
     // Depth stage (optional): typically opaque only
-    const depthPass = passes[RenderStage.Depth]
+    const depthPass = passes['Depth']
     if (depthPass) {
-      const depthQueue = this.getQueue(RenderStage.Depth)
+      const depthQueue = this.getQueue('Depth')
       if (depthQueue.size() === 0) {
         addEntitiesToQueue(depthQueue, visibility.opaque)
       }
       depthQueue.sort()
-      this.runStage(renderer, RenderStage.Depth, depthPass, {
+      this.runStage(renderer, 'Depth', depthPass, {
         camera: frame.camera,
         light: null,
-        target: options?.targets?.[RenderStage.Depth] ?? frame.target,
-        uniforms: options?.uniforms?.[RenderStage.Depth]
+        target: options?.targets?.['Depth'] ?? frame.target,
+        uniforms: options?.uniforms?.['Depth']
       })
     }
 
     // Ambient/base stage (optional): opaque first
-    const ambientPass = passes[RenderStage.Ambient]
+    const ambientPass = passes['Ambient']
     if (ambientPass) {
-      const ambientQueue = this.getQueue(RenderStage.Ambient)
+      const ambientQueue = this.getQueue('Ambient')
       if (ambientQueue.size() === 0) {
         addEntitiesToQueue(ambientQueue, visibility.opaque)
       }
       ambientQueue.sort()
-      this.runStage(renderer, RenderStage.Ambient, ambientPass, {
+      this.runStage(renderer, 'Ambient', ambientPass, {
         camera: frame.camera,
         light: null,
-        target: options?.targets?.[RenderStage.Ambient] ?? frame.target,
-        uniforms: options?.uniforms?.[RenderStage.Ambient]
+        target: options?.targets?.['Ambient'] ?? frame.target,
+        uniforms: options?.uniforms?.['Ambient']
       })
     }
 
     // Per-light stages: Shadow (into current target) then Light accumulation
-    const shadowPass = passes[RenderStage.Shadow]
-    const lightPass = passes[RenderStage.Light]
-    const lightQueue = lightPass ? this.getQueue(RenderStage.Light) : null
+    const shadowPass = passes['Shadow']
+    const lightPass = passes['Light']
+
+    const lightQueue = lightPass ? this.getQueue('Light') : null
     let builtLightQueue = false
 
     for (const task of lighting) {
       if (shadowPass) {
-        const shadowQueue = this.getQueue(RenderStage.Shadow)
+        const shadowQueue = this.getQueue('Shadow')
         shadowQueue.clear()
         addEntitiesToQueue(shadowQueue, task.entities)
         shadowQueue.sort()
-        this.runStage(renderer, RenderStage.Shadow, shadowPass, {
+        this.runStage(renderer, 'Shadow', shadowPass, {
           camera: task.light as any,
           light: null,
-          target: options?.targets?.[RenderStage.Shadow] ?? frame.target,
-          uniforms: options?.uniforms?.[RenderStage.Shadow]
+          target: options?.targets?.['Shadow'] ?? frame.target,
+          uniforms: options?.uniforms?.['Shadow']
         })
       }
 
@@ -115,29 +116,29 @@ export class RenderGraph {
           builtLightQueue = true
         }
         lightQueue.sort()
-        this.runStage(renderer, RenderStage.Light, lightPass, {
+        this.runStage(renderer, 'Light', lightPass, {
           camera: frame.camera,
           light: task.light,
-          target: options?.targets?.[RenderStage.Light] ?? frame.target,
+          target: options?.targets?.['Light'] ?? frame.target,
           scissor: task.scissor,
-          uniforms: options?.uniforms?.[RenderStage.Light]
+          uniforms: options?.uniforms?.['Light']
         })
       }
     }
 
     // Transparent stage (optional)
-    const transparentPass = passes[RenderStage.Transparent]
+    const transparentPass = passes['Transparent']
     if (transparentPass) {
-      const transparentQueue = this.getQueue(RenderStage.Transparent)
+      const transparentQueue = this.getQueue('Transparent')
       if (transparentQueue.size() === 0) {
         addEntitiesToQueue(transparentQueue, visibility.transparent)
       }
       transparentQueue.sort()
-      this.runStage(renderer, RenderStage.Transparent, transparentPass, {
+      this.runStage(renderer, 'Transparent', transparentPass, {
         camera: frame.camera,
         light: null,
-        target: options?.targets?.[RenderStage.Transparent] ?? frame.target,
-        uniforms: options?.uniforms?.[RenderStage.Transparent]
+        target: options?.targets?.['Transparent'] ?? frame.target,
+        uniforms: options?.uniforms?.['Transparent']
       })
     }
 
