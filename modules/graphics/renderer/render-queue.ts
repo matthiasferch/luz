@@ -147,9 +147,13 @@ export class RenderQueue {
     for (const item of this.items) {
       renderer.renderModel(null, item.transform, item.model, null, program, undefined, item.partitions)
     }
+    
+    // Update submissions (draws are counted in renderer)
+    renderer.stats.submissions += this.items.length
 
     if (context.scissor) {
       renderer.disableScissor()
     }
   }
 }
+

@@ -84,12 +84,14 @@ export class RenderGraph {
       }
       // Front-to-back to maximize early-Z
       depthQueue.sortOpaque()
+      const _t0D = performance.now()
       this.renderQueue(renderer, depthQueue, depthPass, {
         camera: context.camera,
         light: null,
         target: options?.overrideTargets?.['Depth'] ?? context.target,
         uniforms: options?.additionalUniforms?.['Depth']
       }, options?.overrideStates?.['Depth'])
+      renderer.stats.addStageTime('Depth', performance.now() - _t0D)
     }
 
     // Ambient/base stage (optional): opaque first
@@ -101,12 +103,14 @@ export class RenderGraph {
       }
       // Front-to-back for opaque ambient/base
       ambientQueue.sortOpaque()
+      const _t0A = performance.now()
       this.renderQueue(renderer, ambientQueue, ambientPass, {
         camera: context.camera,
         light: null,
         target: options?.overrideTargets?.['Ambient'] ?? context.target,
         uniforms: options?.additionalUniforms?.['Ambient']
       }, options?.overrideStates?.['Ambient'])
+      renderer.stats.addStageTime('Ambient', performance.now() - _t0A)
     }
 
     // Per-light stages: Shadow (into current target) then Light accumulation
@@ -128,12 +132,14 @@ export class RenderGraph {
         shadowQueue.items.length = 0
         addEntitiesToQueue(shadowQueue, task.entities)
         shadowQueue.sort()
+        const _t0S = performance.now()
         this.renderQueue(renderer, shadowQueue, shadowPass, {
           camera: task.light,
           light: null,
           target: options?.overrideTargets?.['Shadowing'] ?? context.target,
           uniforms: options?.additionalUniforms?.['Shadowing']
         }, options?.overrideStates?.['Shadowing'])
+        renderer.stats.addStageTime('Shadowing', performance.now() - _t0S)
       }
 
       if (lightPass && lightQueue) {
@@ -143,6 +149,7 @@ export class RenderGraph {
         }
         // Front-to-back for opaque lighting contributions
         lightQueue.sortOpaque()
+        const _t0L = performance.now()
         this.renderQueue(renderer, lightQueue, lightPass, {
           camera: context.camera,
           light: task.light,
@@ -150,6 +157,7 @@ export class RenderGraph {
           scissor: task.scissor,
           uniforms: options?.additionalUniforms?.['Lighting']
         }, options?.overrideStates?.['Lighting'])
+        renderer.stats.addStageTime('Lighting', performance.now() - _t0L)
       }
 
       // Per-light transparent stage (optional), grouped by blend mode
@@ -175,6 +183,7 @@ export class RenderGraph {
         transparentQueue.items.length = 0
         for (const it of transparentAlphaItems) transparentQueue.items.push(it)
         transparentQueue.sortTransparent()
+        const _t0T = performance.now()
         this.renderQueue(renderer, transparentQueue, transparentPass, {
           camera: context.camera,
           light: task.light,
@@ -182,6 +191,7 @@ export class RenderGraph {
           scissor: task.scissor,
           uniforms: options?.additionalUniforms?.['Transparent'] ?? options?.additionalUniforms?.['Lighting']
         }, options?.overrideStates?.['Transparent'])
+        renderer.stats.addStageTime('Transparent', performance.now() - _t0T)
 
         // Additive items: blend mode override to Additive; order less critical
         if (transparentAdditiveItems.length > 0) {
@@ -192,6 +202,7 @@ export class RenderGraph {
             ...(options?.overrideStates?.['Transparent'] ?? {}),
             blendMode: 'Additive'
           }
+          const _t0TA = performance.now()
           this.renderQueue(renderer, transparentQueue, transparentPass, {
             camera: context.camera,
             light: task.light,
@@ -199,6 +210,7 @@ export class RenderGraph {
             scissor: task.scissor,
             uniforms: options?.additionalUniforms?.['Transparent'] ?? options?.additionalUniforms?.['Lighting']
           }, transparentAdditiveOverride)
+          renderer.stats.addStageTime('Transparent', performance.now() - _t0TA)
         }
       }
     }
@@ -222,7 +234,9 @@ export class RenderGraph {
         renderer.use(options?.overrideTargets?.['Overlay'] ?? context.target)
         renderer.bindPipeline(pipeline)
         renderer.bindFrameGroup(program, context.camera)
+        const _t0O = performance.now()
         options.overlayCallback(renderer, overlayPass, context)
+        renderer.stats.addStageTime('Overlay', performance.now() - _t0O)
       }
     }
 
@@ -241,3 +255,5 @@ export class RenderGraph {
     queue.render(renderer, pass, context, pipelineOverride)
   }
 }
+
+

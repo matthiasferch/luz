@@ -41,3 +41,5 @@ export { Partition } from './renderer/partition'
 export { Bone } from './renderer/bone'
 export { Weight } from './renderer/weight'
 export { Keyframe, ScaleKeyframe, RotationKeyframe, TranslationKeyframe } from './renderer/keyframe'
+
+export { RenderStats } from './renderer/stats'

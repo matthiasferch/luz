@@ -19,6 +19,7 @@ import { UniformProperty } from '@luz/utilities/uniform'
 import { Scissor } from './scissor'
 import { PipelineCache } from './pipeline-cache'
 import { RenderPipeline, PipelineDescriptor } from './pipeline'
+import { RenderStats } from './stats'
 
 type UniformCache = Record<string, Uniform.Value>
 
@@ -56,6 +57,8 @@ export class Renderer {
   private activePipeline?: RenderPipeline
   private lastMaterialByProgram: WeakMap<Program, Material>
 
+  readonly stats: RenderStats
+
   constructor(private gl: WebGL2RenderingContext) {
     this.state = new State(this.gl)
 
@@ -84,6 +87,8 @@ export class Renderer {
     }
 
     this.pipelines = new PipelineCache()
+    this.stats = new RenderStats()
+    this.state.stats = this.stats
     this.lastMaterialByProgram = new WeakMap()
   }
 
@@ -102,10 +107,14 @@ export class Renderer {
       const [r = true, g = true, b = true, a = true] = color
 
       this.gl.colorMask(r, g, b, a)
+
+      this.stats.stateChanges.maskColor += 1
     }
 
     if (depth !== undefined) {
       this.gl.depthMask(depth)
+
+      this.stats.stateChanges.maskDepth += 1
     }
   }
 
@@ -157,6 +166,8 @@ export class Renderer {
     this.mask({ color: pipeline.colorMask, depth: pipeline.depthMask })
 
     this.activePipeline = pipeline
+
+    this.stats.pipelineBinds += 1
   }
 
   resetMaterialBinding(program: Program) {
@@ -316,6 +327,8 @@ export class Renderer {
       }
 
       this.meshes.render(mesh)
+
+      this.stats.draws += 1
     }
   }
 
@@ -374,3 +387,10 @@ export class Renderer {
     return Object.prototype.hasOwnProperty.call(uniforms, name)
   }
 }
+
+
+
+
+
+
+

@@ -1,7 +1,11 @@
+import { RenderStats } from './stats'
+
 export class State {
   private activeCullMode: State.CullMode = 'None'
   private activeBlendMode: State.BlendMode = 'None'
   private activeDepthTest: State.DepthTest = 'None'
+
+  stats?: RenderStats
 
   constructor(private gl: WebGL2RenderingContext) { }
 
@@ -27,6 +31,7 @@ export class State {
     }
 
     this.activeCullMode = cullMode
+    if (this.stats) this.stats.stateChanges.cullMode += 1
   }
 
   set blendMode(blendMode: State.BlendMode) {
@@ -51,6 +56,7 @@ export class State {
     }
 
     this.activeBlendMode = blendMode
+    if (this.stats) this.stats.stateChanges.blendMode += 1
   }
 
   set depthTest(depthTest: State.DepthTest) {
@@ -99,6 +105,7 @@ export class State {
     }
 
     this.activeDepthTest = depthTest
+    if (this.stats) this.stats.stateChanges.depthTest += 1
   }
 }
 
