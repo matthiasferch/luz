@@ -310,6 +310,16 @@ export class Renderer {
     return uniforms
   }
 
+  // Apply a set of (possibly nested) uniform values once against a program,
+  // flattening them to real uniform names present in the program. Useful for
+  // pass-level uniforms to avoid re-setting them per draw.
+  applyUniforms(program: Program, values: any) {
+    const uniforms = this.collectUniformValues(program, values)
+    if (Object.keys(uniforms).length > 0) {
+      this.programs.update(program, { uniforms })
+    }
+  }
+
   private hasUniform(program: Program, name: string) {
     const { uniforms } = program
 

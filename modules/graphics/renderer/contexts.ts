@@ -23,7 +23,6 @@ export type RenderPassContext = {
 }
 
 export type VisibilitySet = {
-  opaque: Entity[]
-  transparent: Entity[]
-  lights: Light[]
+  //lights: Light[]
+  entities: Entity[]
 }

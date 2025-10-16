@@ -151,8 +151,8 @@ export class CollisionSolver {
 
             const impulseMagnitude = abs(normalImpulseMagnitude)
 
-            const b1Friction = (b1 as any).friction ?? 0
-            const b2Friction = b2 ? ((b2 as any).friction ?? b1Friction) : b1Friction
+            const b1Friction = b1.friction ?? 0
+            const b2Friction = b2 ? (b2.friction ?? b1Friction) : b1Friction
 
             const friction = sqrt(max(b1Friction, 0) * max(b2Friction, 0))
 

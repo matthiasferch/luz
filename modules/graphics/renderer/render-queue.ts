@@ -70,9 +70,13 @@ export class RenderQueue {
       passUniforms['light'] = context.light
     }
 
-    // Draw all items
+    // Apply pass-level uniforms once per stage to avoid redundant updates.
+    // Uses renderer's flattening to only set uniforms that actually exist.
+    renderer.applyUniforms(program, passUniforms)
+
+    // Draw all items with only per-object/material uniforms changing
     for (const item of this.items) {
-      renderer.renderModel(null, item.transform, item.model, null, program, passUniforms)
+      renderer.renderModel(null, item.transform, item.model, null, program)
     }
 
     if (context.scissor) {
