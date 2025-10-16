@@ -81,7 +81,7 @@ export class RenderGraph {
         addItemsToQueue(depthQueue, visibility.opaque)
       }
       // Front-to-back to maximize early-Z
-      depthQueue.sort((a, b) => (a.depth ?? 0) - (b.depth ?? 0))
+      depthQueue.sortOpaque()
       this.renderQueue(renderer, depthQueue, depthPass, {
         camera: context.camera,
         light: null,
@@ -98,7 +98,7 @@ export class RenderGraph {
         addItemsToQueue(ambientQueue, visibility.opaque)
       }
       // Front-to-back for opaque ambient/base
-      ambientQueue.sort((a, b) => (a.depth ?? 0) - (b.depth ?? 0))
+      ambientQueue.sortOpaque()
       this.renderQueue(renderer, ambientQueue, ambientPass, {
         camera: context.camera,
         light: null,
@@ -140,7 +140,7 @@ export class RenderGraph {
           builtLightQueue = true
         }
         // Front-to-back for opaque lighting contributions
-        lightQueue.sort((a, b) => (a.depth ?? 0) - (b.depth ?? 0))
+        lightQueue.sortOpaque()
         this.renderQueue(renderer, lightQueue, lightPass, {
           camera: context.camera,
           light: task.light,
@@ -172,7 +172,7 @@ export class RenderGraph {
         // Alpha-blended items: sort back-to-front
         transparentQueue.items.length = 0
         for (const it of transparentAlphaItems) transparentQueue.items.push(it)
-        transparentQueue.sort((a, b) => (b.depth ?? 0) - (a.depth ?? 0))
+        transparentQueue.sortTransparent()
         this.renderQueue(renderer, transparentQueue, transparentPass, {
           camera: context.camera,
           light: task.light,
@@ -185,7 +185,7 @@ export class RenderGraph {
         if (transparentAdditiveItems.length > 0) {
           transparentQueue.items.length = 0
           for (const it of transparentAdditiveItems) transparentQueue.items.push(it)
-          transparentQueue.sort((a, b) => (b.depth ?? 0) - (a.depth ?? 0))
+          transparentQueue.sortTransparent()
           const transparentAdditiveOverride: Partial<Pick<PipelineDescriptor, 'cullMode' | 'blendMode' | 'depthTest' | 'depthMask' | 'colorMask'>> = {
             ...(options?.overrideStates?.['Transparent'] ?? {}),
             blendMode: 'Additive'

@@ -1,34 +1,98 @@
 import { Renderer } from './renderer'
 import { RenderPass } from './pass'
 import { PipelineDescriptor } from './pipeline'
+import { Material } from './material'
+import { Mesh } from '../types/mesh'
 import { RenderPassContext } from './contexts'
 import { RenderItem } from './render-item'
 
 export class RenderQueue {
   readonly items: RenderItem[] = []
+  private materialIds = new WeakMap<Material, number>()
+  private meshIds = new WeakMap<Mesh, number>()
+  private nextMaterialId = 1
+  private nextMeshId = 1
 
-  // Default sorting: by explicit sortKey, then by depth (front-to-back)
+  // Default sorting: pipeline (per-queue) → material → mesh → depth (front-to-back)
   sort(compare?: (a: RenderItem, b: RenderItem) => number) {
     if (compare) {
       this.items.sort(compare)
       return
     }
+    this.items.sort(this.compareOpaque)
+  }
 
-    this.items.sort((a, b) => {
-      if (a.sortKey !== undefined && b.sortKey !== undefined) {
-        if (a.sortKey === b.sortKey) {
-          const da = a.depth ?? 0
-          const db = b.depth ?? 0
-          return da - db
-        }
-        return String(a.sortKey) < String(b.sortKey) ? -1 : 1
-      }
-      if (a.sortKey !== undefined) return -1
-      if (b.sortKey !== undefined) return 1
-      const da = a.depth ?? 0
-      const db = b.depth ?? 0
-      return da - db
-    })
+  sortOpaque() { this.items.sort(this.compareOpaque) }
+  sortTransparent() { this.items.sort(this.compareTransparent) }
+
+  private compareOpaque = (a: RenderItem, b: RenderItem) => {
+    const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(a))
+    const bmid = this.getMaterialIdSafe(this.getPrimaryMaterial(b))
+    if (amid !== bmid) return amid - bmid
+    const ameid = this.getMeshIdSafe(this.getPrimaryMesh(a))
+    const bmeid = this.getMeshIdSafe(this.getPrimaryMesh(b))
+    if (ameid !== bmeid) return ameid - bmeid
+    const da = a.depth ?? 0
+    const db = b.depth ?? 0
+    return da - db
+  }
+
+  private compareTransparent = (a: RenderItem, b: RenderItem) => {
+    const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(a))
+    const bmid = this.getMaterialIdSafe(this.getPrimaryMaterial(b))
+    if (amid !== bmid) return amid - bmid
+    const ameid = this.getMeshIdSafe(this.getPrimaryMesh(a))
+    const bmeid = this.getMeshIdSafe(this.getPrimaryMesh(b))
+    if (ameid !== bmeid) return ameid - bmeid
+    const da = a.depth ?? 0
+    const db = b.depth ?? 0
+    return db - da
+  }
+
+  private getPrimaryMaterial(item: RenderItem): Material | null {
+    const model: any = item.model as any
+    const parts: Record<string, any> = model?.partitions ?? {}
+    let part: any | undefined
+    if (item.partitions && item.partitions.length > 0) {
+      part = parts[item.partitions[0]]
+    } else {
+      const first = Object.keys(parts)[0]
+      part = first ? parts[first] : undefined
+    }
+    return part?.mesh?.material ?? null
+  }
+
+  private getPrimaryMesh(item: RenderItem): Mesh | null {
+    const model: any = item.model as any
+    const parts: Record<string, any> = model?.partitions ?? {}
+    let part: any | undefined
+    if (item.partitions && item.partitions.length > 0) {
+      part = parts[item.partitions[0]]
+    } else {
+      const first = Object.keys(parts)[0]
+      part = first ? parts[first] : undefined
+    }
+    return (part?.mesh ?? null) as Mesh | null
+  }
+
+  private getMaterialIdSafe(m: Material | null): number {
+    if (!m) return 0
+    let id = this.materialIds.get(m)
+    if (!id) {
+      id = this.nextMaterialId++
+      this.materialIds.set(m, id)
+    }
+    return id
+  }
+
+  private getMeshIdSafe(mesh: Mesh | null): number {
+    if (!mesh) return 0
+    let id = this.meshIds.get(mesh)
+    if (!id) {
+      id = this.nextMeshId++
+      this.meshIds.set(mesh, id)
+    }
+    return id
   }
 
   // Execute the queue using the provided renderer and pass context.
