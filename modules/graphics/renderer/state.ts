@@ -3,7 +3,7 @@ export class State {
   private activeBlendMode: State.BlendMode = 'None'
   private activeDepthTest: State.DepthTest = 'None'
 
-  constructor(private gl: WebGL2RenderingContext) {}
+  constructor(private gl: WebGL2RenderingContext) { }
 
   set cullMode(cullMode: State.CullMode) {
     if (cullMode === this.activeCullMode) {

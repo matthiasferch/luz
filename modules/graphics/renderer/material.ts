@@ -3,6 +3,7 @@ import { Serialize } from '@luz/utilities/serializable'
 import { vec3 } from '@luz/vectors'
 import { Surface } from './surface'
 import { Texture } from '../types/texture'
+import { State } from './state'
 
 export class Material extends Serializable {
   @Uniform()
@@ -15,22 +16,14 @@ export class Material extends Serializable {
   @Uniform()
   texture: Texture
 
-  // Controls if the material participates in opaque or transparent rendering.
-  // Mask is intentionally not supported in this iteration.
-  @Serialize()
-  alphaMode: 'Opaque' | 'Blend' = 'Opaque'
-
-  // Opacity factor used by shaders; when alphaMode === 'Blend' this should be < 1
   @Uniform()
   @Serialize()
   opacity: number = 1.0
 
-  // Optional refinement for transparent blending behavior. Only relevant when alphaMode === 'Blend'.
-  // When unspecified, treat as standard alpha blending.
   @Serialize()
-  blendMode?: 'Transparent' | 'Additive'
+  blendMode: State.BlendMode = 'None'
 
-  constructor({ color, texture, alphaMode, opacity, blendMode }: Partial<Material> = {}) {
+  constructor({ color, texture, opacity, blendMode }: Partial<Material> = {}) {
     super()
 
     if (color) {
@@ -39,10 +32,6 @@ export class Material extends Serializable {
 
     if (texture) {
       this.texture = texture
-    }
-
-    if (alphaMode) {
-      this.alphaMode = alphaMode
     }
 
     if (opacity !== undefined) {
