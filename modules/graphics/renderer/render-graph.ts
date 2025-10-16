@@ -8,7 +8,7 @@ import { Entity } from '@luz/core'
 import { RenderTarget } from './target'
 import type { PipelineDescriptor } from './pipeline'
 
-export type RenderStage = 'Depth' | 'Ambient' | 'Shadowing' | 'Lighting' | 'Transparent' | 'Compositing'
+export type RenderStage = 'Depth' | 'Ambient' | 'Shadowing' | 'Lighting' | 'Transparent' | 'Overlay' | 'Composite'
 
 type RenderOptions = {
   // Per-stage render targets override; falls back to frame.target when missing
@@ -20,6 +20,8 @@ type RenderOptions = {
     RenderStage,
     Partial<Pick<PipelineDescriptor, 'cullMode' | 'blendMode' | 'depthTest' | 'depthMask' | 'colorMask'>>
   >>
+  // Optional overlay stage callback executed after transparent, if pass provided
+  overlayCallback?: (renderer: Renderer, pass: RenderPass, frame: RenderContext) => void
 }
 
 // High-level orchestration of render stages. For Step 1, this is a thin
@@ -202,6 +204,27 @@ export class RenderGraph {
     }
 
     // Transparent handled per-light above
+
+    // Overlay stage (e.g., debug overlay) — not per-light
+    const overlayPass = passes['Overlay']
+    if (overlayPass && options?.overlayCallback) {
+      const program = overlayPass.program
+      if (program) {
+        const desc: PipelineDescriptor = {
+          program,
+          cullMode: overlayPass.cullMode,
+          blendMode: overlayPass.blendMode,
+          depthTest: overlayPass.depthTest,
+          depthMask: overlayPass.depthMask,
+          colorMask: overlayPass.colorMask
+        }
+        const pipeline = renderer.pipelines.getOrCreate(desc)
+        renderer.use(options?.overrideTargets?.['Overlay'] ?? context.target)
+        renderer.bindPipeline(pipeline)
+        renderer.bindFrameGroup(program, context.camera)
+        options.overlayCallback(renderer, overlayPass, context)
+      }
+    }
 
     // Overlay and Post are intentionally not auto-executed here because they
     // often require explicit full-screen geometry and custom uniforms.
