@@ -43,3 +43,8 @@ export { Weight } from './renderer/weight'
 export { Keyframe, ScaleKeyframe, RotationKeyframe, TranslationKeyframe } from './renderer/keyframe'
 
 export { RenderStats } from './renderer/stats'
+export { type GpuBackend, type GpuCommandEncoder, type GpuRenderPassEncoder } from './renderer/backend'
+export { WebGL2Backend } from './renderer/webgl2-backend'
+export { WebGPUBackend } from './renderer/webgpu-backend'
+export { WebGPURenderPipeline, WebGPUPipelineCache, type WebGPUPipelineDescriptor } from './renderer/webgpu-pipeline'
+export { type IGpuPrograms, type IGpuMeshes, type IGpuBuffers } from './renderer/resources'

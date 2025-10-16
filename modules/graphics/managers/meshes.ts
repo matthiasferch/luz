@@ -60,8 +60,10 @@ export class Meshes {
       this.gl.bufferData(this.gl.ELEMENT_ARRAY_BUFFER, indices, this.gl.STATIC_DRAW)
 
       vertexArray.indexCount = indices.length
+      ;(vertexArray as any).__cpu = { vertices, indices, stride: stride }
     } else {
       vertexArray.indexCount = 0
+      ;(vertexArray as any).__cpu = { vertices, indices: null, stride: stride }
     }
 
     this.gl.bindVertexArray(vertexArray)

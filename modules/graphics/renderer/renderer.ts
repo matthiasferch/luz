@@ -20,6 +20,9 @@ import { Scissor } from './scissor'
 import { PipelineCache } from './pipeline-cache'
 import { RenderPipeline, PipelineDescriptor } from './pipeline'
 import { RenderStats } from './stats'
+import { GpuBackend, GpuRenderPassEncoder } from './backend'
+import { WebGL2Backend } from './webgl2-backend'
+import type { IGpuBuffers, IGpuMeshes, IGpuPrograms } from './resources'
 
 type UniformCache = Record<string, Uniform.Value>
 
@@ -54,12 +57,13 @@ export class Renderer {
   private readonly uniformProperties: Record<string, UniformProperty[]>
 
   readonly pipelines: PipelineCache
-  private activePipeline?: RenderPipeline
-  private lastMaterialByProgram: WeakMap<Program, Material>
 
   readonly stats: RenderStats
 
-  constructor(private gl: WebGL2RenderingContext) {
+  private backend: GpuBackend
+  private pass?: GpuRenderPassEncoder
+
+  constructor(private gl: WebGL2RenderingContext, backend?: GpuBackend) {
     this.state = new State(this.gl)
 
     this.meshes = new Meshes(this.gl)
@@ -89,89 +93,67 @@ export class Renderer {
     this.pipelines = new PipelineCache()
     this.stats = new RenderStats()
     this.state.stats = this.stats
-    this.lastMaterialByProgram = new WeakMap()
+    // Initialize GPU backend and route rendering through it
+    // Provide concrete managers as implementations of the shared resource interfaces
+    this.backend = backend ?? new WebGL2Backend(this.gl, {
+      state: this.state,
+      programs: (this.programs as unknown) as IGpuPrograms,
+      meshes: (this.meshes as unknown) as IGpuMeshes,
+      buffers: (this.buffers as unknown) as IGpuBuffers,
+      stats: this.stats
+    })
+  }
+
+  // Prefer backend-managed pipelines when available; fall back to local cache
+  getOrCreatePipeline(desc: PipelineDescriptor): RenderPipeline {
+    if (this.backend && typeof (this.backend as any).getOrCreatePipeline === 'function') {
+      return (this.backend as any).getOrCreatePipeline(desc)
+    }
+    return this.pipelines.getOrCreate(desc)
   }
 
   use({ width, height, frameBuffer }: RenderTarget) {
-    if (frameBuffer) {
-      this.buffers.bind(frameBuffer)
-    } else {
-      this.buffers.unbind('FrameBuffer')
+    // End previous pass if any
+    if (this.pass) {
+      this.pass.end()
     }
-
-    this.gl.viewport(0, 0, width, height)
+    const encoder = this.backend.createCommandEncoder()
+    this.pass = encoder.beginRenderPass({
+      target: { width, height, frameBuffer },
+      viewport: { x: 0, y: 0, width, height }
+    })
   }
 
   mask({ color, depth }: Partial<MaskOptions>) {
-    if (color !== undefined) {
-      const [r = true, g = true, b = true, a = true] = color
-
-      this.gl.colorMask(r, g, b, a)
-
-      this.stats.stateChanges.maskColor += 1
-    }
-
-    if (depth !== undefined) {
-      this.gl.depthMask(depth)
-
-      this.stats.stateChanges.maskDepth += 1
-    }
+    if (!this.pass) return
+    this.pass.setMask({ color, depth })
   }
 
   clear({ color, depth, stencil }: Partial<ClearOptions>) {
-    let clearMask = 0
-
-    if (color !== undefined) {
-      const { r = 0.0, g = 0.0, b = 0.0, a = 1.0 } = color
-
-      this.gl.clearColor(r, g, b, a)
-      clearMask |= this.gl.COLOR_BUFFER_BIT
-    }
-
-    if (depth !== undefined) {
-      this.gl.clearDepth(depth)
-      clearMask |= this.gl.DEPTH_BUFFER_BIT
-    }
-
-    if (stencil !== undefined) {
-      this.gl.clearStencil(stencil)
-      clearMask |= this.gl.STENCIL_BUFFER_BIT
-    }
-
-    if (clearMask !== 0) {
-      this.gl.clear(clearMask)
-    }
+    if (!this.pass) return
+    this.pass.clear({ color, depth, stencil })
   }
 
   // Enable scissor test with given rectangle in pixels (origin bottom-left)
   enableScissor({ x, y, width, height }: Scissor) {
-    this.gl.enable(this.gl.SCISSOR_TEST)
-    this.gl.scissor(x, y, width, height)
+    if (!this.pass) return
+    this.pass.setScissor({ x, y, width, height })
   }
 
   // Disable scissor test
   disableScissor() {
-    this.gl.disable(this.gl.SCISSOR_TEST)
+    if (!this.pass) return
+    this.pass.setScissor(undefined)
   }
 
   bindPipeline(pipeline: RenderPipeline) {
-    if (this.activePipeline === pipeline) {
-      return
-    }
-
-    this.programs.use(pipeline.program)
-    this.state.cullMode = pipeline.cullMode
-    this.state.blendMode = pipeline.blendMode
-    this.state.depthTest = pipeline.depthTest
-    this.mask({ color: pipeline.colorMask, depth: pipeline.depthMask })
-
-    this.activePipeline = pipeline
-
-    this.stats.pipelineBinds += 1
+    if (!this.pass) return
+    this.pass.setPipeline(pipeline)
   }
 
   resetMaterialBinding(program: Program) {
-    this.lastMaterialByProgram.delete(program)
+    if (!this.pass) return
+    this.pass.resetMaterialBinding(program)
   }
 
   // Bind groups
@@ -183,7 +165,7 @@ export class Renderer {
       if (hasUniform(name)) uniforms[name] = (camera as any)[key]
     }
     if (Object.keys(uniforms).length > 0) {
-      this.programs.update(program, { uniforms })
+      if (this.pass) this.pass.bindProgramUniforms(program, uniforms)
     }
   }
 
@@ -195,7 +177,7 @@ export class Renderer {
       if (hasUniform(name)) uniforms[name] = (light as any)[key]
     }
     if (Object.keys(uniforms).length > 0) {
-      this.programs.update(program, { uniforms })
+      if (this.pass) this.pass.bindProgramUniforms(program, uniforms)
     }
   }
 
@@ -288,7 +270,7 @@ export class Renderer {
 
     // Apply base (camera/transform/model/light/additional) uniforms once per object
     if (Object.keys(baseUniforms).length > 0) {
-      this.programs.update(program, { uniforms: baseUniforms })
+      if (this.pass) this.pass.bindProgramUniforms(program, baseUniforms)
     }
 
     const selectedSet: Set<string> | null = selectedPartitions
@@ -313,22 +295,13 @@ export class Renderer {
         continue
       }
 
-      // Bind material uniforms only when changed for this program
-      const last = this.lastMaterialByProgram.get(program)
-      if (last !== material) {
-        const materialUniforms = this.uniformCache
-        for (const uname in materialUniforms) delete materialUniforms[uname]
-        for (const { key } of this.uniformProperties.material) {
-          const uname = `material.${key}`
-          if (this.hasUniform(program, uname)) (materialUniforms as any)[uname] = (material as any)[key]
-        }
-        this.programs.update(program, { uniforms: materialUniforms })
-        this.lastMaterialByProgram.set(program, material)
+      // Bind material uniforms only when changed for this program (delegated to backend)
+      if (this.pass) {
+        const keys = this.uniformProperties.material.map((p) => p.key)
+        this.pass.bindMaterial(program, material, keys)
       }
 
-      this.meshes.render(mesh)
-
-      this.stats.draws += 1
+      if (this.pass) this.pass.drawMesh(mesh)
     }
   }
 
@@ -373,7 +346,7 @@ export class Renderer {
   applyUniforms(program: Program, values: any) {
     const uniforms = this.collectUniformValues(program, values)
     if (Object.keys(uniforms).length > 0) {
-      this.programs.update(program, { uniforms })
+      if (this.pass) this.pass.bindProgramUniforms(program, uniforms)
     }
   }
 

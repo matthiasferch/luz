@@ -125,7 +125,7 @@ export class RenderQueue {
       if (pipelineOverride.depthMask !== undefined) desc.depthMask = pipelineOverride.depthMask
       if (pipelineOverride.colorMask !== undefined) desc.colorMask = pipelineOverride.colorMask
     }
-    const pipeline = renderer.pipelines.getOrCreate(desc)
+    const pipeline = renderer.getOrCreatePipeline(desc)
     renderer.bindPipeline(pipeline)
     // Reset material binding cache for this program at the start of the stage
     renderer.resetMaterialBinding(program)
@@ -156,4 +156,3 @@ export class RenderQueue {
     }
   }
 }
-

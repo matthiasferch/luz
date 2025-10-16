@@ -218,7 +218,7 @@ export class RenderGraph {
           depthMask: overlayPass.depthMask,
           colorMask: overlayPass.colorMask
         }
-        const pipeline = renderer.pipelines.getOrCreate(desc)
+        const pipeline = renderer.getOrCreatePipeline(desc)
         renderer.use(options?.overrideTargets?.['Overlay'] ?? context.target)
         renderer.bindPipeline(pipeline)
         renderer.bindFrameGroup(program, context.camera)
