@@ -1,29 +1,13 @@
 import { Renderer } from './renderer'
 import { RenderPass } from './pass'
-import { PassContext } from './contexts'
-import { Renderable } from './renderable'
+import { RenderPassContext } from './contexts'
+import { RenderItem } from './render-item'
 
 export class RenderQueue {
-  private items: Renderable[] = []
-
-  add(renderable: Renderable) {
-    this.items.push(renderable)
-  }
-
-  addMany(renderables: Renderable[]) {
-    for (const r of renderables) this.items.push(r)
-  }
-
-  clear() {
-    this.items.length = 0
-  }
-
-  size() {
-    return this.items.length
-  }
+  readonly items: RenderItem[] = []
 
   // Default sorting: by explicit sortKey, then by depth (front-to-back)
-  sort(compare?: (a: Renderable, b: Renderable) => number) {
+  sort(compare?: (a: RenderItem, b: RenderItem) => number) {
     if (compare) {
       this.items.sort(compare)
       return
@@ -49,14 +33,15 @@ export class RenderQueue {
   // Execute the queue using the provided renderer and pass context.
   // For Step 1 scaffolding this mirrors Renderer.renderPass state setup
   // and emits per-item draws via renderer.renderModel.
-  execute(renderer: Renderer, pass: RenderPass, ctx: PassContext) {
+  render(renderer: Renderer, pass: RenderPass, context: RenderPassContext) {
     // Bind target
-    renderer.use(ctx.target)
+    renderer.use(context.target)
 
     // Apply pass fixed state
     renderer.state.cullMode = pass.cullMode
     renderer.state.blendMode = pass.blendMode
     renderer.state.depthTest = pass.depthTest
+
     renderer.mask({ color: pass.colorMask, depth: pass.depthMask })
     renderer.clear({ color: pass.clearColor, depth: pass.clearDepth, stencil: pass.clearStencil })
 
@@ -64,24 +49,33 @@ export class RenderQueue {
     if (!program) return
 
     // Optional scissor
-    if (ctx.scissor) {
-      renderer.enableScissor(ctx.scissor.x, ctx.scissor.y, ctx.scissor.width, ctx.scissor.height)
+    if (context.scissor) {
+      renderer.enableScissor(context.scissor)
     }
 
     // Per-pass uniform grouping (camera + light + extra uniforms)
     const passUniforms: Record<string, unknown> = Object.create(null)
-    if (ctx.uniforms) {
-      for (const [k, v] of Object.entries(ctx.uniforms)) passUniforms[k] = v
+
+    if (context.uniforms) {
+      for (const [key, value] of Object.entries(context.uniforms)) {
+        passUniforms[key] = value
+      }
     }
-    if (ctx.camera) passUniforms['camera'] = ctx.camera
-    if (ctx.light) passUniforms['light'] = ctx.light
+
+    if (context.camera) {
+      passUniforms['camera'] = context.camera
+    }
+
+    if (context.light) {
+      passUniforms['light'] = context.light
+    }
 
     // Draw all items
     for (const item of this.items) {
       renderer.renderModel(null, item.transform, item.model, null, program, passUniforms)
     }
 
-    if (ctx.scissor) {
+    if (context.scissor) {
       renderer.disableScissor()
     }
   }

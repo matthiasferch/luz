@@ -2,16 +2,14 @@ import { Camera, Entity, Light } from '@luz/core'
 import { RenderTarget } from '../renderer/target'
 import { Scissor } from './scissor'
 
-export type FrameContext = {
+export type RenderContext = {
   camera: Camera
   time: number
-  width: number
-  height: number
   // Default target for this frame (canvas or intermediate)
   target: RenderTarget
 }
 
-export type PassContext = {
+export type RenderPassContext = {
   // Active camera for this pass (camera or light-as-camera)
   camera: Camera | null
   // Active light for this pass (null for camera-only passes like Ambient/Depth)

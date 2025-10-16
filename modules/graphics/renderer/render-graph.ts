@@ -1,13 +1,13 @@
 import { Renderer } from './renderer'
 import { RenderPass } from './pass'
 import { RenderStage } from './render-stage'
-import { FrameContext, PassContext, VisibilitySet } from './contexts'
+import { RenderContext, RenderPassContext, VisibilitySet } from './contexts'
 import { LightingTask } from './lighting-task'
 import { RenderQueue } from './render-queue'
-import { Entity, isModel, Model } from '@luz/core'
+import { Entity, isModel } from '@luz/core'
 import { RenderTarget } from './target'
 
-export type RenderGraphExecuteOptions = {
+export type RenderOptions = {
   // Per-stage render targets override; falls back to frame.target when missing
   targets?: Partial<Record<RenderStage, RenderTarget>>
   // Per-stage extra uniforms object merged into the pass uniforms
@@ -24,34 +24,38 @@ export class RenderGraph {
   }
 
   getQueue(stage: RenderStage): RenderQueue {
-    let q = this.queues.get(stage)
-    if (!q) {
-      q = new RenderQueue()
-      this.queues.set(stage, q)
+    let queue = this.queues.get(stage)
+
+    if (!queue) {
+      queue = new RenderQueue()
+      this.queues.set(stage, queue)
     }
-    return q
+
+    return queue
   }
 
   clear() {
-    for (const q of this.queues.values()) q.clear()
+    for (const queue of this.queues.values()) {
+      queue.items.length = 0
+    }
   }
 
   // Execute the graph. For Step 1 scaffolding this method is intentionally
   // conservative and does not alter current behavior by itself; callers can
   // delegate to existing Renderer.renderPass or use queues explicitly.
-  execute(
+  render(
     renderer: Renderer,
     passes: Partial<Record<RenderStage, RenderPass>>,
-    frame: FrameContext,
+    context: RenderContext,
     visibility: VisibilitySet,
     lighting: LightingTask[],
-    options?: RenderGraphExecuteOptions
+    options?: RenderOptions
   ) {
     const addEntitiesToQueue = (queue: RenderQueue, entities: Entity[]) => {
       for (const entity of entities) {
         for (const component of Object.values(entity.components)) {
           if (isModel(component)) {
-            queue.add({ transform: entity, model: component as Model })
+            queue.items.push({ transform: entity, model: component })
           }
         }
       }
@@ -61,14 +65,14 @@ export class RenderGraph {
     const depthPass = passes['Depth']
     if (depthPass) {
       const depthQueue = this.getQueue('Depth')
-      if (depthQueue.size() === 0) {
+      if (depthQueue.items.length === 0) {
         addEntitiesToQueue(depthQueue, visibility.opaque)
       }
       depthQueue.sort()
-      this.runStage(renderer, 'Depth', depthPass, {
-        camera: frame.camera,
+      this.renderQueue(renderer, depthQueue, depthPass, {
+        camera: context.camera,
         light: null,
-        target: options?.targets?.['Depth'] ?? frame.target,
+        target: options?.targets?.['Depth'] ?? context.target,
         uniforms: options?.uniforms?.['Depth']
       })
     }
@@ -77,14 +81,14 @@ export class RenderGraph {
     const ambientPass = passes['Ambient']
     if (ambientPass) {
       const ambientQueue = this.getQueue('Ambient')
-      if (ambientQueue.size() === 0) {
+      if (ambientQueue.items.length === 0) {
         addEntitiesToQueue(ambientQueue, visibility.opaque)
       }
       ambientQueue.sort()
-      this.runStage(renderer, 'Ambient', ambientPass, {
-        camera: frame.camera,
+      this.renderQueue(renderer, ambientQueue, ambientPass, {
+        camera: context.camera,
         light: null,
-        target: options?.targets?.['Ambient'] ?? frame.target,
+        target: options?.targets?.['Ambient'] ?? context.target,
         uniforms: options?.uniforms?.['Ambient']
       })
     }
@@ -99,27 +103,27 @@ export class RenderGraph {
     for (const task of lighting) {
       if (shadowPass) {
         const shadowQueue = this.getQueue('Shadow')
-        shadowQueue.clear()
+        shadowQueue.items.length = 0
         addEntitiesToQueue(shadowQueue, task.entities)
         shadowQueue.sort()
-        this.runStage(renderer, 'Shadow', shadowPass, {
+        this.renderQueue(renderer, shadowQueue, shadowPass, {
           camera: task.light as any,
           light: null,
-          target: options?.targets?.['Shadow'] ?? frame.target,
+          target: options?.targets?.['Shadow'] ?? context.target,
           uniforms: options?.uniforms?.['Shadow']
         })
       }
 
       if (lightPass && lightQueue) {
-        if (!builtLightQueue && lightQueue.size() === 0) {
+        if (!builtLightQueue && lightQueue.items.length === 0) {
           addEntitiesToQueue(lightQueue, visibility.opaque)
           builtLightQueue = true
         }
         lightQueue.sort()
-        this.runStage(renderer, 'Light', lightPass, {
-          camera: frame.camera,
+        this.renderQueue(renderer, lightQueue, lightPass, {
+          camera: context.camera,
           light: task.light,
-          target: options?.targets?.['Light'] ?? frame.target,
+          target: options?.targets?.['Light'] ?? context.target,
           scissor: task.scissor,
           uniforms: options?.uniforms?.['Light']
         })
@@ -130,14 +134,14 @@ export class RenderGraph {
     const transparentPass = passes['Transparent']
     if (transparentPass) {
       const transparentQueue = this.getQueue('Transparent')
-      if (transparentQueue.size() === 0) {
+      if (transparentQueue.items.length === 0) {
         addEntitiesToQueue(transparentQueue, visibility.transparent)
       }
       transparentQueue.sort()
-      this.runStage(renderer, 'Transparent', transparentPass, {
-        camera: frame.camera,
+      this.renderQueue(renderer, transparentQueue, transparentPass, {
+        camera: context.camera,
         light: null,
-        target: options?.targets?.['Transparent'] ?? frame.target,
+        target: options?.targets?.['Transparent'] ?? context.target,
         uniforms: options?.uniforms?.['Transparent']
       })
     }
@@ -147,9 +151,7 @@ export class RenderGraph {
   }
 
   // Utility to run a single stage queue with explicit context.
-  runStage(renderer: Renderer, stage: RenderStage, pass: RenderPass, ctx: PassContext) {
-    const q = this.getQueue(stage)
-    q.sort()
-    q.execute(renderer, pass, ctx)
+  renderQueue(renderer: Renderer, queue: RenderQueue, pass: RenderPass, context: RenderPassContext) {
+    queue.render(renderer, pass, context)
   }
 }

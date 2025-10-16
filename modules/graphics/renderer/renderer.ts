@@ -16,6 +16,7 @@ import { vec4 } from '@luz/vectors'
 import { RenderPass } from './pass'
 import { getUniformProperties } from '@luz/utilities'
 import { UniformProperty } from '@luz/utilities/uniform'
+import { Scissor } from './scissor'
 
 type UniformCache = Record<string, Uniform.Value>
 
@@ -125,7 +126,7 @@ export class Renderer {
   }
 
   // Enable scissor test with given rectangle in pixels (origin bottom-left)
-  enableScissor(x: number, y: number, width: number, height: number) {
+  enableScissor({ x, y, width, height }: Scissor) {
     this.gl.enable(this.gl.SCISSOR_TEST)
     this.gl.scissor(x, y, width, height)
   }

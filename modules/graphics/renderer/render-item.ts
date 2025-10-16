@@ -2,7 +2,7 @@ import { Model, Transform } from '@luz/core'
 
 // Immutable description of a single draw submission.
 // Does not execute anything; the RenderQueue uses these to issue draws.
-export type Renderable = {
+export type RenderItem = {
   transform: Transform
   model: Model
   // Optional depth value for sorting (camera-space z or similar)
