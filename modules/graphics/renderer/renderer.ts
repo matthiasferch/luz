@@ -163,6 +163,31 @@ export class Renderer {
     this.lastMaterialByProgram.delete(program)
   }
 
+  // Bind groups
+  bindFrameGroup(program: Program, camera: Camera) {
+    const uniforms: UniformCache = Object.create(null)
+    const hasUniform = this.hasUniform.bind(this, program)
+    for (const { key } of this.uniformProperties.camera) {
+      const name = `camera.${key}`
+      if (hasUniform(name)) uniforms[name] = (camera as any)[key]
+    }
+    if (Object.keys(uniforms).length > 0) {
+      this.programs.update(program, { uniforms })
+    }
+  }
+
+  bindLightGroup(program: Program, light: Light) {
+    const uniforms: UniformCache = Object.create(null)
+    const hasUniform = this.hasUniform.bind(this, program)
+    for (const { key } of this.uniformProperties.light) {
+      const name = `light.${key}`
+      if (hasUniform(name)) uniforms[name] = (light as any)[key]
+    }
+    if (Object.keys(uniforms).length > 0) {
+      this.programs.update(program, { uniforms })
+    }
+  }
+
   renderPass<T extends {}>(
     pass: RenderPass,
     camera: Camera,

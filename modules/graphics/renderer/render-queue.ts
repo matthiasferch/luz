@@ -74,26 +74,10 @@ export class RenderQueue {
       renderer.enableScissor(context.scissor)
     }
 
-    // Per-pass uniform grouping (camera + light + extra uniforms)
-    const passUniforms: Record<string, unknown> = Object.create(null)
-
-    if (context.uniforms) {
-      for (const [key, value] of Object.entries(context.uniforms)) {
-        passUniforms[key] = value
-      }
-    }
-
-    if (context.camera) {
-      passUniforms['camera'] = context.camera
-    }
-
-    if (context.light) {
-      passUniforms['light'] = context.light
-    }
-
-    // Apply pass-level uniforms once per stage to avoid redundant updates.
-    // Uses renderer's flattening to only set uniforms that actually exist.
-    renderer.applyUniforms(program, passUniforms)
+    // Bind frame/light groups once per stage and apply extra uniforms
+    if (context.camera) renderer.bindFrameGroup(program, context.camera)
+    if (context.light) renderer.bindLightGroup(program, context.light)
+    if (context.uniforms) renderer.applyUniforms(program, context.uniforms)
 
     // Draw all items with only per-object/material uniforms changing
     for (const item of this.items) {
