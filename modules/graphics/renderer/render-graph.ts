@@ -156,7 +156,8 @@ export class RenderGraph {
           for (const item of visibility.transparent) transparentQueue.items.push(item)
           builtTransparentQueue = true
         }
-        transparentQueue.sort()
+        // Sort back-to-front for correct blending
+        transparentQueue.sort((a, b) => (b.depth ?? 0) - (a.depth ?? 0))
         const transparentPatched = options?.overrideStates?.['Transparent'] ? ({ ...transparentPass, ...options.overrideStates['Transparent'] } as RenderPass) : transparentPass
         this.renderQueue(renderer, transparentQueue, transparentPatched, {
           camera: context.camera,
