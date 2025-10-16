@@ -247,11 +247,7 @@ export class Renderer {
       }
     }
 
-    if (camera) {
-      for (const { key } of this.uniformProperties.camera) {
-        setUniformValue(camera[key], key, 'camera')
-      }
-    }
+    // Camera uniforms are bound at pass level (frame group)
 
     if (transform) {
       for (const { key } of this.uniformProperties.transform) {
@@ -269,11 +265,7 @@ export class Renderer {
       setUniformValue(model.boneMatrices, 'boneMatrices')
     }
 
-    if (light) {
-      for (const { key } of this.uniformProperties.light) {
-        setUniformValue(light[key], key, 'light')
-      }
-    }
+    // Light uniforms are bound at pass level (light group)
 
     if (additionalUniforms) {
       const uniformValues = this.collectUniformValues(program, additionalUniforms)
