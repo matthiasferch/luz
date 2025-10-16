@@ -76,7 +76,7 @@ export class RenderQueue {
 
     // Draw all items with only per-object/material uniforms changing
     for (const item of this.items) {
-      renderer.renderModel(null, item.transform, item.model, null, program)
+      renderer.renderModel(null, item.transform, item.model, null, program, undefined, item.partitions)
     }
 
     if (context.scissor) {

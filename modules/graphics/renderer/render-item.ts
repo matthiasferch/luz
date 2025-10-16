@@ -11,5 +11,8 @@ export type RenderItem = {
   sortKey?: number | string
   // Optional extra uniforms specific to this draw
   uniforms?: Record<string, unknown>
+  // Optional list of partition names to render from the model. When omitted,
+  // all partitions are rendered. When provided, only the selected partitions
+  // are drawn (useful for transparent partition rendering).
+  partitions?: string[]
 }
-

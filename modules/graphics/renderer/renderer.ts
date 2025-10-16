@@ -180,7 +180,8 @@ export class Renderer {
     model: Model,
     light: Light,
     program: Program,
-    additionalUniforms?: T
+    additionalUniforms?: T,
+    selectedPartitions?: string[] | Set<string>
   ) {
     const baseUniforms: UniformCache = Object.create(null)
 
@@ -230,7 +231,14 @@ export class Renderer {
       }
     }
 
+    const selectedSet: Set<string> | null = selectedPartitions
+      ? (selectedPartitions instanceof Set ? selectedPartitions : new Set(selectedPartitions))
+      : null
+
     for (const [name, partition] of Object.entries(model.partitions)) {
+      if (selectedSet && !selectedSet.has(name)) {
+        continue
+      }
       const { mesh } = partition
 
       if (!mesh) {

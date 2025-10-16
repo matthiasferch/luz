@@ -74,7 +74,7 @@ export class RenderGraph {
     if (depthPass) {
       const depthQueue = this.getQueue('Depth')
       if (depthQueue.items.length === 0) {
-        addEntitiesToQueue(depthQueue, visibility.entities)
+        addEntitiesToQueue(depthQueue, visibility.opaque)
       }
       depthQueue.sort()
       const depthPatched = options?.overrideStates?.['Depth'] ? ({ ...depthPass, ...options.overrideStates['Depth'] } as RenderPass) : depthPass
@@ -91,7 +91,7 @@ export class RenderGraph {
     if (ambientPass) {
       const ambientQueue = this.getQueue('Ambient')
       if (ambientQueue.items.length === 0) {
-        addEntitiesToQueue(ambientQueue, visibility.entities)
+        addEntitiesToQueue(ambientQueue, visibility.opaque)
       }
       ambientQueue.sort()
       const ambientPatched = options?.overrideStates?.['Ambient'] ? ({ ...ambientPass, ...options.overrideStates['Ambient'] } as RenderPass) : ambientPass
@@ -110,6 +110,9 @@ export class RenderGraph {
 
     const lightQueue = lightPass ? this.getQueue('Lighting') : null
     let builtLightQueue = false
+    const transparentPass = passes['Transparent']
+    const transparentQueue = transparentPass ? this.getQueue('Transparent') : null
+    let builtTransparentQueue = false
 
     for (const task of lighting) {
       if (shadowPass) {
@@ -128,7 +131,7 @@ export class RenderGraph {
 
       if (lightPass && lightQueue) {
         if (!builtLightQueue && lightQueue.items.length === 0) {
-          addEntitiesToQueue(lightQueue, visibility.entities)
+          addEntitiesToQueue(lightQueue, visibility.opaque)
           builtLightQueue = true
         }
         lightQueue.sort()
@@ -141,23 +144,25 @@ export class RenderGraph {
           uniforms: options?.additionalUniforms?.['Lighting']
         })
       }
+
+      // Per-light transparent stage (optional)
+      if (transparentPass && transparentQueue) {
+        if (!builtTransparentQueue && transparentQueue.items.length === 0) {
+          for (const item of visibility.transparent) transparentQueue.items.push(item)
+          builtTransparentQueue = true
+        }
+        transparentQueue.sort()
+        const transparentPatched = options?.overrideStates?.['Transparent'] ? ({ ...transparentPass, ...options.overrideStates['Transparent'] } as RenderPass) : transparentPass
+        this.renderQueue(renderer, transparentQueue, transparentPatched, {
+          camera: context.camera,
+          light: task.light,
+          target: options?.overrideTargets?.['Transparent'] ?? context.target,
+          uniforms: options?.additionalUniforms?.['Transparent'] ?? options?.additionalUniforms?.['Lighting']
+        })
+      }
     }
 
-    // Transparent stage (optional)
-    /*const transparentPass = passes['Transparent']
-    if (transparentPass) {
-      const transparentQueue = this.getQueue('Transparent')
-      if (transparentQueue.items.length === 0) {
-        addEntitiesToQueue(transparentQueue, visibility.transparent)
-      }
-      transparentQueue.sort()
-      this.renderQueue(renderer, transparentQueue, transparentPass, {
-        camera: context.camera,
-        light: null,
-        target: options?.overrideTargets?.['Transparent'] ?? context.target,
-        uniforms: options?.additionalUniforms?.['Transparent']
-      })
-    }*/
+    // Transparent handled per-light above
 
     // Overlay and Post are intentionally not auto-executed here because they
     // often require explicit full-screen geometry and custom uniforms.
