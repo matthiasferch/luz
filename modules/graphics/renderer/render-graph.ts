@@ -83,13 +83,12 @@ export class RenderGraph {
       }
       // Front-to-back to maximize early-Z
       depthQueue.sort((a, b) => (a.depth ?? 0) - (b.depth ?? 0))
-      const depthPatched = options?.overrideStates?.['Depth'] ? ({ ...depthPass, ...options.overrideStates['Depth'] } as RenderPass) : depthPass
-      this.renderQueue(renderer, depthQueue, depthPatched, {
+      this.renderQueue(renderer, depthQueue, depthPass, {
         camera: context.camera,
         light: null,
         target: options?.overrideTargets?.['Depth'] ?? context.target,
         uniforms: options?.additionalUniforms?.['Depth']
-      })
+      }, options?.overrideStates?.['Depth'])
     }
 
     // Ambient/base stage (optional): opaque first
@@ -101,13 +100,12 @@ export class RenderGraph {
       }
       // Front-to-back for opaque ambient/base
       ambientQueue.sort((a, b) => (a.depth ?? 0) - (b.depth ?? 0))
-      const ambientPatched = options?.overrideStates?.['Ambient'] ? ({ ...ambientPass, ...options.overrideStates['Ambient'] } as RenderPass) : ambientPass
-      this.renderQueue(renderer, ambientQueue, ambientPatched, {
+      this.renderQueue(renderer, ambientQueue, ambientPass, {
         camera: context.camera,
         light: null,
         target: options?.overrideTargets?.['Ambient'] ?? context.target,
         uniforms: options?.additionalUniforms?.['Ambient']
-      })
+      }, options?.overrideStates?.['Ambient'])
     }
 
     // Per-light stages: Shadow (into current target) then Light accumulation
@@ -129,13 +127,12 @@ export class RenderGraph {
         shadowQueue.items.length = 0
         addEntitiesToQueue(shadowQueue, task.entities)
         shadowQueue.sort()
-        const shadowPatched = options?.overrideStates?.['Shadowing'] ? ({ ...shadowPass, ...options.overrideStates['Shadowing'] } as RenderPass) : shadowPass
-        this.renderQueue(renderer, shadowQueue, shadowPatched, {
+        this.renderQueue(renderer, shadowQueue, shadowPass, {
           camera: task.light,
           light: null,
           target: options?.overrideTargets?.['Shadowing'] ?? context.target,
           uniforms: options?.additionalUniforms?.['Shadowing']
-        })
+        }, options?.overrideStates?.['Shadowing'])
       }
 
       if (lightPass && lightQueue) {
@@ -145,14 +142,13 @@ export class RenderGraph {
         }
         // Front-to-back for opaque lighting contributions
         lightQueue.sort((a, b) => (a.depth ?? 0) - (b.depth ?? 0))
-        const lightPatched = options?.overrideStates?.['Lighting'] ? ({ ...lightPass, ...options.overrideStates['Lighting'] } as RenderPass) : lightPass
-        this.renderQueue(renderer, lightQueue, lightPatched, {
+        this.renderQueue(renderer, lightQueue, lightPass, {
           camera: context.camera,
           light: task.light,
           target: options?.overrideTargets?.['Lighting'] ?? context.target,
           scissor: task.scissor,
           uniforms: options?.additionalUniforms?.['Lighting']
-        })
+        }, options?.overrideStates?.['Lighting'])
       }
 
       // Per-light transparent stage (optional), grouped by blend mode
@@ -178,33 +174,27 @@ export class RenderGraph {
         transparentQueue.items.length = 0
         for (const it of transparentAlphaItems) transparentQueue.items.push(it)
         transparentQueue.sort((a, b) => (b.depth ?? 0) - (a.depth ?? 0))
-        const transparentAlphaPatched = options?.overrideStates?.['Transparent']
-          ? ({ ...transparentPass, ...options.overrideStates['Transparent'] } as RenderPass)
-          : transparentPass
-        this.renderQueue(renderer, transparentQueue, transparentAlphaPatched, {
+        this.renderQueue(renderer, transparentQueue, transparentPass, {
           camera: context.camera,
           light: task.light,
           target: options?.overrideTargets?.['Transparent'] ?? context.target,
           scissor: task.scissor,
           uniforms: options?.additionalUniforms?.['Transparent'] ?? options?.additionalUniforms?.['Lighting']
-        })
+        }, options?.overrideStates?.['Transparent'])
 
         // Additive items: blend mode override to Additive; order less critical
         if (transparentAdditiveItems.length > 0) {
           transparentQueue.items.length = 0
           for (const it of transparentAdditiveItems) transparentQueue.items.push(it)
           transparentQueue.sort((a, b) => (b.depth ?? 0) - (a.depth ?? 0))
-          const transparentAdditivePatched = { ...(options?.overrideStates?.['Transparent']
-            ? ({ ...transparentPass, ...options.overrideStates['Transparent'] } as RenderPass)
-            : transparentPass) } as RenderPass
-          ;(transparentAdditivePatched as any).blendMode = 'Additive'
-          this.renderQueue(renderer, transparentQueue, transparentAdditivePatched, {
+          const transparentAdditiveOverride = { ...(options?.overrideStates?.['Transparent'] ?? {}), blendMode: 'Additive' as any }
+          this.renderQueue(renderer, transparentQueue, transparentPass, {
             camera: context.camera,
             light: task.light,
             target: options?.overrideTargets?.['Transparent'] ?? context.target,
             scissor: task.scissor,
             uniforms: options?.additionalUniforms?.['Transparent'] ?? options?.additionalUniforms?.['Lighting']
-          })
+          }, transparentAdditiveOverride)
         }
       }
     }
@@ -216,7 +206,13 @@ export class RenderGraph {
   }
 
   // Utility to run a single stage queue with explicit context.
-  renderQueue(renderer: Renderer, queue: RenderQueue, pass: RenderPass, context: RenderPassContext) {
-    queue.render(renderer, pass, context)
+  renderQueue(
+    renderer: Renderer,
+    queue: RenderQueue,
+    pass: RenderPass,
+    context: RenderPassContext,
+    pipelineOverride?: any
+  ) {
+    queue.render(renderer, pass, context, pipelineOverride)
   }
 }

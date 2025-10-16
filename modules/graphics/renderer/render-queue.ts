@@ -34,7 +34,12 @@ export class RenderQueue {
   // Execute the queue using the provided renderer and pass context.
   // For Step 1 scaffolding this mirrors Renderer.renderPass state setup
   // and emits per-item draws via renderer.renderModel.
-  render(renderer: Renderer, pass: RenderPass, context: RenderPassContext) {
+  render(
+    renderer: Renderer,
+    pass: RenderPass,
+    context: RenderPassContext,
+    pipelineOverride?: Partial<Pick<PipelineDescriptor, 'cullMode' | 'blendMode' | 'depthTest' | 'depthMask' | 'colorMask'>>
+  ) {
     // Bind target
     renderer.use(context.target)
 
@@ -48,6 +53,13 @@ export class RenderQueue {
       depthTest: pass.depthTest,
       depthMask: pass.depthMask,
       colorMask: pass.colorMask
+    }
+    if (pipelineOverride) {
+      if (pipelineOverride.cullMode !== undefined) desc.cullMode = pipelineOverride.cullMode
+      if (pipelineOverride.blendMode !== undefined) desc.blendMode = pipelineOverride.blendMode
+      if (pipelineOverride.depthTest !== undefined) desc.depthTest = pipelineOverride.depthTest
+      if (pipelineOverride.depthMask !== undefined) desc.depthMask = pipelineOverride.depthMask
+      if (pipelineOverride.colorMask !== undefined) desc.colorMask = pipelineOverride.colorMask
     }
     const pipeline = renderer.pipelines.getOrCreate(desc)
     renderer.bindPipeline(pipeline)
