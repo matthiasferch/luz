@@ -1,4 +1,4 @@
-import { Camera, Entity, Light } from '@luz/core'
+import { Camera, Light } from '@luz/core'
 import { RenderTarget } from '../renderer/target'
 import { Scissor } from './scissor'
 import { RenderItem } from './render-item'
@@ -24,6 +24,6 @@ export type RenderPassContext = {
 }
 
 export type VisibilitySet = {
-  opaque: Entity[]
+  opaque: RenderItem[]
   transparent: RenderItem[]
 }

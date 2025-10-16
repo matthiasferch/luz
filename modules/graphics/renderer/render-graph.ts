@@ -3,7 +3,8 @@ import { RenderPass } from './pass'
 import { RenderContext, RenderPassContext, VisibilitySet } from './contexts'
 import { LightingTask } from './lighting-task'
 import { RenderQueue } from './render-queue'
-import { Entity, isModel } from '@luz/core'
+import { RenderItem } from './render-item'
+import { Entity } from '@luz/core'
 import { RenderTarget } from './target'
 
 export type RenderStage = 'Depth' | 'Ambient' | 'Shadowing' | 'Lighting' | 'Transparent' | 'Compositing'
@@ -59,11 +60,15 @@ export class RenderGraph {
     lighting: LightingTask[],
     options?: RenderOptions
   ) {
+    const addItemsToQueue = (queue: RenderQueue, items: RenderItem[]) => {
+      for (const item of items) queue.items.push(item)
+    }
+
     const addEntitiesToQueue = (queue: RenderQueue, entities: Entity[]) => {
       for (const entity of entities) {
         for (const component of Object.values(entity.components)) {
-          if (isModel(component)) {
-            queue.items.push({ transform: entity, model: component })
+          if ((component as any)?.type === 'Model') {
+            queue.items.push({ transform: entity, model: component as any })
           }
         }
       }
@@ -74,7 +79,7 @@ export class RenderGraph {
     if (depthPass) {
       const depthQueue = this.getQueue('Depth')
       if (depthQueue.items.length === 0) {
-        addEntitiesToQueue(depthQueue, visibility.opaque)
+        addItemsToQueue(depthQueue, visibility.opaque)
       }
       depthQueue.sort()
       const depthPatched = options?.overrideStates?.['Depth'] ? ({ ...depthPass, ...options.overrideStates['Depth'] } as RenderPass) : depthPass
@@ -91,7 +96,7 @@ export class RenderGraph {
     if (ambientPass) {
       const ambientQueue = this.getQueue('Ambient')
       if (ambientQueue.items.length === 0) {
-        addEntitiesToQueue(ambientQueue, visibility.opaque)
+        addItemsToQueue(ambientQueue, visibility.opaque)
       }
       ambientQueue.sort()
       const ambientPatched = options?.overrideStates?.['Ambient'] ? ({ ...ambientPass, ...options.overrideStates['Ambient'] } as RenderPass) : ambientPass
@@ -131,7 +136,7 @@ export class RenderGraph {
 
       if (lightPass && lightQueue) {
         if (!builtLightQueue && lightQueue.items.length === 0) {
-          addEntitiesToQueue(lightQueue, visibility.opaque)
+          addItemsToQueue(lightQueue, visibility.opaque)
           builtLightQueue = true
         }
         lightQueue.sort()
