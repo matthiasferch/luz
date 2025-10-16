@@ -63,6 +63,8 @@ export class RenderQueue {
     }
     const pipeline = renderer.pipelines.getOrCreate(desc)
     renderer.bindPipeline(pipeline)
+    // Reset material binding cache for this program at the start of the stage
+    renderer.resetMaterialBinding(program)
 
     // Clear after binding masks
     renderer.clear({ color: pass.clearColor, depth: pass.clearDepth, stencil: pass.clearStencil })

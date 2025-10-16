@@ -54,6 +54,7 @@ export class Renderer {
 
   readonly pipelines: PipelineCache
   private activePipeline?: RenderPipeline
+  private lastMaterialByProgram: WeakMap<Program, Material>
 
   constructor(private gl: WebGL2RenderingContext) {
     this.state = new State(this.gl)
@@ -83,6 +84,7 @@ export class Renderer {
     }
 
     this.pipelines = new PipelineCache()
+    this.lastMaterialByProgram = new WeakMap()
   }
 
   use({ width, height, frameBuffer }: RenderTarget) {
@@ -155,6 +157,10 @@ export class Renderer {
     this.mask({ color: pipeline.colorMask, depth: pipeline.depthMask })
 
     this.activePipeline = pipeline
+  }
+
+  resetMaterialBinding(program: Program) {
+    this.lastMaterialByProgram.delete(program)
   }
 
   renderPass<T extends {}>(
@@ -252,6 +258,11 @@ export class Renderer {
       }
     }
 
+    // Apply base (camera/transform/model/light/additional) uniforms once per object
+    if (Object.keys(baseUniforms).length > 0) {
+      this.programs.update(program, { uniforms: baseUniforms })
+    }
+
     const selectedSet: Set<string> | null = selectedPartitions
       ? (selectedPartitions instanceof Set ? selectedPartitions : new Set(selectedPartitions))
       : null
@@ -274,31 +285,18 @@ export class Renderer {
         continue
       }
 
-      const materialUniforms = this.uniformCache
-
-      for (const name in materialUniforms) {
-        delete materialUniforms[name]
-      }
-
-      for (const { key } of this.uniformProperties.material) {
-        const name = `material.${key}`
-
-        if (hasUniform(name)) {
-          materialUniforms[name] = material[key]
+      // Bind material uniforms only when changed for this program
+      const last = this.lastMaterialByProgram.get(program)
+      if (last !== material) {
+        const materialUniforms = this.uniformCache
+        for (const uname in materialUniforms) delete materialUniforms[uname]
+        for (const { key } of this.uniformProperties.material) {
+          const uname = `material.${key}`
+          if (this.hasUniform(program, uname)) (materialUniforms as any)[uname] = (material as any)[key]
         }
+        this.programs.update(program, { uniforms: materialUniforms })
+        this.lastMaterialByProgram.set(program, material)
       }
-
-      const uniforms = Object.create(null) as UniformCache
-
-      for (const name in baseUniforms) {
-        uniforms[name] = baseUniforms[name]
-      }
-
-      for (const name in materialUniforms) {
-        uniforms[name] = materialUniforms[name]
-      }
-
-      this.programs.update(program, { uniforms })
 
       this.meshes.render(mesh)
     }

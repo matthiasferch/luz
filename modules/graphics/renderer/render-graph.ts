@@ -6,6 +6,7 @@ import { RenderQueue } from './render-queue'
 import { RenderItem } from './render-item'
 import { Entity } from '@luz/core'
 import { RenderTarget } from './target'
+import type { PipelineDescriptor } from './pipeline'
 
 export type RenderStage = 'Depth' | 'Ambient' | 'Shadowing' | 'Lighting' | 'Transparent' | 'Compositing'
 
@@ -15,12 +16,10 @@ type RenderOptions = {
   // Per-stage extra uniforms object merged into the pass uniforms
   additionalUniforms?: Partial<Record<RenderStage, Record<string, unknown>>>
   // Per-stage temporary pass-state overrides (e.g., cull mode for reflections)
-  overrideStates?: Partial<
-    Record<
-      RenderStage,
-      Partial<Pick<RenderPass, 'cullMode' | 'blendMode' | 'depthTest' | 'colorMask' | 'depthMask' | 'clearColor' | 'clearDepth' | 'clearStencil'>>
-    >
-  >
+  overrideStates?: Partial<Record<
+    RenderStage,
+    Partial<Pick<PipelineDescriptor, 'cullMode' | 'blendMode' | 'depthTest' | 'depthMask' | 'colorMask'>>
+  >>
 }
 
 // High-level orchestration of render stages. For Step 1, this is a thin
@@ -187,7 +186,10 @@ export class RenderGraph {
           transparentQueue.items.length = 0
           for (const it of transparentAdditiveItems) transparentQueue.items.push(it)
           transparentQueue.sort((a, b) => (b.depth ?? 0) - (a.depth ?? 0))
-          const transparentAdditiveOverride = { ...(options?.overrideStates?.['Transparent'] ?? {}), blendMode: 'Additive' as any }
+          const transparentAdditiveOverride: Partial<Pick<PipelineDescriptor, 'cullMode' | 'blendMode' | 'depthTest' | 'depthMask' | 'colorMask'>> = {
+            ...(options?.overrideStates?.['Transparent'] ?? {}),
+            blendMode: 'Additive'
+          }
           this.renderQueue(renderer, transparentQueue, transparentPass, {
             camera: context.camera,
             light: task.light,
@@ -211,7 +213,7 @@ export class RenderGraph {
     queue: RenderQueue,
     pass: RenderPass,
     context: RenderPassContext,
-    pipelineOverride?: any
+    pipelineOverride?: Partial<Pick<PipelineDescriptor, 'cullMode' | 'blendMode' | 'depthTest' | 'depthMask' | 'colorMask'>>
   ) {
     queue.render(renderer, pass, context, pipelineOverride)
   }
