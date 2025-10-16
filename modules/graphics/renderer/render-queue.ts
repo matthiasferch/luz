@@ -1,5 +1,6 @@
 import { Renderer } from './renderer'
 import { RenderPass } from './pass'
+import { PipelineDescriptor } from './pipeline'
 import { RenderPassContext } from './contexts'
 import { RenderItem } from './render-item'
 
@@ -37,16 +38,22 @@ export class RenderQueue {
     // Bind target
     renderer.use(context.target)
 
-    // Apply pass fixed state
-    renderer.state.cullMode = pass.cullMode
-    renderer.state.blendMode = pass.blendMode
-    renderer.state.depthTest = pass.depthTest
-
-    renderer.mask({ color: pass.colorMask, depth: pass.depthMask })
-    renderer.clear({ color: pass.clearColor, depth: pass.clearDepth, stencil: pass.clearStencil })
-
+    // Build/bind pipeline from pass fixed state
     const program = pass.program
     if (!program) return
+    const desc: PipelineDescriptor = {
+      program,
+      cullMode: pass.cullMode,
+      blendMode: pass.blendMode,
+      depthTest: pass.depthTest,
+      depthMask: pass.depthMask,
+      colorMask: pass.colorMask
+    }
+    const pipeline = renderer.pipelines.getOrCreate(desc)
+    renderer.bindPipeline(pipeline)
+
+    // Clear after binding masks
+    renderer.clear({ color: pass.clearColor, depth: pass.clearDepth, stencil: pass.clearStencil })
 
     // Optional scissor
     if (context.scissor) {

@@ -17,6 +17,8 @@ import { RenderPass } from './pass'
 import { getUniformProperties } from '@luz/utilities'
 import { UniformProperty } from '@luz/utilities/uniform'
 import { Scissor } from './scissor'
+import { PipelineCache } from './pipeline-cache'
+import { RenderPipeline, PipelineDescriptor } from './pipeline'
 
 type UniformCache = Record<string, Uniform.Value>
 
@@ -50,6 +52,9 @@ export class Renderer {
 
   private readonly uniformProperties: Record<string, UniformProperty[]>
 
+  readonly pipelines: PipelineCache
+  private activePipeline?: RenderPipeline
+
   constructor(private gl: WebGL2RenderingContext) {
     this.state = new State(this.gl)
 
@@ -76,6 +81,8 @@ export class Renderer {
       material: getUniformProperties(Material),
       transform: getUniformProperties(Transform)
     }
+
+    this.pipelines = new PipelineCache()
   }
 
   use({ width, height, frameBuffer }: RenderTarget) {
@@ -134,6 +141,20 @@ export class Renderer {
   // Disable scissor test
   disableScissor() {
     this.gl.disable(this.gl.SCISSOR_TEST)
+  }
+
+  bindPipeline(pipeline: RenderPipeline) {
+    if (this.activePipeline === pipeline) {
+      return
+    }
+
+    this.programs.use(pipeline.program)
+    this.state.cullMode = pipeline.cullMode
+    this.state.blendMode = pipeline.blendMode
+    this.state.depthTest = pipeline.depthTest
+    this.mask({ color: pipeline.colorMask, depth: pipeline.depthMask })
+
+    this.activePipeline = pipeline
   }
 
   renderPass<T extends {}>(

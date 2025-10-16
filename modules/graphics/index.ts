@@ -25,6 +25,8 @@ export { RenderItem } from './renderer/render-item'
 export { LightingTask } from './renderer/lighting-task'
 export { RenderContext, RenderPassContext, VisibilitySet } from './renderer/contexts'
 export { Scissor } from './renderer/scissor'
+export { RenderPipeline, type PipelineDescriptor } from './renderer/pipeline'
+export { PipelineCache } from './renderer/pipeline-cache'
 
 export { FrameBuffer } from './buffers/frame-buffer'
 export { RenderBuffer } from './buffers/render-buffer'
