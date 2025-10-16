@@ -10,7 +10,6 @@ export class RenderStats {
     maskColor: 0,
     maskDepth: 0
   }
-  stageTimings: Record<string, number> = Object.create(null)
 
   reset() {
     this.frame += 1
@@ -22,11 +21,6 @@ export class RenderStats {
     this.stateChanges.depthTest = 0
     this.stateChanges.maskColor = 0
     this.stateChanges.maskDepth = 0
-    this.stageTimings = Object.create(null)
-  }
-
-  addStageTime(stage: string, ms: number) {
-    this.stageTimings[stage] = (this.stageTimings[stage] ?? 0) + ms
   }
 }
 
