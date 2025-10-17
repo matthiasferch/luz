@@ -13,12 +13,11 @@ import { Texture } from '../types/texture'
 import { Material } from './material'
 import { RenderTarget } from './target'
 import { vec4 } from '@luz/vectors'
-import { RenderPass } from './pass'
 import { getUniformProperties } from '@luz/utilities'
 import { UniformProperty } from '@luz/utilities/uniform'
 import { Scissor } from './scissor'
 import { PipelineCache } from './pipeline-cache'
-import { RenderPipeline, PipelineDescriptor } from './pipeline'
+import { RenderPipeline } from './pipeline'
 import { RenderStats } from './stats'
 
 type UniformCache = Record<string, Uniform.Value>
@@ -199,49 +198,9 @@ export class Renderer {
     }
   }
 
-  renderPass<T extends {}>(
-    pass: RenderPass,
-    camera: Camera,
-    entities: Entity[],
-    light: Light,
-    uniforms?: T
-  ) {
-    // cull mode
-    this.state.cullMode = pass.cullMode
-
-    // blend mode
-    this.state.blendMode = pass.blendMode
-
-    // depth test
-    this.state.depthTest = pass.depthTest
-
-    // write masks
-    this.mask({ color: pass.colorMask, depth: pass.depthMask })
-
-    // clear buffers
-    this.clear({ color: pass.clearColor, depth: pass.clearDepth, stencil: pass.clearStencil })
-
-    const { program } = pass
-
-    if (!program) {
-      throw new Error('Render pass has no program')
-    }
-
-    // render entities
-    for (const entity of entities) {
-      for (const component of Object.values(entity.components)) {
-        if (isModel(component)) {
-          this.renderModel(camera, entity, component, light, program, uniforms)
-        }
-      }
-    }
-  }
-
   renderModel<T extends {}>(
-    camera: Camera | null,
     transform: Transform,
     model: Model,
-    light: Light,
     program: Program,
     additionalUniforms?: T,
     selectedPartitions?: string[] | Set<string>

@@ -208,20 +208,12 @@ export class RenderGraph {
     // Overlay stage (e.g., debug overlay) — not per-light
     const overlayPass = passes['Overlay']
     if (overlayPass && options?.overlayCallback) {
-      const program = overlayPass.program
-      if (program) {
-        const desc: PipelineDescriptor = {
-          program,
-          cullMode: overlayPass.cullMode,
-          blendMode: overlayPass.blendMode,
-          depthTest: overlayPass.depthTest,
-          depthMask: overlayPass.depthMask,
-          colorMask: overlayPass.colorMask
-        }
+      const desc = overlayPass.toPipelineDescriptor()
+      if (desc) {
         const pipeline = renderer.pipelines.getOrCreate(desc)
         renderer.use(options?.overrideTargets?.['Overlay'] ?? context.target)
         renderer.bindPipeline(pipeline)
-        renderer.bindFrameGroup(program, context.camera)
+        renderer.bindFrameGroup(desc.program, context.camera)
         options.overlayCallback(renderer, overlayPass, context)
       }
     }

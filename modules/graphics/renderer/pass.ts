@@ -2,6 +2,7 @@ import { vec4 } from '@luz/vectors'
 import { Program } from '../types/program'
 import { State } from './state'
 import { Serializable, Serialize } from '@luz/utilities'
+import type { PipelineDescriptor } from './pipeline'
 
 export class RenderPass extends Serializable {
   @Serialize()
@@ -44,5 +45,18 @@ export class RenderPass extends Serializable {
 
   static async deserialize(data: Partial<RenderPass>) {
     return (await super.deserialize(data)) as RenderPass
+  }
+
+  // Convenience to derive the fixed-state pipeline descriptor used by caches.
+  toPipelineDescriptor(): PipelineDescriptor | null {
+    if (!this.program) return null
+    return {
+      program: this.program,
+      cullMode: this.cullMode,
+      blendMode: this.blendMode,
+      depthTest: this.depthTest,
+      depthMask: this.depthMask,
+      colorMask: this.colorMask
+    }
   }
 }

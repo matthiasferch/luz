@@ -108,16 +108,10 @@ export class RenderQueue {
     renderer.use(context.target)
 
     // Build/bind pipeline from pass fixed state
-    const program = pass.program
-    if (!program) return
-    const desc: PipelineDescriptor = {
-      program,
-      cullMode: pass.cullMode,
-      blendMode: pass.blendMode,
-      depthTest: pass.depthTest,
-      depthMask: pass.depthMask,
-      colorMask: pass.colorMask
-    }
+    const base = pass.toPipelineDescriptor()
+    if (!base) return
+    const program = base.program
+    const desc: PipelineDescriptor = { ...base }
     if (pipelineOverride) {
       if (pipelineOverride.cullMode !== undefined) desc.cullMode = pipelineOverride.cullMode
       if (pipelineOverride.blendMode !== undefined) desc.blendMode = pipelineOverride.blendMode
@@ -145,7 +139,7 @@ export class RenderQueue {
 
     // Draw all items with only per-object/material uniforms changing
     for (const item of this.items) {
-      renderer.renderModel(null, item.transform, item.model, null, program, undefined, item.partitions)
+      renderer.renderModel(item.transform, item.model, program, undefined, item.partitions)
     }
     
     // Update submissions (draws are counted in renderer)
