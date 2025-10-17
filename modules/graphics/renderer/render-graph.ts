@@ -5,12 +5,20 @@ import { RenderQueue } from './render-queue'
 import { RenderBatch } from './render-batch'
 import { Camera, Entity, isModel, Light } from '@luz/core'
 import { RenderTarget } from './target'
-import type { RenderPipeline, RenderState } from './render-pipeline'
+import type { RenderPipeline } from './render-pipeline'
 import { Scissor } from './scissor'
+import { State } from './state'
 
 type StageCallback = ({ renderPass, context }: { renderPass: RenderPass, context: FrameContext }) => void
 
-export type RenderStage = 'Depth' | 'Ambient' | 'Shadowing' | 'Lighting' | 'Transparent' | 'Overlay' | 'Composite'
+export type RenderState = {
+  cullMode: State.CullMode
+  blendMode: State.BlendMode
+  depthTest: State.DepthTest
+
+  depthMask: boolean
+  colorMask: boolean[]
+}
 
 export type FrameContext = {
   target: RenderTarget
@@ -42,10 +50,10 @@ export type VisibilitySet = {
 }
 
 type RenderOptions = {
-  overrideTargets?: Partial<Record<RenderStage, RenderTarget>>
-  overrideStates?: Partial<Record<RenderStage, Partial<RenderState>>>
+  overrideTargets?: Partial<Record<RenderPass.Stage, RenderTarget>>
+  overrideStates?: Partial<Record<RenderPass.Stage, Partial<RenderState>>>
 
-  additionalUniforms?: Partial<Record<RenderStage, Record<string, unknown>>>
+  additionalUniforms?: Partial<Record<RenderPass.Stage, Record<string, unknown>>>
 
   overlayStageRendered?: StageCallback
 }
@@ -53,13 +61,13 @@ type RenderOptions = {
 // High-level orchestration of render stages. For Step 1, this is a thin
 // container around stage queues; integration and behavior changes come later.
 export class RenderGraph {
-  private queues: Map<RenderStage, RenderQueue> = new Map()
+  private queues: Map<RenderPass.Stage, RenderQueue> = new Map()
 
   constructor(private renderer: Renderer) {
     this.queues = new Map()
   }
 
-  getQueue(stage: RenderStage): RenderQueue {
+  getQueue(stage: RenderPass.Stage): RenderQueue {
     let queue = this.queues.get(stage)
 
     if (!queue) {
@@ -80,19 +88,19 @@ export class RenderGraph {
   // conservative and does not alter current behavior by itself; callers can
   // delegate to existing Renderer.renderPass or use queues explicitly.
   render(
-    passes: Partial<Record<RenderStage, RenderPass>>,
+    passes: Partial<Record<RenderPass.Stage, RenderPass>>,
     context: FrameContext,
     lightBatches: LightBatch[],
     opaqueBatches: RenderBatch[],
     transparentBatches: RenderBatch[],
     options?: RenderOptions
   ) {
-    const resolveTarget = (stage: RenderStage) => {
+    const resolveTarget = (stage: RenderPass.Stage) => {
       return options?.overrideTargets?.[stage] ?? context.target
     }
 
     const mergeOverrides = (
-      stage: RenderStage,
+      stage: RenderPass.Stage,
       extra?: Partial<RenderState>
     ) => ({ ...(options?.overrideStates?.[stage] ?? {}), ...(extra ?? {}) })
 
@@ -239,7 +247,7 @@ export class RenderGraph {
   }
 
   private renderStage(
-    stage: RenderStage,
+    stage: RenderPass.Stage,
     queue: RenderQueue,
     pass: RenderPass,
     stageContext: StageContext,

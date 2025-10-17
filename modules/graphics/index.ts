@@ -19,10 +19,10 @@ export { VertexArray } from './types/vertex-array'
 
 export { RenderPass } from './renderer/render-pass'
 export { RenderTarget } from './renderer/target'
-export { RenderGraph, type RenderStage } from './renderer/render-graph'
+export { RenderGraph } from './renderer/render-graph'
 export { RenderQueue } from './renderer/render-queue'
-export { RenderBatch as RenderItem } from './renderer/render-batch'
-export { LightBatch as LightingTask } from './renderer/lighting-task'
+export { RenderBatch } from './renderer/render-batch'
+export { LightBatch } from './renderer/lighting-task'
 export { Scissor } from './renderer/scissor'
 export { RenderPipeline } from './renderer/render-pipeline'
 

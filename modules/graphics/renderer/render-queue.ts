@@ -1,10 +1,10 @@
 import { Renderer } from './renderer'
 import { RenderPass } from './render-pass'
-import { RenderPipeline, RenderState } from './render-pipeline'
+import { RenderPipeline } from './render-pipeline'
 import { Material } from './material'
 import { Mesh } from '../types/mesh'
 import { RenderBatch } from './render-batch'
-import { QueueContext } from './render-graph'
+import { QueueContext, RenderState } from './render-graph'
 
 export class RenderQueue {
   readonly batches: RenderBatch[] = []

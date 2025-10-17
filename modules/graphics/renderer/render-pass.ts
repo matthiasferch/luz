@@ -46,3 +46,7 @@ export class RenderPass extends Serializable {
     return (await super.deserialize(data)) as RenderPass
   }
 }
+
+export namespace RenderPass {
+  export type Stage = 'Depth' | 'Ambient' | 'Shadowing' | 'Lighting' | 'Transparent' | 'Overlay' | 'Composite'
+}
