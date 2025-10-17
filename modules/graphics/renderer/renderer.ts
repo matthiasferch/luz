@@ -159,10 +159,15 @@ export class Renderer {
     }
 
     this.programs.use(pipeline.program)
+
     this.state.cullMode = pipeline.cullMode
     this.state.blendMode = pipeline.blendMode
     this.state.depthTest = pipeline.depthTest
-    this.mask({ color: pipeline.colorMask, depth: pipeline.depthMask })
+
+    this.mask({
+      color: pipeline.colorMask,
+      depth: pipeline.depthMask
+    })
 
     this.activePipeline = pipeline
 
@@ -173,37 +178,46 @@ export class Renderer {
     this.lastMaterialByProgram.delete(program)
   }
 
-  // Bind groups
-  bindFrameGroup(program: Program, camera: Camera) {
+  setCameraUniforms(program: Program, camera: Camera) {
     const uniforms: UniformCache = Object.create(null)
     const hasUniform = this.hasUniform.bind(this, program)
+
     for (const { key } of this.uniformProperties.camera) {
       const name = `camera.${key}`
-      if (hasUniform(name)) uniforms[name] = (camera as any)[key]
+
+      if (hasUniform(name)) {
+        uniforms[name] = camera[key]
+      }
     }
+
     if (Object.keys(uniforms).length > 0) {
       this.programs.update(program, { uniforms })
     }
   }
 
-  bindLightGroup(program: Program, light: Light) {
+  setLightUniforms(program: Program, light: Light) {
     const uniforms: UniformCache = Object.create(null)
     const hasUniform = this.hasUniform.bind(this, program)
+
     for (const { key } of this.uniformProperties.light) {
       const name = `light.${key}`
-      if (hasUniform(name)) uniforms[name] = (light as any)[key]
+
+      if (hasUniform(name)) {
+        uniforms[name] = light[key]
+      }
     }
+
     if (Object.keys(uniforms).length > 0) {
       this.programs.update(program, { uniforms })
     }
   }
 
-  renderModel<T extends {}>(
+  render<T extends {}>(
     transform: Transform,
     model: Model,
     program: Program,
     additionalUniforms?: T,
-    selectedPartitions?: string[] | Set<string>
+    selectedPartitions?: string[]
   ) {
     const baseUniforms: UniformCache = Object.create(null)
 
@@ -251,7 +265,7 @@ export class Renderer {
     }
 
     const selectedSet: Set<string> | null = selectedPartitions
-      ? (selectedPartitions instanceof Set ? selectedPartitions : new Set(selectedPartitions))
+      ? new Set(selectedPartitions)
       : null
 
     for (const [name, partition] of Object.entries(model.partitions)) {
@@ -329,7 +343,7 @@ export class Renderer {
   // Apply a set of (possibly nested) uniform values once against a program,
   // flattening them to real uniform names present in the program. Useful for
   // pass-level uniforms to avoid re-setting them per draw.
-  applyUniforms(program: Program, values: any) {
+  setNestedUniforms(program: Program, values: any) {
     const uniforms = this.collectUniformValues(program, values)
     if (Object.keys(uniforms).length > 0) {
       this.programs.update(program, { uniforms })

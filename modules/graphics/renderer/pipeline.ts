@@ -1,13 +1,17 @@
 import { Program } from '../types/program'
 import { State } from './state'
 
-export type PipelineDescriptor = {
-  program: Program
+export type RenderState = {
   cullMode: State.CullMode
   blendMode: State.BlendMode
   depthTest: State.DepthTest
+
   depthMask: boolean
   colorMask: boolean[]
+}
+
+export type PipelineDescriptor = RenderState & {
+  program: Program
 }
 
 export class RenderPipeline {

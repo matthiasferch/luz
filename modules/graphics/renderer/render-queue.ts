@@ -1,10 +1,10 @@
 import { Renderer } from './renderer'
 import { RenderPass } from './pass'
-import { PipelineDescriptor } from './pipeline'
+import { PipelineDescriptor, RenderState } from './pipeline'
 import { Material } from './material'
 import { Mesh } from '../types/mesh'
-import { RenderPassContext } from './contexts'
 import { RenderItem } from './render-item'
+import { RenderContext } from './render-graph'
 
 export class RenderQueue {
   readonly items: RenderItem[] = []
@@ -101,8 +101,8 @@ export class RenderQueue {
   render(
     renderer: Renderer,
     pass: RenderPass,
-    context: RenderPassContext,
-    pipelineOverride?: Partial<Pick<PipelineDescriptor, 'cullMode' | 'blendMode' | 'depthTest' | 'depthMask' | 'colorMask'>>
+    context: RenderContext,
+    pipelineOverride?: Partial<RenderState>
   ) {
     // Bind target
     renderer.use(context.target)
@@ -133,15 +133,23 @@ export class RenderQueue {
     }
 
     // Bind frame/light groups once per stage and apply extra uniforms
-    if (context.camera) renderer.bindFrameGroup(program, context.camera)
-    if (context.light) renderer.bindLightGroup(program, context.light)
-    if (context.uniforms) renderer.applyUniforms(program, context.uniforms)
+    if (context.light) {
+      renderer.setLightUniforms(program, context.light)
+    }
+
+    if (context.camera) {
+      renderer.setCameraUniforms(program, context.camera)
+    }
+
+    if (context.uniforms) {
+      renderer.setNestedUniforms(program, context.uniforms)
+    }
 
     // Draw all items with only per-object/material uniforms changing
-    for (const item of this.items) {
-      renderer.renderModel(item.transform, item.model, program, undefined, item.partitions)
+    for (const { transform, model, partitions } of this.items) {
+      renderer.render(transform, model, program, undefined, partitions)
     }
-    
+
     // Update submissions (draws are counted in renderer)
     renderer.stats.submissions += this.items.length
 
