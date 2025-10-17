@@ -3,29 +3,30 @@ import { RenderPass } from './pass'
 import { PipelineDescriptor, RenderState } from './pipeline'
 import { Material } from './material'
 import { Mesh } from '../types/mesh'
-import { RenderItem } from './render-item'
-import { RenderContext } from './render-graph'
+import { RenderBatch } from './render-item'
+import { QueueContext } from './render-graph'
 
 export class RenderQueue {
-  readonly items: RenderItem[] = []
+  readonly batches: RenderBatch[] = []
+
   private materialIds = new WeakMap<Material, number>()
   private meshIds = new WeakMap<Mesh, number>()
   private nextMaterialId = 1
   private nextMeshId = 1
 
   // Default sorting: pipeline (per-queue) → material → mesh → depth (front-to-back)
-  sort(compare?: (a: RenderItem, b: RenderItem) => number) {
+  sort(compare?: (a: RenderBatch, b: RenderBatch) => number) {
     if (compare) {
-      this.items.sort(compare)
+      this.batches.sort(compare)
       return
     }
-    this.items.sort(this.compareOpaque)
+    this.batches.sort(this.compareOpaque)
   }
 
-  sortOpaque() { this.items.sort(this.compareOpaque) }
-  sortTransparent() { this.items.sort(this.compareTransparent) }
+  sortOpaque() { this.batches.sort(this.compareOpaque) }
+  sortTransparent() { this.batches.sort(this.compareTransparent) }
 
-  private compareOpaque = (a: RenderItem, b: RenderItem) => {
+  private compareOpaque = (a: RenderBatch, b: RenderBatch) => {
     const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(a))
     const bmid = this.getMaterialIdSafe(this.getPrimaryMaterial(b))
     if (amid !== bmid) return amid - bmid
@@ -37,7 +38,7 @@ export class RenderQueue {
     return da - db
   }
 
-  private compareTransparent = (a: RenderItem, b: RenderItem) => {
+  private compareTransparent = (a: RenderBatch, b: RenderBatch) => {
     const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(a))
     const bmid = this.getMaterialIdSafe(this.getPrimaryMaterial(b))
     if (amid !== bmid) return amid - bmid
@@ -49,7 +50,7 @@ export class RenderQueue {
     return db - da
   }
 
-  private getPrimaryMaterial(item: RenderItem): Material | null {
+  private getPrimaryMaterial(item: RenderBatch): Material | null {
     const model: any = item.model as any
     const parts: Record<string, any> = model?.partitions ?? {}
     let part: any | undefined
@@ -62,7 +63,7 @@ export class RenderQueue {
     return part?.mesh?.material ?? null
   }
 
-  private getPrimaryMesh(item: RenderItem): Mesh | null {
+  private getPrimaryMesh(item: RenderBatch): Mesh | null {
     const model: any = item.model as any
     const parts: Record<string, any> = model?.partitions ?? {}
     let part: any | undefined
@@ -101,7 +102,7 @@ export class RenderQueue {
   render(
     renderer: Renderer,
     pass: RenderPass,
-    context: RenderContext,
+    context: QueueContext,
     pipelineOverride?: Partial<RenderState>
   ) {
     // Bind target
@@ -146,12 +147,12 @@ export class RenderQueue {
     }
 
     // Draw all items with only per-object/material uniforms changing
-    for (const { transform, model, partitions } of this.items) {
+    for (const { transform, model, partitions } of this.batches) {
       renderer.render(transform, model, program, undefined, partitions)
     }
 
     // Update submissions (draws are counted in renderer)
-    renderer.stats.submissions += this.items.length
+    renderer.stats.submissions += this.batches.length
 
     if (context.scissor) {
       renderer.disableScissor()
