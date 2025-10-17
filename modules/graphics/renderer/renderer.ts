@@ -16,8 +16,7 @@ import { vec4 } from '@luz/vectors'
 import { getUniformProperties } from '@luz/utilities'
 import { UniformProperty } from '@luz/utilities/uniform'
 import { Scissor } from './scissor'
-import { PipelineCache } from './pipeline-cache'
-import { RenderPipeline } from './pipeline'
+import { RenderPipeline } from './render-pipeline'
 import { RenderStats } from './stats'
 
 type UniformCache = Record<string, Uniform.Value>
@@ -52,7 +51,6 @@ export class Renderer {
 
   private readonly uniformProperties: Record<string, UniformProperty[]>
 
-  readonly pipelines: PipelineCache
   private activePipeline?: RenderPipeline
   private lastMaterialByProgram: WeakMap<Program, Material>
 
@@ -85,9 +83,9 @@ export class Renderer {
       transform: getUniformProperties(Transform)
     }
 
-    this.pipelines = new PipelineCache()
     this.stats = new RenderStats()
     this.state.stats = this.stats
+
     this.lastMaterialByProgram = new WeakMap()
   }
 

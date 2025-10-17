@@ -1,11 +1,11 @@
 import { Renderer } from './renderer'
-import { RenderPass } from './pass'
+import { RenderPass } from './render-pass'
 import { LightBatch } from './lighting-task'
 import { RenderQueue } from './render-queue'
-import { RenderBatch } from './render-item'
+import { RenderBatch } from './render-batch'
 import { Camera, Entity, isModel, Light } from '@luz/core'
 import { RenderTarget } from './target'
-import type { RenderState } from './pipeline'
+import type { RenderPipeline, RenderState } from './render-pipeline'
 import { Scissor } from './scissor'
 
 type StageCallback = ({ renderPass, context }: { renderPass: RenderPass, context: FrameContext }) => void
@@ -211,18 +211,17 @@ export class RenderGraph {
     // Overlay stage (e.g., debug overlay) — not per-light
     const overlayPass = passes['Overlay']
     if (overlayPass && options?.overlayStageRendered) {
-      const desc = overlayPass.toPipelineDescriptor()
-
-      if (desc) {
-        const pipeline = this.renderer.pipelines.getOrCreate(desc)
-
-        this.renderer.use(resolveTarget('Overlay'))
-        this.renderer.bindPipeline(pipeline)
-
-        this.renderer.setCameraUniforms(desc.program, context.camera)
-
-        options.overlayStageRendered({ renderPass: overlayPass, context })
+      const pipeline: RenderPipeline = {
+        ...overlayPass,
+        program: overlayPass.program!
       }
+
+      this.renderer.use(resolveTarget('Overlay'))
+      this.renderer.bindPipeline(pipeline)
+
+      this.renderer.setCameraUniforms(pipeline.program, context.camera)
+
+      options.overlayStageRendered({ renderPass: overlayPass, context })
     }
 
     // Overlay and Post are intentionally not auto-executed here because they

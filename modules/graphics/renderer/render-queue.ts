@@ -1,9 +1,9 @@
 import { Renderer } from './renderer'
-import { RenderPass } from './pass'
-import { PipelineDescriptor, RenderState } from './pipeline'
+import { RenderPass } from './render-pass'
+import { RenderPipeline, RenderState } from './render-pipeline'
 import { Material } from './material'
 import { Mesh } from '../types/mesh'
-import { RenderBatch } from './render-item'
+import { RenderBatch } from './render-batch'
 import { QueueContext } from './render-graph'
 
 export class RenderQueue {
@@ -113,22 +113,22 @@ export class RenderQueue {
     // Bind target
     renderer.use(context.target)
 
-    // Build/bind pipeline from pass fixed state
-    const base = pass.toPipelineDescriptor()
-    if (!base) return
-    const program = base.program
-    const desc: PipelineDescriptor = { ...base }
-    if (pipelineOverride) {
-      if (pipelineOverride.cullMode !== undefined) desc.cullMode = pipelineOverride.cullMode
-      if (pipelineOverride.blendMode !== undefined) desc.blendMode = pipelineOverride.blendMode
-      if (pipelineOverride.depthTest !== undefined) desc.depthTest = pipelineOverride.depthTest
-      if (pipelineOverride.depthMask !== undefined) desc.depthMask = pipelineOverride.depthMask
-      if (pipelineOverride.colorMask !== undefined) desc.colorMask = pipelineOverride.colorMask
+    const pipeline: RenderPipeline = {
+      ...pass,
+      program: pass.program!,
     }
-    const pipeline = renderer.pipelines.getOrCreate(desc)
+
+    if (pipelineOverride) {
+      if (pipelineOverride.cullMode !== undefined) pipeline.cullMode = pipelineOverride.cullMode
+      if (pipelineOverride.blendMode !== undefined) pipeline.blendMode = pipelineOverride.blendMode
+      if (pipelineOverride.depthTest !== undefined) pipeline.depthTest = pipelineOverride.depthTest
+      if (pipelineOverride.depthMask !== undefined) pipeline.depthMask = pipelineOverride.depthMask
+      if (pipelineOverride.colorMask !== undefined) pipeline.colorMask = pipelineOverride.colorMask
+    }
+
     renderer.bindPipeline(pipeline)
     // Reset material binding cache for this program at the start of the stage
-    renderer.resetMaterialBinding(program)
+    renderer.resetMaterialBinding(pipeline.program)
 
     // Clear after binding masks
     renderer.clear({ color: pass.clearColor, depth: pass.clearDepth, stencil: pass.clearStencil })
@@ -140,20 +140,20 @@ export class RenderQueue {
 
     // Bind frame/light groups once per stage and apply extra uniforms
     if (context.light) {
-      renderer.setLightUniforms(program, context.light)
+      renderer.setLightUniforms(pipeline.program, context.light)
     }
 
     if (context.camera) {
-      renderer.setCameraUniforms(program, context.camera)
+      renderer.setCameraUniforms(pipeline.program, context.camera)
     }
 
     if (context.uniforms) {
-      renderer.setNestedUniforms(program, context.uniforms)
+      renderer.setNestedUniforms(pipeline.program, context.uniforms)
     }
 
     // Draw all items with only per-object/material uniforms changing
     for (const { transform, model, partitions } of this.batches) {
-      renderer.render(transform, model, program, undefined, partitions)
+      renderer.render(transform, model, pipeline.program, undefined, partitions)
     }
 
     // Update submissions (draws are counted in renderer)
