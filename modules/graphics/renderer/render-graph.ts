@@ -3,10 +3,12 @@ import { RenderPass } from './pass'
 import { LightBatch } from './lighting-task'
 import { RenderQueue } from './render-queue'
 import { RenderBatch } from './render-item'
-import { Camera, Entity, Light } from '@luz/core'
+import { Camera, Entity, isModel, Light } from '@luz/core'
 import { RenderTarget } from './target'
 import type { RenderState } from './pipeline'
 import { Scissor } from './scissor'
+
+type StageCallback = ({ renderPass, context }: { renderPass: RenderPass, context: FrameContext }) => void
 
 export type RenderStage = 'Depth' | 'Ambient' | 'Shadowing' | 'Lighting' | 'Transparent' | 'Overlay' | 'Composite'
 
@@ -45,7 +47,7 @@ type RenderOptions = {
 
   additionalUniforms?: Partial<Record<RenderStage, Record<string, unknown>>>
 
-  overlayStageCallback?: (renderer: Renderer, pass: RenderPass, frame: FrameContext) => void
+  overlayStageRendered?: StageCallback
 }
 
 // High-level orchestration of render stages. For Step 1, this is a thin
@@ -78,29 +80,33 @@ export class RenderGraph {
   // conservative and does not alter current behavior by itself; callers can
   // delegate to existing Renderer.renderPass or use queues explicitly.
   render(
-    renderer: Renderer,
     passes: Partial<Record<RenderStage, RenderPass>>,
     context: FrameContext,
-    visibility: VisibilitySet,
     lightBatches: LightBatch[],
+    opaqueBatches: RenderBatch[],
+    transparentBatches: RenderBatch[],
     options?: RenderOptions
   ) {
-    // Helpers to keep stage code concise
-    const pickTarget = (stage: RenderStage) => options?.overrideTargets?.[stage] ?? context.target
-    const pickOverrides = (
+    const resolveTarget = (stage: RenderStage) => {
+      return options?.overrideTargets?.[stage] ?? context.target
+    }
+
+    const mergeOverrides = (
       stage: RenderStage,
       extra?: Partial<RenderState>
     ) => ({ ...(options?.overrideStates?.[stage] ?? {}), ...(extra ?? {}) })
 
-    const addItemsToQueue = (queue: RenderQueue, items: RenderBatch[]) => {
-      for (const item of items) queue.batches.push(item)
+    const enqueueBatches = (queue: RenderQueue, batches: RenderBatch[]) => {
+      for (const item of batches) {
+        queue.batches.push(item)
+      }
     }
 
-    const addEntitiesToQueue = (queue: RenderQueue, entities: Entity[]) => {
+    const enqueueEntities = (queue: RenderQueue, entities: Entity[]) => {
       for (const entity of entities) {
         for (const component of Object.values(entity.components)) {
-          if ((component as any)?.type === 'Model') {
-            queue.batches.push({ transform: entity, model: component as any })
+          if (isModel(component)) {
+            queue.batches.push({ transform: entity, model: component })
           }
         }
       }
@@ -113,11 +119,11 @@ export class RenderGraph {
     if (depthPass) {
       const depthQueue = this.getQueue('Depth')
       if (depthQueue.batches.length === 0) {
-        addItemsToQueue(depthQueue, visibility.opaqueBatches)
+        enqueueBatches(depthQueue, opaqueBatches)
       }
       // Front-to-back to maximize early-Z
-      depthQueue.sortOpaque()
-      this.renderStage(renderer, 'Depth', depthQueue, depthPass, { camera: context.camera, light: null }, context, options)
+      depthQueue.sortOpaqueBatches()
+      this.renderStage('Depth', depthQueue, depthPass, { camera: context.camera }, context, options)
     }
 
     // Ambient/base stage (optional): opaque first
@@ -125,11 +131,11 @@ export class RenderGraph {
     if (ambientPass) {
       const ambientQueue = this.getQueue('Ambient')
       if (ambientQueue.batches.length === 0) {
-        addItemsToQueue(ambientQueue, visibility.opaqueBatches)
+        enqueueBatches(ambientQueue, opaqueBatches)
       }
       // Front-to-back for opaque ambient/base
-      ambientQueue.sortOpaque()
-      this.renderStage(renderer, 'Ambient', ambientQueue, ambientPass, { camera: context.camera, light: null }, context, options)
+      ambientQueue.sortOpaqueBatches()
+      this.renderStage('Ambient', ambientQueue, ambientPass, { camera: context.camera }, context, options)
     }
 
     // Per-light stages: Shadow (into current target) then Light accumulation
@@ -149,19 +155,19 @@ export class RenderGraph {
       if (shadowPass) {
         const shadowQueue = this.getQueue('Shadowing')
         shadowQueue.batches.length = 0
-        addEntitiesToQueue(shadowQueue, task.entities)
+        enqueueEntities(shadowQueue, task.entities)
         shadowQueue.sort()
-        this.renderStage(renderer, 'Shadowing', shadowQueue, shadowPass, { camera: task.light, light: null }, context, options)
+        this.renderStage('Shadowing', shadowQueue, shadowPass, { camera: task.light }, context, options)
       }
 
       if (lightPass && lightQueue) {
         if (!builtLightQueue && lightQueue.batches.length === 0) {
-          addItemsToQueue(lightQueue, visibility.opaqueBatches)
+          enqueueBatches(lightQueue, opaqueBatches)
           builtLightQueue = true
         }
         // Front-to-back for opaque lighting contributions
-        lightQueue.sortOpaque()
-        this.renderStage(renderer, 'Lighting', lightQueue, lightPass, { camera: context.camera, light: task.light, scissor: task.scissor }, context, options)
+        lightQueue.sortOpaqueBatches()
+        this.renderStage('Lighting', lightQueue, lightPass, { camera: context.camera, light: task.light, scissor: task.scissor }, context, options)
       }
 
       // Per-light transparent stage (optional), grouped by blend mode
@@ -169,7 +175,7 @@ export class RenderGraph {
         if (!groupedTransparentBuilt) {
           transparentAlphaItems = []
           transparentAdditiveItems = []
-          for (const item of visibility.transparentBatches) {
+          for (const item of transparentBatches) {
             let blend: string = 'Transparent'
             if (item.partitions && item.partitions.length > 0) {
               const name = item.partitions[0]
@@ -186,16 +192,16 @@ export class RenderGraph {
         // Alpha-blended items: sort back-to-front
         transparentQueue.batches.length = 0
         for (const it of transparentAlphaItems) transparentQueue.batches.push(it)
-        transparentQueue.sortTransparent()
-        this.renderStage(renderer, 'Transparent', transparentQueue, transparentPass, { camera: context.camera, light: task.light, scissor: task.scissor }, context, options)
+        transparentQueue.sortTransparentBatches()
+        this.renderStage('Transparent', transparentQueue, transparentPass, { camera: context.camera, light: task.light, scissor: task.scissor }, context, options)
 
         // Additive items: blend mode override to Additive; order less critical
         if (transparentAdditiveItems.length > 0) {
           transparentQueue.batches.length = 0
           for (const it of transparentAdditiveItems) transparentQueue.batches.push(it)
-          transparentQueue.sortTransparent()
-          const additiveOverride = pickOverrides('Transparent', { blendMode: 'Additive' })
-          this.renderStage(renderer, 'Transparent', transparentQueue, transparentPass, { camera: context.camera, light: task.light, scissor: task.scissor }, context, options, additiveOverride)
+          transparentQueue.sortTransparentBatches()
+          const additiveOverride = mergeOverrides('Transparent', { blendMode: 'Additive' })
+          this.renderStage('Transparent', transparentQueue, transparentPass, { camera: context.camera, light: task.light, scissor: task.scissor }, context, options, additiveOverride)
         }
       }
     }
@@ -204,14 +210,18 @@ export class RenderGraph {
 
     // Overlay stage (e.g., debug overlay) — not per-light
     const overlayPass = passes['Overlay']
-    if (overlayPass && options?.overlayStageCallback) {
+    if (overlayPass && options?.overlayStageRendered) {
       const desc = overlayPass.toPipelineDescriptor()
+
       if (desc) {
-        const pipeline = renderer.pipelines.getOrCreate(desc)
-        renderer.use(pickTarget('Overlay'))
-        renderer.bindPipeline(pipeline)
-        renderer.setCameraUniforms(desc.program, context.camera)
-        options.overlayStageCallback(renderer, overlayPass, context)
+        const pipeline = this.renderer.pipelines.getOrCreate(desc)
+
+        this.renderer.use(resolveTarget('Overlay'))
+        this.renderer.bindPipeline(pipeline)
+
+        this.renderer.setCameraUniforms(desc.program, context.camera)
+
+        options.overlayStageRendered({ renderPass: overlayPass, context })
       }
     }
 
@@ -221,42 +231,41 @@ export class RenderGraph {
 
   // Utility to run a single stage queue with explicit context.
   renderQueue(
-    renderer: Renderer,
     queue: RenderQueue,
     pass: RenderPass,
     context: QueueContext,
     pipelineOverride?: Partial<RenderState>
   ) {
-    queue.render(renderer, pass, context, pipelineOverride)
+    queue.render(this.renderer, pass, context, pipelineOverride)
   }
 
-  // Execute a stage with computed target/uniforms/overrides.
-  // Kept as a method to reduce duplication in render().
   private renderStage(
-    renderer: Renderer,
     stage: RenderStage,
     queue: RenderQueue,
     pass: RenderPass,
-    passCtx: StageContext,
-    frame: FrameContext,
-    options?: RenderOptions,
-    override?: Partial<RenderState>
+    stageContext: StageContext,
+    frameContext: FrameContext,
+    renderOptions?: RenderOptions,
+    stateOverrides?: Partial<RenderState>
   ) {
-    const uniforms = options?.additionalUniforms?.[stage]
-      ?? (stage === 'Transparent' ? options?.additionalUniforms?.['Lighting'] : undefined)
-    const target = options?.overrideTargets?.[stage] ?? frame.target
+    const uniforms = renderOptions?.additionalUniforms?.[stage]
+      ?? (stage === 'Transparent' ? renderOptions?.additionalUniforms?.['Lighting'] : undefined)
+
+    const target = renderOptions?.overrideTargets?.[stage] ?? frameContext.target
+
+    const { camera, light, scissor } = stageContext
+
     this.renderQueue(
-      renderer,
       queue,
       pass,
       {
-        camera: passCtx.camera,
-        light: passCtx.light,
-        scissor: passCtx.scissor,
+        camera,
+        light,
+        scissor,
         target,
         uniforms
       },
-      override ?? options?.overrideStates?.[stage]
+      stateOverrides ?? renderOptions?.overrideStates?.[stage]
     )
   }
 }

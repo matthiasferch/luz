@@ -23,8 +23,13 @@ export class RenderQueue {
     this.batches.sort(this.compareOpaque)
   }
 
-  sortOpaque() { this.batches.sort(this.compareOpaque) }
-  sortTransparent() { this.batches.sort(this.compareTransparent) }
+  sortOpaqueBatches() {
+    this.batches.sort(this.compareOpaque)
+  }
+
+  sortTransparentBatches() {
+    this.batches.sort(this.compareTransparent)
+  }
 
   private compareOpaque = (a: RenderBatch, b: RenderBatch) => {
     const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(a))
