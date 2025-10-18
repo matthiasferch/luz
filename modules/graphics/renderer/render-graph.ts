@@ -5,7 +5,6 @@ import { RenderQueue } from './render-queue'
 import { RenderBatch } from './render-batch'
 import { Camera, Entity, isModel, Light } from '@luz/core'
 import { RenderTarget } from './target'
-import type { RenderPipeline } from './render-pipeline'
 import { Scissor } from './scissor'
 import { State } from './state'
 
@@ -219,15 +218,10 @@ export class RenderGraph {
     // Overlay stage (e.g., debug overlay) — not per-light
     const overlayPass = passes['Overlay']
     if (overlayPass && options?.overlayStageRendered) {
-      const pipeline: RenderPipeline = {
-        ...overlayPass,
-        program: overlayPass.program!
-      }
-
       this.renderer.use(resolveTarget('Overlay'))
-      this.renderer.bindPipeline(pipeline)
+      this.renderer.bindPipeline(overlayPass, mergeOverrides('Overlay'))
 
-      this.renderer.setCameraUniforms(pipeline.program, context.camera)
+      this.renderer.setCameraUniforms(overlayPass.program!, context.camera)
 
       options.overlayStageRendered({ renderPass: overlayPass, context })
     }

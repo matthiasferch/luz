@@ -1,6 +1,5 @@
 import { Renderer } from './renderer'
 import { RenderPass } from './render-pass'
-import { RenderPipeline } from './render-pipeline'
 import { Material } from './material'
 import { Mesh } from '../types/mesh'
 import { RenderBatch } from './render-batch'
@@ -106,60 +105,47 @@ export class RenderQueue {
   // and emits per-item draws via renderer.renderModel.
   render(
     renderer: Renderer,
-    pass: RenderPass,
-    context: QueueContext,
-    pipelineOverride?: Partial<RenderState>
+    pipeline: RenderPass,
+    queueContext: QueueContext,
+    overrideStates?: Partial<RenderState>
   ) {
     // Bind target
-    renderer.use(context.target)
+    renderer.use(queueContext.target)
 
-    const pipeline: RenderPipeline = {
-      ...pass,
-      program: pass.program!,
-    }
-
-    if (pipelineOverride) {
-      if (pipelineOverride.cullMode !== undefined) pipeline.cullMode = pipelineOverride.cullMode
-      if (pipelineOverride.blendMode !== undefined) pipeline.blendMode = pipelineOverride.blendMode
-      if (pipelineOverride.depthTest !== undefined) pipeline.depthTest = pipelineOverride.depthTest
-      if (pipelineOverride.depthMask !== undefined) pipeline.depthMask = pipelineOverride.depthMask
-      if (pipelineOverride.colorMask !== undefined) pipeline.colorMask = pipelineOverride.colorMask
-    }
-
-    renderer.bindPipeline(pipeline)
+    renderer.bindPipeline(pipeline, overrideStates)
     // Reset material binding cache for this program at the start of the stage
-    renderer.resetMaterialBinding(pipeline.program)
+    renderer.resetMaterialBinding(pipeline.program!)
 
     // Clear after binding masks
-    renderer.clear({ color: pass.clearColor, depth: pass.clearDepth, stencil: pass.clearStencil })
+    renderer.clear({ color: pipeline.clearColor, depth: pipeline.clearDepth, stencil: pipeline.clearStencil })
 
     // Optional scissor
-    if (context.scissor) {
-      renderer.enableScissor(context.scissor)
+    if (queueContext.scissor) {
+      renderer.enableScissor(queueContext.scissor)
     }
 
     // Bind frame/light groups once per stage and apply extra uniforms
-    if (context.light) {
-      renderer.setLightUniforms(pipeline.program, context.light)
+    if (queueContext.light) {
+      renderer.setLightUniforms(pipeline.program!, queueContext.light)
     }
 
-    if (context.camera) {
-      renderer.setCameraUniforms(pipeline.program, context.camera)
+    if (queueContext.camera) {
+      renderer.setCameraUniforms(pipeline.program!, queueContext.camera)
     }
 
-    if (context.uniforms) {
-      renderer.setNestedUniforms(pipeline.program, context.uniforms)
+    if (queueContext.uniforms) {
+      renderer.setNestedUniforms(pipeline.program!, queueContext.uniforms)
     }
 
     // Draw all items with only per-object/material uniforms changing
     for (const { transform, model, partitions } of this.batches) {
-      renderer.render(transform, model, pipeline.program, undefined, partitions)
+      renderer.render(transform, model, pipeline.program!, undefined, partitions)
     }
 
     // Update submissions (draws are counted in renderer)
     renderer.stats.submissions += this.batches.length
 
-    if (context.scissor) {
+    if (queueContext.scissor) {
       renderer.disableScissor()
     }
   }

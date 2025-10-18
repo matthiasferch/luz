@@ -12,6 +12,4 @@ export interface UniformBlock {
   offsets: Record<string, number>
 }
 
-export namespace Uniform {
-  export type Value = boolean | number | Float32Array | Texture
-}
+export type UniformValue = boolean | number | Float32Array | Texture

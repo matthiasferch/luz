@@ -4,10 +4,10 @@ import { Attribute } from '../types/attribute'
 import { Program } from '../types/program'
 import { Shader } from '../types/shader'
 import { Texture } from '../types/texture'
-import { Uniform } from '../types/uniform'
+import { Uniform, UniformValue } from '../types/uniform'
 
 type UniformData = Partial<{
-  uniforms: Record<string, Uniform.Value>
+  uniforms: Record<string, UniformValue>
   uniformBuffers: Record<string, UniformBuffer>
 }>
 
@@ -16,7 +16,7 @@ export class Programs {
 
   private usedProgram: Program // TODO: should be 'boundProgram' for sake of consistency
 
-  constructor(private gl: WebGL2RenderingContext) {}
+  constructor(private gl: WebGL2RenderingContext) { }
 
   create(vertexShader: Shader, fragmentShader: Shader, data?: UniformData): Program | null {
     let program = this.gl.createProgram() as Program

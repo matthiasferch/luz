@@ -24,7 +24,6 @@ export { RenderQueue } from './renderer/render-queue'
 export { RenderBatch } from './renderer/render-batch'
 export { LightBatch } from './renderer/lighting-task'
 export { Scissor } from './renderer/scissor'
-export { RenderPipeline } from './renderer/render-pipeline'
 
 export { FrameBuffer } from './buffers/frame-buffer'
 export { RenderBuffer } from './buffers/render-buffer'

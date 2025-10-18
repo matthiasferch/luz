@@ -7,7 +7,7 @@ import { Samplers } from '../managers/samplers'
 import { Shaders } from '../managers/shaders'
 import { Textures } from '../managers/textures'
 import { Program } from '../types/program'
-import { Uniform } from '../types/uniform'
+import { Uniform, UniformValue } from '../types/uniform'
 import { State } from './state'
 import { Texture } from '../types/texture'
 import { Material } from './material'
@@ -16,10 +16,11 @@ import { vec4 } from '@luz/vectors'
 import { getUniformProperties } from '@luz/utilities'
 import { UniformProperty } from '@luz/utilities/uniform'
 import { Scissor } from './scissor'
-import { RenderPipeline } from './render-pipeline'
 import { RenderStats } from './stats'
+import { RenderState } from './render-graph'
+import { RenderPass } from './render-pass'
 
-type UniformCache = Record<string, Uniform.Value>
+type UniformCache = Record<string, UniformValue>
 
 type MaskOptions = {
   color: boolean[]
@@ -51,7 +52,6 @@ export class Renderer {
 
   private readonly uniformProperties: Record<string, UniformProperty[]>
 
-  private activePipeline?: RenderPipeline
   private lastMaterialByProgram: WeakMap<Program, Material>
 
   readonly stats: RenderStats
@@ -151,23 +151,21 @@ export class Renderer {
     this.gl.disable(this.gl.SCISSOR_TEST)
   }
 
-  bindPipeline(pipeline: RenderPipeline) {
-    if (this.activePipeline === pipeline) {
-      return
+  bindPipeline(pipeline: RenderPass, overrideStates?: Partial<RenderState>) {
+    if (pipeline.program == null) {
+      throw new Error('Cannot bind pipeline without a program')
     }
 
     this.programs.use(pipeline.program)
 
-    this.state.cullMode = pipeline.cullMode
-    this.state.blendMode = pipeline.blendMode
-    this.state.depthTest = pipeline.depthTest
+    this.state.cullMode = overrideStates?.cullMode ?? pipeline.cullMode
+    this.state.blendMode = overrideStates?.blendMode ?? pipeline.blendMode
+    this.state.depthTest = overrideStates?.depthTest ?? pipeline.depthTest
 
     this.mask({
-      color: pipeline.colorMask,
-      depth: pipeline.depthMask
+      color: overrideStates?.colorMask ?? pipeline.colorMask,
+      depth: overrideStates?.depthMask ?? pipeline.depthMask
     })
-
-    this.activePipeline = pipeline
 
     this.stats.pipelineBinds += 1
   }
@@ -221,7 +219,7 @@ export class Renderer {
 
     const hasUniform = this.hasUniform.bind(this, program)
 
-    const setUniformValue = (value: Uniform.Value, key: string, prefix?: string) => {
+    const setUniformValue = (value: UniformValue, key: string, prefix?: string) => {
       const name = prefix ? `${prefix}.${key}` : key
 
       if (hasUniform(name)) {
@@ -316,13 +314,13 @@ export class Renderer {
         const uniformName = prefix ? `${prefix}.${name}` : name
 
         if (hasUniform(uniformName)) {
-          uniforms[uniformName] = value as Uniform.Value
+          uniforms[uniformName] = value as UniformValue
         } else if (Array.isArray(value)) {
           value.forEach((element, index) => {
             const arrayIndex = `${uniformName}[${index}]`
 
             if (hasUniform(arrayIndex)) {
-              uniforms[arrayIndex] = element as Uniform.Value
+              uniforms[arrayIndex] = element as UniformValue
             } else {
               collectRecursively(element, arrayIndex)
             }
