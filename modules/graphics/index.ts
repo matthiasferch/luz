@@ -17,7 +17,7 @@ export { Program } from './types/program'
 export { Attribute } from './types/attribute'
 export { VertexArray } from './types/vertex-array'
 
-export { RenderPass } from './renderer/render-pass'
+export { RenderPipeline } from './renderer/render-pass'
 export { RenderTarget } from './renderer/target'
 export { RenderGraph } from './renderer/render-graph'
 export { RenderQueue } from './renderer/render-queue'

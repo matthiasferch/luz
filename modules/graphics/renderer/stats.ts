@@ -1,8 +1,9 @@
 export class RenderStats {
   frame: number = 0
-  submissions: number = 0
-  draws: number = 0
-  pipelineBinds: number = 0
+
+  submittedMeshes: number = 0
+  renderedMeshes: number = 0
+
   stateChanges = {
     cullMode: 0,
     blendMode: 0,
@@ -13,9 +14,10 @@ export class RenderStats {
 
   reset() {
     this.frame += 1
-    this.submissions = 0
-    this.draws = 0
-    this.pipelineBinds = 0
+
+    this.submittedMeshes = 0
+    this.renderedMeshes = 0
+
     this.stateChanges.cullMode = 0
     this.stateChanges.blendMode = 0
     this.stateChanges.depthTest = 0

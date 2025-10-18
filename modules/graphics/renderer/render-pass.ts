@@ -3,7 +3,7 @@ import { Program } from '../types/program'
 import { State } from './state'
 import { Serializable, Serialize } from '@luz/utilities'
 
-export class RenderPass extends Serializable {
+export class RenderPipeline extends Serializable {
   @Serialize()
   readonly clearColor: vec4 | undefined
 
@@ -36,17 +36,15 @@ export class RenderPass extends Serializable {
 
   program: Program | null = null
 
-  constructor(data: Partial<RenderPass>) {
+  constructor(data: Partial<RenderPipeline>) {
     super()
 
     Object.assign(this, data)
   }
 
-  static async deserialize(data: Partial<RenderPass>) {
-    return (await super.deserialize(data)) as RenderPass
+  static async deserialize(data: Partial<RenderPipeline>) {
+    return (await super.deserialize(data)) as RenderPipeline
   }
 }
 
-export namespace RenderPass {
-  export type Stage = 'Depth' | 'Ambient' | 'Shadowing' | 'Lighting' | 'Transparent' | 'Overlay' | 'Composite'
-}
+export type RenderStage = 'Depth' | 'Ambient' | 'ShadowMapping' | 'Lighting' | 'Transparent' | 'Overlay' | 'Composite'

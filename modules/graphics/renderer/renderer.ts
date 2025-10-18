@@ -7,7 +7,7 @@ import { Samplers } from '../managers/samplers'
 import { Shaders } from '../managers/shaders'
 import { Textures } from '../managers/textures'
 import { Program } from '../types/program'
-import { Uniform, UniformValue } from '../types/uniform'
+import { UniformValue } from '../types/uniform'
 import { State } from './state'
 import { Texture } from '../types/texture'
 import { Material } from './material'
@@ -18,7 +18,7 @@ import { UniformProperty } from '@luz/utilities/uniform'
 import { Scissor } from './scissor'
 import { RenderStats } from './stats'
 import { RenderState } from './render-graph'
-import { RenderPass } from './render-pass'
+import { RenderPipeline, RenderStage } from './render-pass'
 
 type UniformCache = Record<string, UniformValue>
 
@@ -89,7 +89,7 @@ export class Renderer {
     this.lastMaterialByProgram = new WeakMap()
   }
 
-  use({ width, height, frameBuffer }: RenderTarget) {
+  bindTarget({ width, height, frameBuffer }: RenderTarget) {
     if (frameBuffer) {
       this.buffers.bind(frameBuffer)
     } else {
@@ -140,18 +140,19 @@ export class Renderer {
     }
   }
 
-  // Enable scissor test with given rectangle in pixels (origin bottom-left)
-  enableScissor({ x, y, width, height }: Scissor) {
+  scissor(scissor: Scissor | null) {
+    if (scissor === null) {
+      this.gl.disable(this.gl.SCISSOR_TEST)
+      return
+    }
+
+    const { x, y, width, height } = scissor
+
     this.gl.enable(this.gl.SCISSOR_TEST)
     this.gl.scissor(x, y, width, height)
   }
 
-  // Disable scissor test
-  disableScissor() {
-    this.gl.disable(this.gl.SCISSOR_TEST)
-  }
-
-  bindPipeline(pipeline: RenderPass, overrideStates?: Partial<RenderState>) {
+  bindPipeline(pipeline: RenderPipeline, overrideStates?: Partial<RenderState>) {
     if (pipeline.program == null) {
       throw new Error('Cannot bind pipeline without a program')
     }
@@ -166,15 +167,13 @@ export class Renderer {
       color: overrideStates?.colorMask ?? pipeline.colorMask,
       depth: overrideStates?.depthMask ?? pipeline.depthMask
     })
-
-    this.stats.pipelineBinds += 1
   }
 
   resetMaterialBinding(program: Program) {
     this.lastMaterialByProgram.delete(program)
   }
 
-  setCameraUniforms(program: Program, camera: Camera) {
+  bindCameraUniforms(program: Program, camera: Camera) {
     const uniforms: UniformCache = Object.create(null)
     const hasUniform = this.hasUniform.bind(this, program)
 
@@ -191,7 +190,7 @@ export class Renderer {
     }
   }
 
-  setLightUniforms(program: Program, light: Light) {
+  bindLightUniforms(program: Program, light: Light) {
     const uniforms: UniformCache = Object.create(null)
     const hasUniform = this.hasUniform.bind(this, program)
 
@@ -209,9 +208,9 @@ export class Renderer {
   }
 
   render<T extends {}>(
-    transform: Transform,
     model: Model,
     program: Program,
+    transform: Transform,
     additionalUniforms?: T,
     selectedPartitions?: string[]
   ) {
@@ -297,7 +296,7 @@ export class Renderer {
 
       this.meshes.render(mesh)
 
-      this.stats.draws += 1
+      this.stats.renderedMeshes += 1
     }
   }
 

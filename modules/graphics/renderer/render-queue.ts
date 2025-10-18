@@ -1,5 +1,5 @@
 import { Renderer } from './renderer'
-import { RenderPass } from './render-pass'
+import { RenderPipeline } from './render-pass'
 import { Material } from './material'
 import { Mesh } from '../types/mesh'
 import { RenderBatch } from './render-batch'
@@ -13,32 +13,23 @@ export class RenderQueue {
   private nextMaterialId = 1
   private nextMeshId = 1
 
-  // Default sorting: pipeline (per-queue) → material → mesh → depth (front-to-back)
-  sort(compare?: (a: RenderBatch, b: RenderBatch) => number) {
-    if (compare) {
-      this.batches.sort(compare)
-      return
-    }
+  sortFrontToBack() {
     this.batches.sort(this.compareOpaque)
   }
 
-  sortOpaqueBatches() {
-    this.batches.sort(this.compareOpaque)
-  }
-
-  sortTransparentBatches() {
+  sortBackToFront() {
     this.batches.sort(this.compareTransparent)
   }
 
-  private compareOpaque = (a: RenderBatch, b: RenderBatch) => {
-    const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(a))
-    const bmid = this.getMaterialIdSafe(this.getPrimaryMaterial(b))
+  private compareOpaque = (b1: RenderBatch, b2: RenderBatch) => {
+    const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(b1))
+    const bmid = this.getMaterialIdSafe(this.getPrimaryMaterial(b2))
     if (amid !== bmid) return amid - bmid
-    const ameid = this.getMeshIdSafe(this.getPrimaryMesh(a))
-    const bmeid = this.getMeshIdSafe(this.getPrimaryMesh(b))
+    const ameid = this.getMeshIdSafe(this.getPrimaryMesh(b1))
+    const bmeid = this.getMeshIdSafe(this.getPrimaryMesh(b2))
     if (ameid !== bmeid) return ameid - bmeid
-    const da = a.depth ?? 0
-    const db = b.depth ?? 0
+    const da = b1.depth ?? 0
+    const db = b2.depth ?? 0
     return da - db
   }
 
@@ -100,53 +91,51 @@ export class RenderQueue {
     return id
   }
 
-  // Execute the queue using the provided renderer and pass context.
-  // For Step 1 scaffolding this mirrors Renderer.renderPass state setup
-  // and emits per-item draws via renderer.renderModel.
   render(
     renderer: Renderer,
-    pipeline: RenderPass,
+    pipeline: RenderPipeline,
     queueContext: QueueContext,
     overrideStates?: Partial<RenderState>
   ) {
-    // Bind target
-    renderer.use(queueContext.target)
-
+    renderer.bindTarget(queueContext.target)
     renderer.bindPipeline(pipeline, overrideStates)
-    // Reset material binding cache for this program at the start of the stage
+
     renderer.resetMaterialBinding(pipeline.program!)
 
-    // Clear after binding masks
-    renderer.clear({ color: pipeline.clearColor, depth: pipeline.clearDepth, stencil: pipeline.clearStencil })
+    const { clearColor, clearDepth, clearStencil } = pipeline
 
-    // Optional scissor
+    renderer.clear({ color: clearColor, depth: clearDepth, stencil: clearStencil })
+
     if (queueContext.scissor) {
-      renderer.enableScissor(queueContext.scissor)
+      renderer.scissor(queueContext.scissor)
     }
 
-    // Bind frame/light groups once per stage and apply extra uniforms
     if (queueContext.light) {
-      renderer.setLightUniforms(pipeline.program!, queueContext.light)
+      renderer.bindLightUniforms(pipeline.program!, queueContext.light)
     }
 
     if (queueContext.camera) {
-      renderer.setCameraUniforms(pipeline.program!, queueContext.camera)
+      renderer.bindCameraUniforms(pipeline.program!, queueContext.camera)
     }
 
     if (queueContext.uniforms) {
       renderer.setNestedUniforms(pipeline.program!, queueContext.uniforms)
     }
 
-    // Draw all items with only per-object/material uniforms changing
     for (const { transform, model, partitions } of this.batches) {
-      renderer.render(transform, model, pipeline.program!, undefined, partitions)
+      renderer.render(model, pipeline.program!, transform, undefined, partitions)
     }
 
-    // Update submissions (draws are counted in renderer)
-    renderer.stats.submissions += this.batches.length
+    let submittedMeshes = 0
+
+    for (const batch of this.batches) {
+      submittedMeshes += (batch.partitions && batch.partitions.length > 0) ? batch.partitions.length : 1
+    }
+
+    renderer.stats.submittedMeshes += submittedMeshes
 
     if (queueContext.scissor) {
-      renderer.disableScissor()
+      renderer.scissor(null)
     }
   }
 }
