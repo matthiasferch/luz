@@ -1,6 +1,6 @@
 import { Renderer } from './renderer'
-import { RenderPipeline, RenderStage } from './render-pass'
-import { LightBatch } from './lighting-task'
+import { RenderPipeline, RenderStage } from './render-pipeline'
+import { LightBatch } from './light-batch'
 import { RenderQueue } from './render-queue'
 import { RenderBatch } from './render-batch'
 import { Camera, Entity, isModel, Light } from '@luz/core'
@@ -109,9 +109,9 @@ export class RenderGraph {
       }
     }
 
-    const depthPass = pipelines['Depth']
+    const depthPipeline = pipelines['Depth']
 
-    if (depthPass) {
+    if (depthPipeline) {
       const depthQueue = this.getQueue('Depth')
 
       if (depthQueue.batches.length === 0) {
@@ -124,7 +124,7 @@ export class RenderGraph {
         camera: frameContext.camera
       }
 
-      this.renderStage('Depth', depthQueue, depthPass, depthContext, frameContext, pipelineOverrides)
+      this.renderStage('Depth', depthQueue, depthPipeline, depthContext, frameContext, pipelineOverrides)
     }
 
     const ambientPipeline = pipelines['Ambient']
@@ -150,12 +150,12 @@ export class RenderGraph {
 
     const lightQueue = lightingPipeline ? this.getQueue('Lighting') : null
 
-    let builtLightQueue = false
+    let lightQueuePrepared = false
 
     const transparentPipeline = pipelines['Transparent']
     const transparentQueue = transparentPipeline ? this.getQueue('Transparent') : null
 
-    let groupedTransparentBuilt = false
+    let transparentBatchesGrouped = false
 
     let transparentAlphaBatches: RenderBatch[] = []
     let transparentAdditiveBatches: RenderBatch[] = []
@@ -178,10 +178,10 @@ export class RenderGraph {
       }
 
       if (lightingPipeline && lightQueue) {
-        if (!builtLightQueue && lightQueue.batches.length === 0) {
+        if (!lightQueuePrepared && lightQueue.batches.length === 0) {
           enqueueBatches(lightQueue, opaqueBatches)
 
-          builtLightQueue = true
+          lightQueuePrepared = true
         }
 
         lightQueue.sortFrontToBack()
@@ -196,7 +196,7 @@ export class RenderGraph {
       }
 
       if (transparentPipeline && transparentQueue) {
-        if (!groupedTransparentBuilt) {
+        if (!transparentBatchesGrouped) {
           transparentAlphaBatches = []
           transparentAdditiveBatches = []
 
@@ -219,7 +219,7 @@ export class RenderGraph {
             else transparentAlphaBatches.push(batch)
           }
 
-          groupedTransparentBuilt = true
+          transparentBatchesGrouped = true
         }
 
         transparentQueue.batches.length = 0

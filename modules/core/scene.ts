@@ -3,7 +3,7 @@ import { BoundingBox, Broadphase } from '@luz/physics'
 import { Serializable, Serialize } from '@luz/utilities'
 import { vec3 } from '@luz/vectors'
 import { Body, isBody } from './components/body'
-import { Biped, isBiped } from './components/biped'
+import { isBiped } from './components/biped'
 import { Entity } from './entity'
 import { CollisionManifold } from '@luz/physics/collision'
 

@@ -18,7 +18,7 @@ import { UniformProperty } from '@luz/utilities/uniform'
 import { Scissor } from './scissor'
 import { RenderStats } from './stats'
 import { RenderState } from './render-graph'
-import { RenderPipeline, RenderStage } from './render-pass'
+import { RenderPipeline, RenderStage } from './render-pipeline'
 
 type UniformCache = Record<string, UniformValue>
 

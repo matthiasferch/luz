@@ -1,5 +1,5 @@
 import { Renderer } from './renderer'
-import { RenderPipeline } from './render-pass'
+import { RenderPipeline } from './render-pipeline'
 import { Material } from './material'
 import { Mesh } from '../types/mesh'
 import { RenderBatch } from './render-batch'
