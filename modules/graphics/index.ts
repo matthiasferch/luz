@@ -1,5 +1,6 @@
 export { State } from './renderer/state'
-export { Renderer } from './renderer/renderer'
+export { WebGLRenderer } from './renderer/webgl-renderer'
+export type { Renderer } from './renderer/renderer'
 
 export { Meshes } from './managers/meshes'
 export { Buffers } from './managers/buffers'

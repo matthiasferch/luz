@@ -1,4 +1,4 @@
-import { Renderer } from './renderer'
+import type { Renderer } from './renderer'
 import { RenderPipeline, RenderStage } from './render-pipeline'
 import { LightBatch } from './light-batch'
 import { RenderQueue } from './render-queue'
