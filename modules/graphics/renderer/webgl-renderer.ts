@@ -1,14 +1,13 @@
 import { Camera, Light, Model, Transform } from '@luz/core'
 
-import { Meshes } from '../managers/meshes'
-import { Buffers } from '../managers/buffers'
-import { Programs } from '../managers/programs'
-import { Samplers } from '../managers/samplers'
-import { Shaders } from '../managers/shaders'
-import { Textures } from '../managers/textures'
+import { WebGLMeshManager } from '../managers/meshes'
+import { WebGLBufferManager } from '../managers/buffers'
+import { WebGLProgramManager } from '../managers/programs'
+import { WebGLSamplerManager } from '../managers/samplers'
+import { WebGLShaderManager } from '../managers/shaders'
+import { WebGLTextureManager } from '../managers/textures'
 import { Program } from '../types/program'
 import { UniformValue } from '../types/uniform'
-import { State } from './state'
 import { Texture } from '../types/texture'
 import { Material } from './material'
 import { RenderTarget } from './target'
@@ -16,10 +15,10 @@ import { vec4 } from '@luz/vectors'
 import { getUniformProperties } from '@luz/utilities'
 import { UniformProperty } from '@luz/utilities/uniform'
 import { Scissor } from './scissor'
-import { RenderStats } from './stats'
 import type { RenderState } from './render-graph'
 import type { RenderPipeline } from './render-pipeline'
-import type { Renderer } from './renderer'
+import type { Renderer, ShaderManager, ProgramManager, MeshManager, BufferManager, TextureManager, SamplerManager, BlendMode, CullMode, DepthTest } from './renderer'
+import { RenderStatistics } from './render-statistics'
 
 type UniformCache = Record<string, UniformValue>
 
@@ -35,19 +34,21 @@ type ClearOptions = {
 }
 
 export class WebGLRenderer implements Renderer {
-  readonly state: State
+  readonly meshes: MeshManager
+  readonly buffers: BufferManager
 
-  readonly shaders: Shaders
-  readonly programs: Programs
+  readonly shaders: ShaderManager
+  readonly programs: ProgramManager
 
-  readonly meshes: Meshes
-  readonly buffers: Buffers
-
-  readonly textures: Textures
-  readonly samplers: Samplers
+  readonly textures: TextureManager
+  readonly samplers: SamplerManager
 
   readonly defaultTexture: Texture
   readonly defaultMaterial: Material
+
+  private activeCullMode: CullMode = 'None'
+  private activeBlendMode: BlendMode = 'None'
+  private activeDepthTest: DepthTest = 'None'
 
   private readonly uniformCache: UniformCache
 
@@ -55,19 +56,17 @@ export class WebGLRenderer implements Renderer {
 
   private lastMaterialByProgram: WeakMap<Program, Material>
 
-  readonly stats: RenderStats
+  readonly statistics: RenderStatistics
 
   constructor(private gl: WebGL2RenderingContext) {
-    this.state = new State(this.gl)
+    this.meshes = new WebGLMeshManager(this.gl)
+    this.buffers = new WebGLBufferManager(this.gl)
 
-    this.meshes = new Meshes(this.gl)
-    this.buffers = new Buffers(this.gl)
+    this.shaders = new WebGLShaderManager(this.gl)
+    this.programs = new WebGLProgramManager(this.gl)
 
-    this.shaders = new Shaders(this.gl)
-    this.programs = new Programs(this.gl)
-
-    this.textures = new Textures(this.gl)
-    this.samplers = new Samplers(this.gl)
+    this.textures = new WebGLTextureManager(this.gl)
+    this.samplers = new WebGLSamplerManager(this.gl)
 
     const textureData = new Uint8Array([0xff, 0xff, 0xff, 0xff])
 
@@ -84,10 +83,111 @@ export class WebGLRenderer implements Renderer {
       transform: getUniformProperties(Transform)
     }
 
-    this.stats = new RenderStats()
-    this.state.stats = this.stats
+    this.statistics = new RenderStatistics()
 
     this.lastMaterialByProgram = new WeakMap()
+  }
+
+  set cullMode(cullMode: CullMode) {
+    if (cullMode === this.activeCullMode) {
+      return
+    }
+
+    if (cullMode === 'None') {
+      this.gl.disable(this.gl.CULL_FACE)
+    } else {
+      this.gl.enable(this.gl.CULL_FACE)
+
+      switch (cullMode) {
+        case 'Front':
+          this.gl.cullFace(this.gl.FRONT)
+          break
+
+        case 'Back':
+          this.gl.cullFace(this.gl.BACK)
+          break
+      }
+    }
+
+    this.activeCullMode = cullMode
+
+    this.statistics.stateChanges.cullMode += 1
+  }
+
+  set blendMode(blendMode: BlendMode) {
+    if (blendMode === this.activeBlendMode) {
+      return
+    }
+
+    if (blendMode === 'None') {
+      this.gl.disable(this.gl.BLEND)
+    } else {
+      this.gl.enable(this.gl.BLEND)
+
+      switch (blendMode) {
+        case 'Additive':
+          this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE)
+          break
+
+        case 'Transparent':
+          this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
+          break
+      }
+    }
+
+    this.activeBlendMode = blendMode
+
+    this.statistics.stateChanges.blendMode += 1
+  }
+
+  set depthTest(depthTest: DepthTest) {
+    if (depthTest === this.activeDepthTest) {
+      return
+    }
+
+    if (depthTest === 'None') {
+      this.gl.disable(this.gl.DEPTH_TEST)
+    } else {
+      this.gl.enable(this.gl.DEPTH_TEST)
+
+      switch (depthTest) {
+        case 'Never':
+          this.gl.depthFunc(this.gl.NEVER)
+          break
+
+        case 'Always':
+          this.gl.depthFunc(this.gl.ALWAYS)
+          break
+
+        case 'Equal':
+          this.gl.depthFunc(this.gl.EQUAL)
+          break
+
+        case 'NotEqual':
+          this.gl.depthFunc(this.gl.NOTEQUAL)
+          break
+
+        case 'Less':
+          this.gl.depthFunc(this.gl.LESS)
+          break
+
+        case 'LessEqual':
+          this.gl.depthFunc(this.gl.LEQUAL)
+          break
+
+        case 'Greater':
+          this.gl.depthFunc(this.gl.GREATER)
+          break
+
+        case 'GreaterEqual':
+          this.gl.depthFunc(this.gl.GEQUAL)
+          break
+      }
+    }
+
+    this.activeDepthTest = depthTest
+
+    this.statistics.stateChanges.depthTest += 1
   }
 
   bindTarget({ width, height, frameBuffer }: RenderTarget) {
@@ -106,13 +206,13 @@ export class WebGLRenderer implements Renderer {
 
       this.gl.colorMask(r, g, b, a)
 
-      this.stats.stateChanges.maskColor += 1
+      this.statistics.stateChanges.maskColor += 1
     }
 
     if (depth !== undefined) {
       this.gl.depthMask(depth)
 
-      this.stats.stateChanges.maskDepth += 1
+      this.statistics.stateChanges.maskDepth += 1
     }
   }
 
@@ -160,9 +260,9 @@ export class WebGLRenderer implements Renderer {
 
     this.programs.use(pipeline.program)
 
-    this.state.cullMode = overrideStates?.cullMode ?? pipeline.cullMode
-    this.state.blendMode = overrideStates?.blendMode ?? pipeline.blendMode
-    this.state.depthTest = overrideStates?.depthTest ?? pipeline.depthTest
+    this.cullMode = overrideStates?.cullMode ?? pipeline.cullMode
+    this.blendMode = overrideStates?.blendMode ?? pipeline.blendMode
+    this.depthTest = overrideStates?.depthTest ?? pipeline.depthTest
 
     this.mask({
       color: overrideStates?.colorMask ?? pipeline.colorMask,
@@ -297,7 +397,7 @@ export class WebGLRenderer implements Renderer {
 
       this.meshes.render(mesh)
 
-      this.stats.renderedMeshes += 1
+      this.statistics.renderedMeshes += 1
     }
   }
 
@@ -316,7 +416,7 @@ export class WebGLRenderer implements Renderer {
         if (hasUniform(uniformName)) {
           uniforms[uniformName] = value as UniformValue
         } else if (Array.isArray(value)) {
-          ;(value as any[]).forEach((element, index) => {
+          ; (value as any[]).forEach((element, index) => {
             const arrayIndex = `${uniformName}[${index}]`
 
             if (hasUniform(arrayIndex)) {
@@ -339,7 +439,7 @@ export class WebGLRenderer implements Renderer {
   // Apply a set of (possibly nested) uniform values once against a program,
   // flattening them to real uniform names present in the program. Useful for
   // pass-level uniforms to avoid re-setting them per draw.
-  setNestedUniforms(program: Program, values: any) {
+  bindNestedUniforms(program: Program, values: any) {
     const uniforms = this.collectUniformValues(program, values)
     if (Object.keys(uniforms).length > 0) {
       this.programs.update(program, { uniforms })

@@ -1,12 +1,13 @@
+import { SamplerManager } from '../renderer/renderer'
 import { Sampler } from '../types/sampler'
 import { Texture } from '../types/texture'
 
-export class Samplers {
+export class WebGLSamplerManager implements SamplerManager {
   private samplers: Sampler[] = []
 
   private boundSamplers: { [index: number]: Sampler } = {}
 
-  constructor(private gl: WebGL2RenderingContext) {}
+  constructor(private gl: WebGL2RenderingContext) { }
 
   create(filtering: Texture.Filtering = 'None', tiling: Texture.Tiling = 'None'): Sampler {
     let sampler = this.gl.createSampler() as Sampler

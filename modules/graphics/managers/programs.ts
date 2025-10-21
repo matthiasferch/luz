@@ -5,13 +5,14 @@ import { Program } from '../types/program'
 import { Shader } from '../types/shader'
 import { Texture } from '../types/texture'
 import { Uniform, UniformValue } from '../types/uniform'
+import { ProgramManager } from '../renderer/renderer'
 
 type UniformData = Partial<{
   uniforms: Record<string, UniformValue>
   uniformBuffers: Record<string, UniformBuffer>
 }>
 
-export class Programs {
+export class WebGLProgramManager implements ProgramManager {
   private programs: Program[] = []
 
   private usedProgram: Program // TODO: should be 'boundProgram' for sake of consistency

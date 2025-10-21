@@ -2,13 +2,14 @@ import { Mesh } from '../types/mesh'
 import { Material } from '../renderer/material'
 import { Partition } from '../renderer/partition'
 import { VertexArray } from '../types/vertex-array'
+import { MeshManager } from '../renderer/renderer'
 
 const vertexSize = 8 // position (xyz) + normal (xyz) + texture coordinates (uv)
 
 const stride = vertexSize * Float32Array.BYTES_PER_ELEMENT
 
-export class Meshes {
-  constructor(private gl: WebGL2RenderingContext) {}
+export class WebGLMeshManager implements MeshManager {
+  constructor(private gl: WebGL2RenderingContext) { }
 
   create(partition: Omit<Partition, 'mesh'>, material: Material): Mesh {
     if (!partition.topology) {

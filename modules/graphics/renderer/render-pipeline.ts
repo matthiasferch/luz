@@ -1,7 +1,7 @@
 import { vec4 } from '@luz/vectors'
 import { Program } from '../types/program'
-import { State } from './state'
 import { Serializable, Serialize } from '@luz/utilities'
+import { CullMode, BlendMode, DepthTest } from './renderer'
 
 export class RenderPipeline extends Serializable {
   @Serialize()
@@ -14,13 +14,13 @@ export class RenderPipeline extends Serializable {
   readonly clearStencil: number | undefined
 
   @Serialize()
-  readonly cullMode: State.CullMode = 'Back'
+  readonly cullMode: CullMode = 'Back'
 
   @Serialize()
-  readonly blendMode: State.BlendMode = 'None'
+  readonly blendMode: BlendMode = 'None'
 
   @Serialize()
-  readonly depthTest: State.DepthTest = 'LessEqual'
+  readonly depthTest: DepthTest = 'LessEqual'
 
   @Serialize()
   readonly depthMask: boolean = true

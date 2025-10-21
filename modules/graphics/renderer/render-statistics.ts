@@ -1,5 +1,5 @@
-export class RenderStats {
-  frame: number = 0
+export class RenderStatistics {
+  frameId: number = 0
 
   submittedMeshes: number = 0
   renderedMeshes: number = 0
@@ -13,7 +13,7 @@ export class RenderStats {
   }
 
   reset() {
-    this.frame += 1
+    this.frameId += 1
 
     this.submittedMeshes = 0
     this.renderedMeshes = 0

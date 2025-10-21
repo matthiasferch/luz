@@ -119,7 +119,7 @@ export class RenderQueue {
     }
 
     if (queueContext.uniforms) {
-      renderer.setNestedUniforms(pipeline.program!, queueContext.uniforms)
+      renderer.bindNestedUniforms(pipeline.program!, queueContext.uniforms)
     }
 
     for (const { transform, model, partitions } of this.batches) {
@@ -132,7 +132,7 @@ export class RenderQueue {
       submittedMeshes += (batch.partitions && batch.partitions.length > 0) ? batch.partitions.length : 1
     }
 
-    renderer.stats.submittedMeshes += submittedMeshes
+    renderer.statistics.submittedMeshes += submittedMeshes
 
     if (queueContext.scissor) {
       renderer.scissor(null)

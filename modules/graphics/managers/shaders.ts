@@ -1,11 +1,12 @@
-import { Shader } from '../types/shader'
+import { ShaderManager } from '../renderer/renderer'
+import { Shader, ShaderStage } from '../types/shader'
 
-export class Shaders {
+export class WebGLShaderManager implements ShaderManager {
   private shaders: Shader[] = []
 
-  constructor(private gl: WebGL2RenderingContext) {}
+  constructor(private gl: WebGL2RenderingContext) { }
 
-  create(stage: Shader.Stage, source: string, headers?: string[]): Shader | null {
+  create(stage: ShaderStage, source: string, headers?: string[]): Shader | null {
     let type: number
 
     switch (stage) {

@@ -1,10 +1,11 @@
 import { FrameBuffer } from '../buffers/frame-buffer'
 import { RenderBuffer } from '../buffers/render-buffer'
 import { UniformBuffer } from '../buffers/uniform-buffer'
+import { BufferManager } from '../renderer/renderer'
 import { Buffer } from '../types/buffer'
 import { Texture } from '../types/texture'
 
-export class Buffers {
+export class WebGLBufferManager implements BufferManager {
   private readonly buffers: Buffer[] = []
 
   private readonly activeBuffers: Partial<Record<Buffer.Type, Buffer>> = {}

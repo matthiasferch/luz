@@ -1,4 +1,4 @@
-import type { Renderer } from './renderer'
+import type { BlendMode, CullMode, DepthTest, Renderer } from './renderer'
 import { RenderPipeline, RenderStage } from './render-pipeline'
 import { LightBatch } from './light-batch'
 import { RenderQueue } from './render-queue'
@@ -6,14 +6,13 @@ import { RenderBatch } from './render-batch'
 import { Camera, Entity, isModel, Light } from '@luz/core'
 import { RenderTarget } from './target'
 import { Scissor } from './scissor'
-import { State } from './state'
 
 type StageCallback = ({ pipeline, context }: { pipeline: RenderPipeline, context: FrameContext }) => void
 
 export type RenderState = {
-  cullMode: State.CullMode
-  blendMode: State.BlendMode
-  depthTest: State.DepthTest
+  cullMode: CullMode
+  blendMode: BlendMode
+  depthTest: DepthTest
 
   depthMask: boolean
   colorMask: boolean[]
@@ -201,7 +200,7 @@ export class RenderGraph {
           transparentAdditiveBatches = []
 
           for (const batch of transparentBatches) {
-            let blendMode: State.BlendMode = 'Transparent'
+            let blendMode: BlendMode = 'Transparent'
 
             if (batch.partitions && batch.partitions.length > 0) {
               const name = batch.partitions[0]

@@ -3,7 +3,7 @@ import { Serialize } from '@luz/utilities/serializable'
 import { vec3 } from '@luz/vectors'
 import { Surface } from './surface'
 import { Texture } from '../types/texture'
-import { State } from './state'
+import { BlendMode } from './renderer'
 
 export class Material extends Serializable {
   @Uniform()
@@ -21,7 +21,7 @@ export class Material extends Serializable {
   opacity: number = 1.0
 
   @Serialize()
-  blendMode: State.BlendMode = 'None'
+  blendMode: BlendMode = 'None'
 
   constructor({ color, texture, opacity, blendMode }: Partial<Material> = {}) {
     super()
