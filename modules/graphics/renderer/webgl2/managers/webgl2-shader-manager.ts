@@ -1,7 +1,7 @@
-import { ShaderManager } from '../renderer/renderer'
-import { Shader, ShaderStage } from '../types/shader'
+import { ShaderManager } from '../../renderer'
+import { Shader, ShaderStage } from '../../../types/shader'
 
-export class WebGLShaderManager implements ShaderManager {
+export class WebGL2ShaderManager implements ShaderManager {
   private shaders: Shader[] = []
 
   constructor(private gl: WebGL2RenderingContext) { }

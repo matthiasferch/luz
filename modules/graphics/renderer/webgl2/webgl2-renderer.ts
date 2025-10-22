@@ -1,47 +1,33 @@
 import { Camera, Light, Model, Transform } from '@luz/core'
 
-import { WebGLMeshManager } from '../managers/meshes'
-import { WebGLBufferManager } from '../managers/buffers'
-import { WebGLProgramManager } from '../managers/programs'
-import { WebGLSamplerManager } from '../managers/samplers'
-import { WebGLShaderManager } from '../managers/shaders'
-import { WebGLTextureManager } from '../managers/textures'
-import { Program } from '../types/program'
-import { UniformValue } from '../types/uniform'
-import { Texture } from '../types/texture'
-import { Material } from './material'
-import { RenderTarget } from './target'
-import { vec4 } from '@luz/vectors'
+import { WebGL2MeshManager } from './managers/webgl2-mesh-manager'
+import { WebGL2BufferManager } from './managers/webgl2-buffer-manager'
+import { WebGL2ProgramManager } from './managers/webgl2-program-manager'
+import { WebGL2SamplerManager } from './managers/webgl2-sampler-manager'
+import { WebGL2ShaderManager } from './managers/webgl2-shader-manager'
+import { WebGL2TextureManager } from './managers/webgl2-texture.manager'
+import { Program } from '../../types/program'
+import { UniformValue } from '../../types/uniform'
+import { Texture } from '../../types/texture'
+import { Material } from '../material'
+import { RenderTarget } from '../target'
 import { getUniformProperties } from '@luz/utilities'
 import { UniformProperty } from '@luz/utilities/uniform'
-import { Scissor } from './scissor'
-import type { RenderState } from './render-graph'
-import type { RenderPipeline } from './render-pipeline'
-import type { Renderer, ShaderManager, ProgramManager, MeshManager, BufferManager, TextureManager, SamplerManager, BlendMode, CullMode, DepthTest } from './renderer'
-import { RenderStatistics } from './render-statistics'
+import { Scissor } from '../scissor'
+import type { RenderState } from '../render-graph'
+import type { RenderPipeline } from '../render-pipeline'
+import type { Renderer, BlendMode, CullMode, DepthTest, ClearOptions } from '../renderer'
+import { RenderStatistics } from '../render-statistics'
 
-type UniformCache = Record<string, UniformValue>
+export class WebGL2Renderer implements Renderer {
+  readonly meshes: WebGL2MeshManager
+  readonly buffers: WebGL2BufferManager
 
-type MaskOptions = {
-  color: boolean[]
-  depth: boolean
-}
+  readonly shaders: WebGL2ShaderManager
+  readonly programs: WebGL2ProgramManager
 
-type ClearOptions = {
-  color: vec4
-  depth: number
-  stencil: number
-}
-
-export class WebGLRenderer implements Renderer {
-  readonly meshes: MeshManager
-  readonly buffers: BufferManager
-
-  readonly shaders: ShaderManager
-  readonly programs: ProgramManager
-
-  readonly textures: TextureManager
-  readonly samplers: SamplerManager
+  readonly textures: WebGL2TextureManager
+  readonly samplers: WebGL2SamplerManager
 
   readonly defaultTexture: Texture
   readonly defaultMaterial: Material
@@ -50,23 +36,22 @@ export class WebGLRenderer implements Renderer {
   private activeBlendMode: BlendMode = 'None'
   private activeDepthTest: DepthTest = 'None'
 
-  private readonly uniformCache: UniformCache
-
+  private readonly uniformCache: Record<string, UniformValue>
   private readonly uniformProperties: Record<string, UniformProperty[]>
 
   private lastMaterialByProgram: WeakMap<Program, Material>
 
   readonly statistics: RenderStatistics
 
-  constructor(private gl: WebGL2RenderingContext) {
-    this.meshes = new WebGLMeshManager(this.gl)
-    this.buffers = new WebGLBufferManager(this.gl)
+  constructor(private context: WebGL2RenderingContext) {
+    this.meshes = new WebGL2MeshManager(this.context)
+    this.buffers = new WebGL2BufferManager(this.context)
 
-    this.shaders = new WebGLShaderManager(this.gl)
-    this.programs = new WebGLProgramManager(this.gl)
+    this.shaders = new WebGL2ShaderManager(this.context)
+    this.programs = new WebGL2ProgramManager(this.context)
 
-    this.textures = new WebGLTextureManager(this.gl)
-    this.samplers = new WebGLSamplerManager(this.gl)
+    this.textures = new WebGL2TextureManager(this.context)
+    this.samplers = new WebGL2SamplerManager(this.context)
 
     const textureData = new Uint8Array([0xff, 0xff, 0xff, 0xff])
 
@@ -94,17 +79,17 @@ export class WebGLRenderer implements Renderer {
     }
 
     if (cullMode === 'None') {
-      this.gl.disable(this.gl.CULL_FACE)
+      this.context.disable(this.context.CULL_FACE)
     } else {
-      this.gl.enable(this.gl.CULL_FACE)
+      this.context.enable(this.context.CULL_FACE)
 
       switch (cullMode) {
         case 'Front':
-          this.gl.cullFace(this.gl.FRONT)
+          this.context.cullFace(this.context.FRONT)
           break
 
         case 'Back':
-          this.gl.cullFace(this.gl.BACK)
+          this.context.cullFace(this.context.BACK)
           break
       }
     }
@@ -120,17 +105,17 @@ export class WebGLRenderer implements Renderer {
     }
 
     if (blendMode === 'None') {
-      this.gl.disable(this.gl.BLEND)
+      this.context.disable(this.context.BLEND)
     } else {
-      this.gl.enable(this.gl.BLEND)
+      this.context.enable(this.context.BLEND)
 
       switch (blendMode) {
         case 'Additive':
-          this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE)
+          this.context.blendFunc(this.context.SRC_ALPHA, this.context.ONE)
           break
 
         case 'Transparent':
-          this.gl.blendFunc(this.gl.SRC_ALPHA, this.gl.ONE_MINUS_SRC_ALPHA)
+          this.context.blendFunc(this.context.SRC_ALPHA, this.context.ONE_MINUS_SRC_ALPHA)
           break
       }
     }
@@ -146,41 +131,41 @@ export class WebGLRenderer implements Renderer {
     }
 
     if (depthTest === 'None') {
-      this.gl.disable(this.gl.DEPTH_TEST)
+      this.context.disable(this.context.DEPTH_TEST)
     } else {
-      this.gl.enable(this.gl.DEPTH_TEST)
+      this.context.enable(this.context.DEPTH_TEST)
 
       switch (depthTest) {
         case 'Never':
-          this.gl.depthFunc(this.gl.NEVER)
+          this.context.depthFunc(this.context.NEVER)
           break
 
         case 'Always':
-          this.gl.depthFunc(this.gl.ALWAYS)
+          this.context.depthFunc(this.context.ALWAYS)
           break
 
         case 'Equal':
-          this.gl.depthFunc(this.gl.EQUAL)
+          this.context.depthFunc(this.context.EQUAL)
           break
 
         case 'NotEqual':
-          this.gl.depthFunc(this.gl.NOTEQUAL)
+          this.context.depthFunc(this.context.NOTEQUAL)
           break
 
         case 'Less':
-          this.gl.depthFunc(this.gl.LESS)
+          this.context.depthFunc(this.context.LESS)
           break
 
         case 'LessEqual':
-          this.gl.depthFunc(this.gl.LEQUAL)
+          this.context.depthFunc(this.context.LEQUAL)
           break
 
         case 'Greater':
-          this.gl.depthFunc(this.gl.GREATER)
+          this.context.depthFunc(this.context.GREATER)
           break
 
         case 'GreaterEqual':
-          this.gl.depthFunc(this.gl.GEQUAL)
+          this.context.depthFunc(this.context.GEQUAL)
           break
       }
     }
@@ -190,30 +175,30 @@ export class WebGLRenderer implements Renderer {
     this.statistics.stateChanges.depthTest += 1
   }
 
-  bindTarget({ width, height, frameBuffer }: RenderTarget) {
-    if (frameBuffer) {
-      this.buffers.bind(frameBuffer)
-    } else {
-      this.buffers.unbind('FrameBuffer')
-    }
+  set colorMask(colorMask: boolean[]) {
+    const [r = true, g = true, b = true, a = true] = colorMask
 
-    this.gl.viewport(0, 0, width, height)
+    this.context.colorMask(r, g, b, a)
+
+    this.statistics.stateChanges.maskColor += 1
   }
 
-  mask({ color, depth }: Partial<MaskOptions>) {
-    if (color !== undefined) {
-      const [r = true, g = true, b = true, a = true] = color
+  set depthMask(depthMask: boolean) {
+    this.context.depthMask(depthMask)
 
-      this.gl.colorMask(r, g, b, a)
+    this.statistics.stateChanges.maskDepth += 1
+  }
 
-      this.statistics.stateChanges.maskColor += 1
+  set scissor(scissor: Scissor | null) {
+    if (scissor === null) {
+      this.context.disable(this.context.SCISSOR_TEST)
+      return
     }
 
-    if (depth !== undefined) {
-      this.gl.depthMask(depth)
+    const { x, y, width, height } = scissor
 
-      this.statistics.stateChanges.maskDepth += 1
-    }
+    this.context.enable(this.context.SCISSOR_TEST)
+    this.context.scissor(x, y, width, height)
   }
 
   clear({ color, depth, stencil }: Partial<ClearOptions>) {
@@ -222,35 +207,33 @@ export class WebGLRenderer implements Renderer {
     if (color !== undefined) {
       const { r = 0.0, g = 0.0, b = 0.0, a = 1.0 } = color
 
-      this.gl.clearColor(r, g, b, a)
-      clearMask |= this.gl.COLOR_BUFFER_BIT
+      this.context.clearColor(r, g, b, a)
+      clearMask |= this.context.COLOR_BUFFER_BIT
     }
 
     if (depth !== undefined) {
-      this.gl.clearDepth(depth)
-      clearMask |= this.gl.DEPTH_BUFFER_BIT
+      this.context.clearDepth(depth)
+      clearMask |= this.context.DEPTH_BUFFER_BIT
     }
 
     if (stencil !== undefined) {
-      this.gl.clearStencil(stencil)
-      clearMask |= this.gl.STENCIL_BUFFER_BIT
+      this.context.clearStencil(stencil)
+      clearMask |= this.context.STENCIL_BUFFER_BIT
     }
 
     if (clearMask !== 0) {
-      this.gl.clear(clearMask)
+      this.context.clear(clearMask)
     }
   }
 
-  scissor(scissor: Scissor | null) {
-    if (scissor === null) {
-      this.gl.disable(this.gl.SCISSOR_TEST)
-      return
+  bindTarget({ width, height, frameBuffer }: RenderTarget) {
+    if (frameBuffer) {
+      this.buffers.bind(frameBuffer)
+    } else {
+      this.buffers.unbind('FrameBuffer')
     }
 
-    const { x, y, width, height } = scissor
-
-    this.gl.enable(this.gl.SCISSOR_TEST)
-    this.gl.scissor(x, y, width, height)
+    this.context.viewport(0, 0, width, height)
   }
 
   bindPipeline(pipeline: RenderPipeline, overrideStates?: Partial<RenderState>) {
@@ -258,24 +241,18 @@ export class WebGLRenderer implements Renderer {
       throw new Error('Cannot bind pipeline without a program')
     }
 
-    this.programs.use(pipeline.program)
+    this.programs.bind(pipeline.program)
 
     this.cullMode = overrideStates?.cullMode ?? pipeline.cullMode
     this.blendMode = overrideStates?.blendMode ?? pipeline.blendMode
     this.depthTest = overrideStates?.depthTest ?? pipeline.depthTest
 
-    this.mask({
-      color: overrideStates?.colorMask ?? pipeline.colorMask,
-      depth: overrideStates?.depthMask ?? pipeline.depthMask
-    })
-  }
-
-  resetMaterialBinding(program: Program) {
-    this.lastMaterialByProgram.delete(program)
+    this.colorMask = overrideStates?.colorMask ?? pipeline.colorMask
+    this.depthMask = overrideStates?.depthMask ?? pipeline.depthMask
   }
 
   bindCameraUniforms(program: Program, camera: Camera) {
-    const uniforms: UniformCache = Object.create(null)
+    const uniforms: Record<string, UniformValue> = Object.create(null)
     const hasUniform = this.hasUniform.bind(this, program)
 
     for (const { key } of this.uniformProperties.camera) {
@@ -292,7 +269,7 @@ export class WebGLRenderer implements Renderer {
   }
 
   bindLightUniforms(program: Program, light: Light) {
-    const uniforms: UniformCache = Object.create(null)
+    const uniforms: Record<string, UniformValue> = Object.create(null)
     const hasUniform = this.hasUniform.bind(this, program)
 
     for (const { key } of this.uniformProperties.light) {
@@ -308,6 +285,17 @@ export class WebGLRenderer implements Renderer {
     }
   }
 
+  bindUniforms(program: Program, values: any) {
+    const uniforms = this.collectUniformValues(program, values)
+    if (Object.keys(uniforms).length > 0) {
+      this.programs.update(program, { uniforms })
+    }
+  }
+
+  resetMaterialBinding(program: Program) {
+    this.lastMaterialByProgram.delete(program)
+  }
+
   render<T extends {}>(
     model: Model,
     program: Program,
@@ -315,7 +303,7 @@ export class WebGLRenderer implements Renderer {
     additionalUniforms?: T,
     selectedPartitions?: string[]
   ) {
-    const baseUniforms: UniformCache = Object.create(null)
+    const baseUniforms: Record<string, UniformValue> = Object.create(null)
 
     const hasUniform = this.hasUniform.bind(this, program)
 
@@ -402,7 +390,7 @@ export class WebGLRenderer implements Renderer {
   }
 
   private collectUniformValues(program: Program, uniformValues: any) {
-    const uniforms: UniformCache = Object.create(null)
+    const uniforms: Record<string, UniformValue> = Object.create(null)
     const hasUniform = this.hasUniform.bind(this, program)
 
     const collectRecursively = (values: any, prefix?: string) => {
@@ -434,16 +422,6 @@ export class WebGLRenderer implements Renderer {
     collectRecursively(uniformValues)
 
     return uniforms
-  }
-
-  // Apply a set of (possibly nested) uniform values once against a program,
-  // flattening them to real uniform names present in the program. Useful for
-  // pass-level uniforms to avoid re-setting them per draw.
-  bindNestedUniforms(program: Program, values: any) {
-    const uniforms = this.collectUniformValues(program, values)
-    if (Object.keys(uniforms).length > 0) {
-      this.programs.update(program, { uniforms })
-    }
   }
 
   private hasUniform(program: Program, name: string) {

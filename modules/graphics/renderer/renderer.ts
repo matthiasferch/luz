@@ -17,6 +17,7 @@ import type { Scissor } from './scissor'
 import type { RenderPipeline } from './render-pipeline'
 import type { RenderState } from './render-graph'
 import { RenderStatistics } from './render-statistics'
+import { vec4 } from '@luz/vectors'
 
 export type CullMode = 'None' | 'Front' | 'Back'
 
@@ -33,12 +34,10 @@ export type DepthTest =
   | 'Greater'
   | 'GreaterEqual'
 
-// Abstract rendering interface to support multiple backends (WebGL, WebGPU).
-// Implementations must provide the resource managers and draw/state APIs used
-// throughout the engine and demo code.
-// Backend-agnostic manager interfaces
-export interface ShaderManager {
-  create(stage: ShaderStage, source: string, headers?: string[]): Shader | null
+export type ClearOptions = {
+  color: vec4
+  depth: number
+  stencil: number
 }
 
 export type UniformData = Partial<{
@@ -46,10 +45,14 @@ export type UniformData = Partial<{
   uniformBuffers: Record<string, UniformBuffer>
 }>
 
+export interface ShaderManager {
+  create(stage: ShaderStage, source: string, headers?: string[]): Shader | null
+}
+
 export interface ProgramManager {
   create(vertexShader: Shader, fragmentShader: Shader, data?: UniformData): Program | null
   update(program: Program, data: UniformData): void
-  use(program: Program): void
+  bind(program: Program): void
 }
 
 export interface MeshManager {
@@ -60,9 +63,11 @@ export interface MeshManager {
 export interface BufferManager {
   create(target: 'FrameBuffer'): FrameBuffer
   create(target: 'RenderBuffer'): RenderBuffer
-  create(target: 'UniformBuffer', data?: any): UniformBuffer
+  create(target: 'UniformBuffer'): UniformBuffer
+
   attach(frameBuffer: FrameBuffer, data: Texture | RenderBuffer, attachment: number): void
   format(buffer: RenderBuffer, format: number, width: number, height: number): void
+
   bind(buffer: Buffer): void
   unbind(type: Buffer.Type): void
 }
@@ -79,9 +84,6 @@ export interface SamplerManager {
   bind(sampler: Sampler, unit: number): void
 }
 
-// Abstract rendering interface to support multiple backends (WebGL, WebGPU).
-// Implementations must provide the resource managers and draw/state APIs used
-// throughout the engine and demo code.
 export interface Renderer {
   readonly meshes: MeshManager
   readonly buffers: BufferManager
@@ -95,24 +97,28 @@ export interface Renderer {
   readonly defaultTexture: Texture
   readonly defaultMaterial: Material
 
-  // Statistics for UI/debug
   readonly statistics: RenderStatistics
 
-  // Render target and pipeline binding
+  set cullMode(cullMode: CullMode)
+  set blendMode(blendMode: BlendMode)
+  set depthTest(depthTest: DepthTest)
+
+  set colorMask(colorMask: boolean[])
+  set depthMask(depthMask: boolean)
+
+  set scissor(scissor: Scissor | null)
+
+  clear(options: Partial<ClearOptions>): void
+
   bindTarget(target: RenderTarget): void
   bindPipeline(pipeline: RenderPipeline, overrideStates?: Partial<RenderState>): void
-  resetMaterialBinding(program: Program): void
 
-  // Global operations per pass
-  clear(opts: { color?: any, depth?: number, stencil?: number }): void
-  scissor(scissor: Scissor | null): void
-
-  // Pass-level uniforms
   bindCameraUniforms(program: Program, camera: Camera): void
   bindLightUniforms(program: Program, light: Light): void
-  bindNestedUniforms(program: Program, values: any): void
+  bindUniforms(program: Program, values: any): void
 
-  // Draw a model with optional extra uniforms/partition selection
+  resetMaterialBinding(program: Program): void
+
   render<T extends {}>(
     model: Model,
     program: Program,

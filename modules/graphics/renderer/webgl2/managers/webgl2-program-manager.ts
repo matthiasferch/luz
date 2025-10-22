@@ -1,18 +1,18 @@
 import { mat2, mat3, mat4, vec2, vec3, vec4 } from '@luz/vectors'
-import { UniformBuffer } from '../buffers/uniform-buffer'
-import { Attribute } from '../types/attribute'
-import { Program } from '../types/program'
-import { Shader } from '../types/shader'
-import { Texture } from '../types/texture'
-import { Uniform, UniformValue } from '../types/uniform'
-import { ProgramManager } from '../renderer/renderer'
+import { UniformBuffer } from '../../../buffers/uniform-buffer'
+import { Attribute } from '../../../types/attribute'
+import { Program } from '../../../types/program'
+import { Shader } from '../../../types/shader'
+import { Texture } from '../../../types/texture'
+import { Uniform, UniformValue } from '../../../types/uniform'
+import { ProgramManager } from '../../renderer'
 
 type UniformData = Partial<{
   uniforms: Record<string, UniformValue>
   uniformBuffers: Record<string, UniformBuffer>
 }>
 
-export class WebGLProgramManager implements ProgramManager {
+export class WebGL2ProgramManager implements ProgramManager {
   private programs: Program[] = []
 
   private usedProgram: Program // TODO: should be 'boundProgram' for sake of consistency
@@ -62,7 +62,7 @@ export class WebGLProgramManager implements ProgramManager {
   }
 
   update(program: Program, data: UniformData) {
-    this.use(program)
+    this.bind(program)
 
     if (data.uniforms) {
       Object.keys(data.uniforms).forEach((name) => {
@@ -158,7 +158,7 @@ export class WebGLProgramManager implements ProgramManager {
     }
   }
 
-  use(program: Program) {
+  bind(program: Program) {
     if (this.usedProgram === program) {
       return
     }
@@ -251,7 +251,7 @@ export class WebGLProgramManager implements ProgramManager {
 
     let slot = 0
 
-    this.use(program)
+    this.bind(program)
 
     Object.keys(program.uniforms).forEach((name) => {
       const uniform = program.uniforms[name]

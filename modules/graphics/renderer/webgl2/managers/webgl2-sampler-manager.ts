@@ -1,8 +1,8 @@
-import { SamplerManager } from '../renderer/renderer'
-import { Sampler } from '../types/sampler'
-import { Texture } from '../types/texture'
+import { SamplerManager } from '../../renderer'
+import { Sampler } from '../../../types/sampler'
+import { Texture } from '../../../types/texture'
 
-export class WebGLSamplerManager implements SamplerManager {
+export class WebGL2SamplerManager implements SamplerManager {
   private samplers: Sampler[] = []
 
   private boundSamplers: { [index: number]: Sampler } = {}

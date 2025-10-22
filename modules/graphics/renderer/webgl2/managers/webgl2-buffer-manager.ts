@@ -1,11 +1,11 @@
-import { FrameBuffer } from '../buffers/frame-buffer'
-import { RenderBuffer } from '../buffers/render-buffer'
-import { UniformBuffer } from '../buffers/uniform-buffer'
-import { BufferManager } from '../renderer/renderer'
-import { Buffer } from '../types/buffer'
-import { Texture } from '../types/texture'
+import { FrameBuffer } from '../../../buffers/frame-buffer'
+import { RenderBuffer } from '../../../buffers/render-buffer'
+import { UniformBuffer } from '../../../buffers/uniform-buffer'
+import { BufferManager } from '../../renderer'
+import { Buffer } from '../../../types/buffer'
+import { Texture } from '../../../types/texture'
 
-export class WebGLBufferManager implements BufferManager {
+export class WebGL2BufferManager implements BufferManager {
   private readonly buffers: Buffer[] = []
 
   private readonly activeBuffers: Partial<Record<Buffer.Type, Buffer>> = {}
@@ -13,12 +13,10 @@ export class WebGLBufferManager implements BufferManager {
   constructor(private gl: WebGL2RenderingContext) { }
 
   create(target: 'FrameBuffer'): FrameBuffer
-
   create(target: 'RenderBuffer'): RenderBuffer
+  create(target: 'UniformBuffer'): UniformBuffer
 
-  create(target: 'UniformBuffer', data?: any): UniformBuffer
-
-  create(target: Buffer.Type, data?: any) {
+  create(target: Buffer.Type) {
     switch (target) {
       case 'FrameBuffer':
         const frameBuffer = this.gl.createFramebuffer() as FrameBuffer
@@ -46,13 +44,8 @@ export class WebGLBufferManager implements BufferManager {
         const buffer = this.gl.createBuffer() as UniformBuffer
 
         buffer.type = 'UniformBuffer'
-        buffer.target = this.gl.UNIFORM_BUFFER
-
         buffer.usage = this.gl.DYNAMIC_DRAW
-
-        if (data) {
-          this.update(buffer, data)
-        }
+        buffer.target = this.gl.UNIFORM_BUFFER
 
         this.buffers.push(buffer)
 

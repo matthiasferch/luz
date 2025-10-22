@@ -4,90 +4,126 @@ import { Material } from './material'
 import { Mesh } from '../types/mesh'
 import { RenderBatch } from './render-batch'
 import { QueueContext, RenderState } from './render-graph'
+import { Partition } from './partition'
 
 export class RenderQueue {
   readonly batches: RenderBatch[] = []
 
-  private materialIds = new WeakMap<Material, number>()
   private meshIds = new WeakMap<Mesh, number>()
+  private materialIds = new WeakMap<Material, number>()
+
   private nextMaterialId = 1
   private nextMeshId = 1
 
   sortFrontToBack() {
-    this.batches.sort(this.compareOpaque)
+    this.batches.sort(this.compareFrontToBack)
   }
 
   sortBackToFront() {
-    this.batches.sort(this.compareTransparent)
+    this.batches.sort(this.compareBackToFront)
   }
 
-  private compareOpaque = (b1: RenderBatch, b2: RenderBatch) => {
-    const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(b1))
-    const bmid = this.getMaterialIdSafe(this.getPrimaryMaterial(b2))
-    if (amid !== bmid) return amid - bmid
-    const ameid = this.getMeshIdSafe(this.getPrimaryMesh(b1))
-    const bmeid = this.getMeshIdSafe(this.getPrimaryMesh(b2))
-    if (ameid !== bmeid) return ameid - bmeid
+  private compareFrontToBack = (b1: RenderBatch, b2: RenderBatch) => {
+    const m1 = this.getMaterialId(this.getPrimaryMaterial(b1))
+    const m2 = this.getMaterialId(this.getPrimaryMaterial(b2))
+
+    if (m1 !== m2) {
+      return m1 - m2
+    }
+
+    const n1 = this.getMeshId(this.getPrimaryMesh(b1))
+    const n2 = this.getMeshId(this.getPrimaryMesh(b2))
+
+    if (n1 !== n2) {
+      return n1 - n2
+    }
+
     const da = b1.depth ?? 0
     const db = b2.depth ?? 0
+
     return da - db
   }
 
-  private compareTransparent = (a: RenderBatch, b: RenderBatch) => {
-    const amid = this.getMaterialIdSafe(this.getPrimaryMaterial(a))
-    const bmid = this.getMaterialIdSafe(this.getPrimaryMaterial(b))
-    if (amid !== bmid) return amid - bmid
-    const ameid = this.getMeshIdSafe(this.getPrimaryMesh(a))
-    const bmeid = this.getMeshIdSafe(this.getPrimaryMesh(b))
-    if (ameid !== bmeid) return ameid - bmeid
-    const da = a.depth ?? 0
-    const db = b.depth ?? 0
+  private compareBackToFront = (b1: RenderBatch, b2: RenderBatch) => {
+    const m1 = this.getMaterialId(this.getPrimaryMaterial(b1))
+    const m2 = this.getMaterialId(this.getPrimaryMaterial(b2))
+
+    if (m1 !== m2) {
+      return m1 - m2
+    }
+
+    const n1 = this.getMeshId(this.getPrimaryMesh(b1))
+    const n2 = this.getMeshId(this.getPrimaryMesh(b2))
+
+    if (n1 !== n2) {
+      return n1 - n2
+    }
+
+    const da = b1.depth ?? 0
+    const db = b2.depth ?? 0
+
     return db - da
   }
 
   private getPrimaryMaterial(item: RenderBatch): Material | null {
-    const model: any = item.model as any
-    const parts: Record<string, any> = model?.partitions ?? {}
-    let part: any | undefined
+    const { model } = item
+    const partitions: Record<string, Partition> = model?.partitions ?? {}
+
+    let partition: Partition | undefined
+
     if (item.partitions && item.partitions.length > 0) {
-      part = parts[item.partitions[0]]
+      partition = partitions[item.partitions[0]]
     } else {
-      const first = Object.keys(parts)[0]
-      part = first ? parts[first] : undefined
+      const firstPartition = Object.keys(partitions)[0]
+      partition = firstPartition ? partitions[firstPartition] : undefined
     }
-    return part?.mesh?.material ?? null
+
+    return partition?.mesh?.material ?? null
   }
 
   private getPrimaryMesh(item: RenderBatch): Mesh | null {
-    const model: any = item.model as any
-    const parts: Record<string, any> = model?.partitions ?? {}
-    let part: any | undefined
+    const { model } = item
+    const partitions: Record<string, Partition> = model?.partitions ?? {}
+
+    let partition: Partition | undefined
+
     if (item.partitions && item.partitions.length > 0) {
-      part = parts[item.partitions[0]]
+      partition = partitions[item.partitions[0]]
     } else {
-      const first = Object.keys(parts)[0]
-      part = first ? parts[first] : undefined
+      const firstPartition = Object.keys(partitions)[0]
+      partition = firstPartition ? partitions[firstPartition] : undefined
     }
-    return (part?.mesh ?? null) as Mesh | null
+
+    return partition?.mesh ?? null
   }
 
-  private getMaterialIdSafe(m: Material | null): number {
-    if (!m) return 0
-    let id = this.materialIds.get(m)
+  private getMaterialId(material: Material | null): number {
+    if (!material) {
+      return 0
+    }
+
+    let id = this.materialIds.get(material)
+
     if (!id) {
       id = this.nextMaterialId++
-      this.materialIds.set(m, id)
+      this.materialIds.set(material, id)
     }
+
     return id
   }
 
-  private getMeshIdSafe(mesh: Mesh | null): number {
-    if (!mesh) return 0
+  private getMeshId(mesh: Mesh | null): number {
+    if (!mesh) {
+      return 0
+    }
+
     let id = this.meshIds.get(mesh)
+
     if (!id) {
       id = this.nextMeshId++
       this.meshIds.set(mesh, id)
     }
+
     return id
   }
 
@@ -107,7 +143,7 @@ export class RenderQueue {
     renderer.clear({ color: clearColor, depth: clearDepth, stencil: clearStencil })
 
     if (queueContext.scissor) {
-      renderer.scissor(queueContext.scissor)
+      renderer.scissor = queueContext.scissor
     }
 
     if (queueContext.light) {
@@ -119,7 +155,7 @@ export class RenderQueue {
     }
 
     if (queueContext.uniforms) {
-      renderer.bindNestedUniforms(pipeline.program!, queueContext.uniforms)
+      renderer.bindUniforms(pipeline.program!, queueContext.uniforms)
     }
 
     for (const { transform, model, partitions } of this.batches) {
@@ -135,7 +171,7 @@ export class RenderQueue {
     renderer.statistics.submittedMeshes += submittedMeshes
 
     if (queueContext.scissor) {
-      renderer.scissor(null)
+      renderer.scissor = null
     }
   }
 }

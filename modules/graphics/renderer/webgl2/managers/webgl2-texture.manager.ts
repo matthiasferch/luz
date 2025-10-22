@@ -1,8 +1,8 @@
-import { Texture } from '../types/texture'
-import { Surface } from '../renderer/surface'
-import { TextureManager } from '../renderer/renderer'
+import { Texture } from '../../../types/texture'
+import { Surface } from '../../surface'
+import { TextureManager } from '../../renderer'
 
-export class WebGLTextureManager implements TextureManager {
+export class WebGL2TextureManager implements TextureManager {
   private textures: Texture[] = []
 
   private boundTextures: Record<number, Texture> = {}
