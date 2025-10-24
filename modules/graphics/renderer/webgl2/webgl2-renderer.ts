@@ -259,7 +259,7 @@ export class WebGL2Renderer implements Renderer {
       const name = `camera.${key}`
 
       if (hasUniform(name)) {
-        uniforms[name] = (camera as any)[key]
+        uniforms[name] = (camera as unknown as Record<string, UniformValue>)[key]
       }
     }
 
@@ -276,7 +276,7 @@ export class WebGL2Renderer implements Renderer {
       const name = `light.${key}`
 
       if (hasUniform(name)) {
-        uniforms[name] = (light as any)[key]
+        uniforms[name] = (light as unknown as Record<string, UniformValue>)[key]
       }
     }
 
@@ -319,18 +319,18 @@ export class WebGL2Renderer implements Renderer {
 
     if (transform) {
       for (const { key } of this.uniformProperties.transform) {
-        setUniformValue((transform as any)[key], key, 'transform')
+        setUniformValue((transform as unknown as Record<string, UniformValue>)[key], key, 'transform')
       }
     }
 
     if (model) {
       for (const { key } of this.uniformProperties.model) {
-        setUniformValue((model as any)[key], key, 'model')
+        setUniformValue((model as unknown as Record<string, UniformValue>)[key], key, 'model')
       }
     }
 
-    if ((model as any).boneMatrices) {
-      setUniformValue((model as any).boneMatrices, 'boneMatrices')
+    if (model.boneMatrices) {
+      setUniformValue(model.boneMatrices as unknown as UniformValue, 'boneMatrices')
     }
 
     // Light uniforms are bound at pass level (light group)
@@ -352,11 +352,11 @@ export class WebGL2Renderer implements Renderer {
       ? new Set(selectedPartitions)
       : null
 
-    for (const [name, partition] of Object.entries((model as any).partitions)) {
+    for (const [name, partition] of Object.entries(model.partitions)) {
       if (selectedSet && !selectedSet.has(name)) {
         continue
       }
-      const { mesh } = partition as any
+      const { mesh } = partition
 
       if (!mesh) {
         console.warn('Partition has no mesh:', name)
@@ -374,10 +374,10 @@ export class WebGL2Renderer implements Renderer {
       const last = this.lastMaterialByProgram.get(program)
       if (last !== material) {
         const materialUniforms = this.uniformCache
-        for (const uname in materialUniforms) delete (materialUniforms as any)[uname]
+        for (const uname in materialUniforms) delete materialUniforms[uname]
         for (const { key } of this.uniformProperties.material) {
           const uname = `material.${key}`
-          if (this.hasUniform(program, uname)) (materialUniforms as any)[uname] = (material as any)[key]
+          if (this.hasUniform(program, uname)) materialUniforms[uname] = (material as unknown as Record<string, UniformValue>)[key]
         }
         this.programs.update(program, { uniforms: materialUniforms })
         this.lastMaterialByProgram.set(program, material)
@@ -404,7 +404,7 @@ export class WebGL2Renderer implements Renderer {
         if (hasUniform(uniformName)) {
           uniforms[uniformName] = value as UniformValue
         } else if (Array.isArray(value)) {
-          ; (value as any[]).forEach((element, index) => {
+          ; (value as unknown[]).forEach((element, index) => {
             const arrayIndex = `${uniformName}[${index}]`
 
             if (hasUniform(arrayIndex)) {
@@ -427,7 +427,7 @@ export class WebGL2Renderer implements Renderer {
   private hasUniform(program: Program, name: string) {
     const { uniforms } = program
 
-    if (!(uniforms as any)) {
+    if (!uniforms) {
       return false
     }
 
