@@ -16,6 +16,36 @@ export class Material extends Serializable {
   @Uniform()
   texture: Texture
 
+  @Serialize()
+  normalSurface: Surface | null
+
+  @Serialize()
+  metallicSurface: Surface | null
+
+  @Serialize()
+  roughnessSurface: Surface | null
+
+  @Serialize()
+  occlusionSurface: Surface | null
+
+  @Serialize()
+  emissiveSurface: Surface | null
+
+  @Uniform()
+  normalTexture?: Texture
+
+  @Uniform()
+  metallicTexture?: Texture
+
+  @Uniform()
+  roughnessTexture?: Texture
+
+  @Uniform()
+  occlusionTexture?: Texture
+
+  @Uniform()
+  emissiveTexture?: Texture
+
   @Uniform()
   @Serialize()
   opacity: number = 1.0

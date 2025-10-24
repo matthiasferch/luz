@@ -377,7 +377,8 @@ export class WebGL2Renderer implements Renderer {
         for (const uname in materialUniforms) delete materialUniforms[uname]
         for (const { key } of this.uniformProperties.material) {
           const uname = `material.${key}`
-          if (this.hasUniform(program, uname)) materialUniforms[uname] = (material as unknown as Record<string, UniformValue>)[key]
+          const value = (material as unknown as Record<string, UniformValue | undefined>)[key]
+          if (value !== undefined && this.hasUniform(program, uname)) materialUniforms[uname] = value as UniformValue
         }
         this.programs.update(program, { uniforms: materialUniforms })
         this.lastMaterialByProgram.set(program, material)
