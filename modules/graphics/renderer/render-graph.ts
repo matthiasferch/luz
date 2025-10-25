@@ -71,9 +71,9 @@ export class RenderGraph {
   }
 
   clear() {
-    for (const queue of this.queues.values()) {
+    this.queues.forEach((queue) => {
       queue.batches.length = 0
-    }
+    })
   }
 
   render(
