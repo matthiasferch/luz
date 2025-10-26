@@ -21,6 +21,7 @@ export class WebGL2TextureManager implements TextureManager {
     texture.height = height
 
     texture.target = gl.TEXTURE_2D
+    texture.useMipmaps = useMipmaps
 
     switch (format) {
       case 'Color':
@@ -161,19 +162,35 @@ export class WebGL2TextureManager implements TextureManager {
   update(texture: Texture, data: any, x = 0, y = 0, width?: number, height?: number) {
     const { gl } = this
 
-    if (width === undefined) {
-      width = texture.width
-    }
-
-    if (height === undefined) {
-      height = texture.height
-    }
-
     this.bind(texture, 0)
 
-    const { target, components, dataType, useMipmaps } = texture
+    const { target, dataFormat, dataType, useMipmaps } = texture
 
-    gl.texSubImage2D(target, 0, x, y, width, height, components, dataType, data)
+    const isImageLike =
+      (typeof ImageBitmap !== 'undefined' && data instanceof ImageBitmap) ||
+      (typeof HTMLImageElement !== 'undefined' && data instanceof HTMLImageElement) ||
+      (typeof HTMLCanvasElement !== 'undefined' && data instanceof HTMLCanvasElement) ||
+      (typeof HTMLVideoElement !== 'undefined' && data instanceof HTMLVideoElement)
+
+    if (isImageLike) {
+      const srcW = (data as any).width
+      const srcH = (data as any).height
+
+      // Reallocate storage if size changed
+      if (srcW !== texture.width || srcH !== texture.height) {
+        texture.width = srcW
+        texture.height = srcH
+        gl.texImage2D(target, 0, texture.components, texture.width, texture.height, 0, texture.dataFormat, texture.dataType, null)
+      }
+
+      // Use TexImageSource overload (no width/height parameters)
+      gl.texSubImage2D(target, 0, 0, 0, dataFormat, dataType, data)
+    } else {
+      if (width === undefined) width = texture.width
+      if (height === undefined) height = texture.height
+
+      gl.texSubImage2D(target, 0, x, y, width!, height!, dataFormat, dataType, data)
+    }
 
     if (useMipmaps) {
       gl.generateMipmap(target)
