@@ -32,23 +32,28 @@ export class WebGL2MeshManager implements MeshManager {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer)
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW)
 
-    const boneIndices = new Float32Array(vertexArray.vertexCount * 4)
-    const boneWeights = new Float32Array(vertexArray.vertexCount * 4)
+    let boneIndexBuffer: WebGLBuffer | null = null
+    let boneWeightBuffer: WebGLBuffer | null = null
 
-    partition.weights.forEach((weight, index) => {
-      boneIndices.set(weight.indices, index * 4)
-      boneWeights.set(weight.weights, index * 4)
-    })
+    if (partition.weights && partition.weights.length > 0) {
+      const boneIndices = new Float32Array(vertexArray.vertexCount * 4)
+      const boneWeights = new Float32Array(vertexArray.vertexCount * 4)
 
-    const boneIndexBuffer = this.gl.createBuffer()
+      partition.weights.forEach((weight, index) => {
+        boneIndices.set(weight.indices, index * 4)
+        boneWeights.set(weight.weights, index * 4)
+      })
 
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boneIndexBuffer)
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, boneIndices, this.gl.STATIC_DRAW)
+      boneIndexBuffer = this.gl.createBuffer()
 
-    const boneWeightBuffer = this.gl.createBuffer()
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boneIndexBuffer)
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, boneIndices, this.gl.STATIC_DRAW)
 
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boneWeightBuffer)
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, boneWeights, this.gl.STATIC_DRAW)
+      boneWeightBuffer = this.gl.createBuffer()
+
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boneWeightBuffer)
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, boneWeights, this.gl.STATIC_DRAW)
+    }
 
     let indexBuffer: WebGLBuffer | null = null
 
@@ -70,35 +75,28 @@ export class WebGL2MeshManager implements MeshManager {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer)
 
     // position
-
     this.gl.enableVertexAttribArray(0)
     this.gl.vertexAttribPointer(0, 3, this.gl.FLOAT, false, stride, 0)
 
     // normal
-
     this.gl.enableVertexAttribArray(1)
     this.gl.vertexAttribPointer(1, 3, this.gl.FLOAT, true, stride, 3 * Float32Array.BYTES_PER_ELEMENT)
 
     // coordinates
-
     this.gl.enableVertexAttribArray(2)
     this.gl.vertexAttribPointer(2, 2, this.gl.FLOAT, false, stride, 6 * Float32Array.BYTES_PER_ELEMENT)
 
-    // bone indices
+    if (boneIndexBuffer != null && boneWeightBuffer != null) {
+      // bone indices
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boneIndexBuffer)
+      this.gl.vertexAttribPointer(3, 4, this.gl.FLOAT, false, 0, 0)
+      this.gl.enableVertexAttribArray(3)
 
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boneIndexBuffer)
-
-    this.gl.vertexAttribPointer(3, 4, this.gl.FLOAT, false, 0, 0)
-    this.gl.enableVertexAttribArray(3)
-
-    // bone weights
-
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boneWeightBuffer)
-
-    this.gl.vertexAttribPointer(4, 4, this.gl.FLOAT, false, 0, 0)
-    this.gl.enableVertexAttribArray(4)
-
-    // indices
+      // bone weights
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, boneWeightBuffer)
+      this.gl.vertexAttribPointer(4, 4, this.gl.FLOAT, false, 0, 0)
+      this.gl.enableVertexAttribArray(4)
+    }
 
     if (indexBuffer != null) {
       this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
