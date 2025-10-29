@@ -90,6 +90,13 @@ export class WebGL2BufferManager implements BufferManager {
         break
     }
 
+    // Ensure draw buffers are configured for color attachments
+    if (attachment >= this.gl.COLOR_ATTACHMENT0 && attachment <= (this.gl.COLOR_ATTACHMENT0 + 15)) {
+      const drawBufCount = attachment - this.gl.COLOR_ATTACHMENT0 + 1
+      const bufs = new Array(drawBufCount).fill(0).map((_, i) => this.gl.COLOR_ATTACHMENT0 + i)
+      this.gl.drawBuffers(bufs as unknown as number[])
+    }
+
     if (this.gl.checkFramebufferStatus(this.gl.FRAMEBUFFER) !== this.gl.FRAMEBUFFER_COMPLETE) {
       throw new Error('Frame buffer is incomplete')
     }
