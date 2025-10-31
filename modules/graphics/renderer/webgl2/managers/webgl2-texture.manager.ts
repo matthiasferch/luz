@@ -176,8 +176,8 @@ export class WebGL2TextureManager implements TextureManager {
       (typeof HTMLVideoElement !== 'undefined' && data instanceof HTMLVideoElement)
 
     if (isImageLike) {
-      const srcW = (data as any).width
-      const srcH = (data as any).height
+      const srcW = data.width
+      const srcH = data.height
 
       // Reallocate storage if size changed
       if (srcW !== texture.width || srcH !== texture.height) {

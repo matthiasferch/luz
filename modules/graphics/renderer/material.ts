@@ -89,28 +89,4 @@ export class Material extends Serializable {
       this.blendMode = blendMode
     }
   }
-
-  static async deserialize(data: any) {
-    const mapped: any = { ...data }
-
-    // Backward compatibility mappings
-    if (mapped.surface !== undefined && mapped.albedoSurface === undefined) {
-      mapped.albedoSurface = mapped.surface
-      delete mapped.surface
-    }
-    if (mapped.color !== undefined && mapped.albedoColor === undefined) {
-      mapped.albedoColor = mapped.color
-      delete mapped.color
-    }
-    if (mapped.texture !== undefined && mapped.albedoTexture === undefined) {
-      mapped.albedoTexture = mapped.texture
-      delete mapped.texture
-    }
-    if (mapped.heightSurface !== undefined && mapped.parallaxSurface === undefined) {
-      mapped.parallaxSurface = mapped.heightSurface
-      delete mapped.heightSurface
-    }
-
-    return (await super.deserialize(mapped)) as Material
-  }
 }

@@ -236,9 +236,10 @@ export class WebGL2Renderer implements Renderer {
     if (frameBuffer) {
       const attachments = frameBuffer.attachments || {}
       for (const key of Object.keys(attachments)) {
-        const att = (attachments as any)[key]
-        if (att && typeof att === 'object' && 'dataType' in att) {
-          this.currentAttachments.add(att as unknown as Texture)
+        const attachment = attachments[key]
+        
+        if (attachment && typeof attachment === 'object' && 'dataType' in attachment) {
+          this.currentAttachments.add(attachment as unknown as Texture)
         }
       }
     }
