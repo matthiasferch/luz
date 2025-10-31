@@ -41,6 +41,10 @@ export class WebGL2Renderer implements Renderer {
 
   private lastMaterialByProgram: WeakMap<Program, Material>
 
+  // Track currently bound render target attachments to prevent feedback loops
+  private currentTarget: RenderTarget | null = null
+  private currentAttachments: Set<Texture> = new Set()
+
   readonly statistics: RenderStatistics
 
   constructor(private context: WebGL2RenderingContext) {
@@ -227,7 +231,30 @@ export class WebGL2Renderer implements Renderer {
   }
 
   bindTarget({ width, height, frameBuffer }: RenderTarget) {
+    // Track current target and its attached textures (if any)
+    this.currentAttachments.clear()
     if (frameBuffer) {
+      const attachments = frameBuffer.attachments || {}
+      for (const key of Object.keys(attachments)) {
+        const att = (attachments as any)[key]
+        if (att && typeof att === 'object' && 'dataType' in att) {
+          this.currentAttachments.add(att as unknown as Texture)
+        }
+      }
+    }
+    this.currentTarget = { width, height, frameBuffer }
+
+    if (frameBuffer) {
+      // Ensure we don't have the target's attachments currently bound on any unit
+      // (Avoid feedback loop regardless of previous state.)
+      // Since program bindings bypass TextureManager, clear bindings at GL level.
+      const maxUnits = this.context.getParameter(this.context.MAX_COMBINED_TEXTURE_IMAGE_UNITS) as number
+      for (let unit = 0; unit < maxUnits; unit++) {
+        this.context.activeTexture(this.context.TEXTURE0 + unit)
+        this.context.bindTexture(this.context.TEXTURE_2D, null)
+        this.context.bindTexture(this.context.TEXTURE_CUBE_MAP, null)
+      }
+
       this.buffers.bind(frameBuffer)
     } else {
       this.buffers.unbind('FrameBuffer')
@@ -287,6 +314,16 @@ export class WebGL2Renderer implements Renderer {
 
   bindUniforms(program: Program, values: any) {
     const uniforms = this.collectUniformValues(program, values)
+    // Replace any uniform textures that would create a feedback loop
+    for (const key of Object.keys(uniforms)) {
+      const val = uniforms[key]
+      if (val && typeof val === 'object' && (val as any).target !== undefined) {
+        const tex = val as Texture
+        if (this.currentAttachments.has(tex)) {
+          uniforms[key] = this.defaultTexture
+        }
+      }
+    }
     if (Object.keys(uniforms).length > 0) {
       this.programs.update(program, { uniforms })
     }
@@ -378,7 +415,15 @@ export class WebGL2Renderer implements Renderer {
         for (const { key } of this.uniformProperties.material) {
           const uname = `material.${key}`
           const value = (material as unknown as Record<string, UniformValue | undefined>)[key]
-          if (value !== undefined && this.hasUniform(program, uname)) materialUniforms[uname] = value as UniformValue
+          if (value !== undefined && this.hasUniform(program, uname)) {
+            // Prevent binding a material texture that equals a target attachment
+            const v = value as UniformValue
+            if (v && typeof v === 'object' && (v as any).target !== undefined && this.currentAttachments.has(v as unknown as Texture)) {
+              materialUniforms[uname] = this.defaultTexture
+            } else {
+              materialUniforms[uname] = v
+            }
+          }
         }
         this.programs.update(program, { uniforms: materialUniforms })
         this.lastMaterialByProgram.set(program, material)

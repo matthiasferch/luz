@@ -156,6 +156,9 @@ export class WebGL2TextureManager implements TextureManager {
 
     this.textures.push(texture)
 
+    // Avoid leaving newly created textures bound to any unit by default
+    this.unbindIfBound(texture)
+
     return texture
   }
 
@@ -218,6 +221,19 @@ export class WebGL2TextureManager implements TextureManager {
     gl.bindTexture(texture.target, texture)
 
     this.boundTextures[unit] = texture
+  }
+
+  // Ensure a texture is not bound on any unit (to avoid FBO feedback loops)
+  unbindIfBound(texture: Texture) {
+    const { gl } = this
+    for (const key of Object.keys(this.boundTextures)) {
+      const unit = Number(key)
+      if (this.boundTextures[unit] === texture) {
+        gl.activeTexture(gl.TEXTURE0 + unit)
+        gl.bindTexture(texture.target, null)
+        delete this.boundTextures[unit]
+      }
+    }
   }
 
   // Create a cubemap texture from a parsed KTX container (v1).
