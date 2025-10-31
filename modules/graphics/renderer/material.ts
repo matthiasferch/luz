@@ -11,7 +11,7 @@ export class Material extends Serializable {
   readonly color: vec3 = vec3.one.copy()
 
   @Serialize()
-  surface: Surface | null
+  albedoSurface: Surface | null
 
   @Uniform()
   texture: Texture
