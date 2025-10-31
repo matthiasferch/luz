@@ -80,7 +80,8 @@ export class WebGL2ProgramManager implements ProgramManager {
 
         if (uniform) {
           switch (uniform.type) {
-            case this.gl.SAMPLER_2D: {
+            case this.gl.SAMPLER_2D:
+            case this.gl.SAMPLER_CUBE: {
               const slot = program.textureSlots[name]
               const texture = value as Texture
 
@@ -258,7 +259,7 @@ export class WebGL2ProgramManager implements ProgramManager {
     Object.keys(program.uniforms).forEach((name) => {
       const uniform = program.uniforms[name]
 
-      if (uniform.type === this.gl.SAMPLER_2D) {
+      if (uniform.type === this.gl.SAMPLER_2D || uniform.type === this.gl.SAMPLER_CUBE) {
         this.gl.uniform1i(uniform.location, slot)
 
         program.textureSlots[name] = slot

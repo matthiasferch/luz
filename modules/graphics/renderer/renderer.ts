@@ -76,6 +76,9 @@ export interface TextureManager {
   create(surface: Partial<Surface>): Texture
   update(texture: Texture, data: any, x?: number, y?: number, width?: number, height?: number): void
   bind(texture: Texture, unit: number): void
+
+  create2DFromKTX(container: any): Texture
+  createCubeFromKTX(container: any): Texture
 }
 
 export interface SamplerManager {

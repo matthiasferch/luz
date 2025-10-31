@@ -90,10 +90,15 @@ export class WebGL2BufferManager implements BufferManager {
         break
     }
 
-    // Ensure draw buffers are configured for color attachments
+    // Ensure draw buffers are configured to only include actually attached color targets
     if (attachment >= this.gl.COLOR_ATTACHMENT0 && attachment <= (this.gl.COLOR_ATTACHMENT0 + 15)) {
-      const drawBufCount = attachment - this.gl.COLOR_ATTACHMENT0 + 1
-      const bufs = new Array(drawBufCount).fill(0).map((_, i) => this.gl.COLOR_ATTACHMENT0 + i)
+      const present = new Set<number>(
+        Object.keys(frameBuffer.attachments)
+          .map((k) => parseInt(k, 10))
+          .filter((att) => att >= this.gl.COLOR_ATTACHMENT0 && att <= (this.gl.COLOR_ATTACHMENT0 + 15))
+      )
+      present.add(attachment)
+      const bufs = Array.from(present).sort((a, b) => a - b)
       this.gl.drawBuffers(bufs as unknown as number[])
     }
 
