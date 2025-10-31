@@ -32,6 +32,9 @@ export class Material extends Serializable {
   @Serialize()
   emissiveSurface: Surface | null
 
+  @Serialize()
+  parallaxSurface: Surface | null
+
   @Uniform()
   albedoTexture: Texture
 
@@ -49,9 +52,6 @@ export class Material extends Serializable {
 
   @Uniform()
   emissiveTexture?: Texture
-
-  @Serialize()
-  parallaxSurface: Surface | null
 
   @Uniform()
   parallaxTexture?: Texture
