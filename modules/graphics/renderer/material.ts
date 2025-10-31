@@ -8,13 +8,10 @@ import { BlendMode } from './renderer'
 export class Material extends Serializable {
   @Uniform()
   @Serialize()
-  readonly color: vec3 = vec3.one.copy()
+  readonly albedoColor: vec3 = vec3.one.copy()
 
   @Serialize()
   albedoSurface: Surface | null
-
-  @Uniform()
-  texture: Texture
 
   @Serialize()
   normalSurface: Surface | null
@@ -30,6 +27,9 @@ export class Material extends Serializable {
 
   @Serialize()
   emissiveSurface: Surface | null
+
+  @Uniform()
+  albedoTexture: Texture
 
   @Uniform()
   normalTexture?: Texture
@@ -53,15 +53,15 @@ export class Material extends Serializable {
   @Serialize()
   blendMode: BlendMode = 'None'
 
-  constructor({ color, texture, opacity, blendMode }: Partial<Material> = {}) {
+  constructor({ albedoColor, albedoTexture, opacity, blendMode }: Partial<Material> = {}) {
     super()
 
-    if (color) {
-      this.color.set(color)
+    if (albedoColor) {
+      this.albedoColor.set(albedoColor)
     }
 
-    if (texture) {
-      this.texture = texture
+    if (albedoTexture) {
+      this.albedoTexture = albedoTexture
     }
 
     if (opacity !== undefined) {

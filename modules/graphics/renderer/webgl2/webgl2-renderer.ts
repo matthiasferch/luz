@@ -60,7 +60,7 @@ export class WebGL2Renderer implements Renderer {
     const textureData = new Uint8Array([0xff, 0xff, 0xff, 0xff])
 
     this.defaultTexture = this.textures.create({ data: textureData })
-    this.defaultMaterial = new Material({ texture: this.defaultTexture })
+    this.defaultMaterial = new Material({ albedoTexture: this.defaultTexture })
 
     this.uniformCache = Object.create(null)
 
@@ -402,7 +402,7 @@ export class WebGL2Renderer implements Renderer {
 
       const material = mesh.material ?? this.defaultMaterial
 
-      if (!material.texture) {
+      if (!material.albedoTexture) {
         console.warn('Material has no texture on partition:', name)
         continue
       }
