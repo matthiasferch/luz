@@ -4,4 +4,4 @@ luz (pronounced [ˈluθ] or [ˈlus], Spanish for *light*) is a 3D game engine fo
 
 It has no run-time dependencies apart from WebGL.
 
-<img src="images/luz.jpg" />
+<img src="images/editor.jpg" />
