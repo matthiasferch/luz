@@ -1,12 +1,12 @@
 require('../register-assets.cjs')
 
-const childProcess = require('node:child_process')
 const fileSystem = require('node:fs')
 const fileSystemPromises = require('node:fs/promises')
 const operatingSystem = require('node:os')
 const path = require('node:path')
 const { validateShaderNames } = require('./shader-names.cjs')
 const { validateShaderLayout } = require('./shader-layout.cjs')
+const { prepareValidator, runValidator } = require('./validator.cjs')
 
 require('ts-node').register({
   transpileOnly: true,
@@ -63,22 +63,11 @@ const validatePipeline = async (pipelineEntry, temporaryDirectory, index) => {
     fileSystemPromises.writeFile(vertexPath, assembleShader(vertexSource, vertexHeaders)),
     fileSystemPromises.writeFile(fragmentPath, assembleShader(fragmentSource, [...fragmentHeaders, ...materialHeaders]))
   ])
-
-  const validation = childProcess.spawnSync(validatorPath, ['-l', vertexPath, fragmentPath], {
-    encoding: 'utf8',
-    windowsHide: true
-  })
-
-  if (validation.status === 0) {
-    return
-  }
-
-  const diagnostics = `${validation.stdout ?? ''}${validation.stderr ?? ''}`.trim()
-
-  throw new Error(`Shader validation failed for '${pipelineEntry.name}'\n${diagnostics}`)
+  runValidator(validatorPath, ['-l', vertexPath, fragmentPath], pipelineEntry.name)
 }
 
 const validateShaders = async () => {
+  prepareValidator(validatorPath)
   validateShaderDirectory(shaderDirectory)
   validateShaderLayout(defaultMaterialGraphSource, 'defaultMaterialGraphSource')
 
