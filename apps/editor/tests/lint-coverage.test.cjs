@@ -3,12 +3,12 @@ const assert = require('node:assert/strict')
 const { execFileSync } = require('node:child_process')
 const { existsSync } = require('node:fs')
 const path = require('node:path')
-const { ESLint } = require('eslint')
+const { createLinter } = require('./helpers/create-linter.cjs')
 const { FileEnumerator } = require('eslint/use-at-your-own-risk')
 const { HtmlValidate } = require('html-validate')
 
 const workspaceRoot = path.resolve(__dirname, '../../..')
-const linter = new ESLint({ cwd: workspaceRoot })
+const linter = createLinter({ cwd: workspaceRoot })
 
 it('includes every repository JavaScript, TypeScript, and Vue file in the lint commands', () => {
   const includedFiles = new Set()

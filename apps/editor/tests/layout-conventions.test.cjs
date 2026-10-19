@@ -1,7 +1,7 @@
 const { it } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
-const { ESLint } = require('eslint')
+const { createLinter } = require('./helpers/create-linter.cjs')
 const {
   findMissingShaderPadding,
   findUnbracedShaderBodies,
@@ -9,8 +9,8 @@ const {
 } = require('../../../tooling/shaders/shader-layout.cjs')
 
 const workspaceRoot = path.resolve(__dirname, '../../..')
-const linter = new ESLint({ cwd: workspaceRoot })
-const fixer = new ESLint({
+const linter = createLinter({ cwd: workspaceRoot })
+const fixer = createLinter({
   cwd: workspaceRoot,
   fix: ({ ruleId }) => ['curly', 'padding-line-between-statements', 'luz/assignment-call-padding'].includes(ruleId)
 })

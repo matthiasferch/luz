@@ -1,10 +1,10 @@
 const { it } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
-const { ESLint } = require('eslint')
+const { createLinter } = require('./helpers/create-linter.cjs')
 
 const workspaceRoot = path.resolve(__dirname, '../../..')
-const linter = new ESLint({ cwd: workspaceRoot })
+const linter = createLinter({ cwd: workspaceRoot })
 const ruleName = '@typescript-eslint/no-unused-vars'
 const getUnusedMessages = async (source, fileName = 'tooling/eslint/config/unused.cjs') => {
   const [result] = await linter.lintText(source, { filePath: path.join(workspaceRoot, fileName) })

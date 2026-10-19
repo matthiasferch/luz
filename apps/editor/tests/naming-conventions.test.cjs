@@ -1,11 +1,11 @@
 const { it } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
-const { ESLint } = require('eslint')
+const { createLinter } = require('./helpers/create-linter.cjs')
 const { findInvalidBooleanNames } = require('../../../tooling/shaders/shader-names.cjs')
 
 const workspaceRoot = path.resolve(__dirname, '../../..')
-const linter = new ESLint({ cwd: workspaceRoot })
+const linter = createLinter({ cwd: workspaceRoot })
 const getNamingMessages = async (source, filePath) => {
   const [result] = await linter.lintText(source, { filePath: path.join(workspaceRoot, filePath) })
 

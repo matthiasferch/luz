@@ -1,7 +1,8 @@
 const { it } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
-const { ESLint, Linter } = require('eslint')
+const { Linter } = require('eslint')
+const { createLinter } = require('./helpers/create-linter.cjs')
 const prettier = require('prettier')
 
 const rule = require('eslint-plugin-luz').rules['assignment-call-padding']
@@ -136,7 +137,7 @@ it('does not cross block boundaries, switch labels, or separate expressions with
 })
 it('loads the local plugin through engine, editor, Vue, and math ESLint configurations', async () => {
   const workspaceRoot = path.resolve(__dirname, '../../..')
-  const configuredLinter = new ESLint({ cwd: workspaceRoot })
+  const configuredLinter = createLinter({ cwd: workspaceRoot })
   const source = 'function update() { value = 1; apply(); value++; save(); }'
 
   for (const fileName of [

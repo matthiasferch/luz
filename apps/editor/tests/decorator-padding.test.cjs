@@ -1,7 +1,8 @@
 const { it } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
-const { ESLint, Linter } = require('eslint')
+const { Linter } = require('eslint')
+const { createLinter } = require('./helpers/create-linter.cjs')
 const prettier = require('prettier')
 const parser = require('@typescript-eslint/parser')
 const { rules } = require('eslint-plugin-luz')
@@ -218,8 +219,8 @@ it('keeps combined layout fixes stable after Prettier formats decorated members 
 })
 it('loads and fixes decorator padding through the engine, editor, Vue, and math configurations', async () => {
   const workspaceRoot = path.resolve(__dirname, '../../..')
-  const configuredLinter = new ESLint({ cwd: workspaceRoot })
-  const configuredFixer = new ESLint({
+  const configuredLinter = createLinter({ cwd: workspaceRoot })
+  const configuredFixer = createLinter({
     cwd: workspaceRoot,
     fix: ({ ruleId }) => Object.keys(sharedConfiguration.rules).includes(ruleId)
   })

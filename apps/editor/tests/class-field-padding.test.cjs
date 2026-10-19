@@ -1,7 +1,8 @@
 const { it } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
-const { ESLint, Linter } = require('eslint')
+const { Linter } = require('eslint')
+const { createLinter } = require('./helpers/create-linter.cjs')
 const prettier = require('prettier')
 const parser = require('@typescript-eslint/parser')
 
@@ -228,7 +229,7 @@ it('keeps fixes stable with Prettier, decorators, and protective semicolons befo
 })
 it('enforces the rule through the engine, editor, Vue, and math configurations', async () => {
   const workspaceRoot = path.resolve(__dirname, '../../..')
-  const configuredLinter = new ESLint({ cwd: workspaceRoot })
+  const configuredLinter = createLinter({ cwd: workspaceRoot })
   const source = 'class State {\n value = 1\n\n count = 2\n static capacity = 3\n}'
 
   for (const fileName of [

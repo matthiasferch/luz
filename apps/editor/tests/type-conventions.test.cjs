@@ -1,12 +1,12 @@
 const { it } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
-const { ESLint } = require('eslint')
+const { createLinter } = require('./helpers/create-linter.cjs')
 const typeRules = require('../../../tooling/eslint/config/types.cjs')
 
 const workspaceRoot = path.resolve(__dirname, '../../..')
-const linter = new ESLint({ cwd: workspaceRoot })
-const fixingLinter = new ESLint({ cwd: workspaceRoot, fix: true })
+const linter = createLinter({ cwd: workspaceRoot })
+const fixingLinter = createLinter({ cwd: workspaceRoot, fix: true })
 const getTypeMessages = async (source, fileName = 'packages/core/transform.ts') => {
   const [result] = await linter.lintText(source, { filePath: path.join(workspaceRoot, fileName) })
 
