@@ -1,0 +1,6 @@
+{
+  "css-render@0.15.14": "css-render-0.15.14",
+  "@css-render/plugin-bem@0.15.14": "css-render-0.15.14",
+  "@css-render/vue3-ssr@0.15.14": "css-render-0.15.14",
+  "vdirs@0.1.8": "vdirs-0.1.8"
+}

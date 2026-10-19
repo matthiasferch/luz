@@ -1,0 +1,74 @@
+name: Quality
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: npm ci
+      - run: python -m pip install ruff==0.12.12
+
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run validate:textures
+      - run: npm run validate:shaders
+      - run: npm test
+      - run: npm run build
+
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      BLENDER_VERSION: 5.0.1
+      CHROME_PATH: /usr/bin/google-chrome
+      LUZ_BLENDER_SKELETAL_FIXTURE: ${{ github.workspace }}/.tmp/skeletal-fixture/skeletal-manifest.json
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - name: Install pinned Blender
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP"
+          archive="blender-${BLENDER_VERSION}-linux-x64.tar.xz"
+          curl --fail --location --retry 3 --output "$archive" "https://download.blender.org/release/Blender5.0/$archive"
+          curl --fail --location --retry 3 --output blender.sha256 "https://download.blender.org/release/Blender5.0/blender-${BLENDER_VERSION}.sha256"
+          grep " $archive$" blender.sha256 > selected.sha256
+          sha256sum --check selected.sha256
+          tar --extract --file "$archive"
+          echo "BLENDER_PATH=$RUNNER_TEMP/blender-${BLENDER_VERSION}-linux-x64/blender" >> "$GITHUB_ENV"
+
+      - run: npm run test:fixture:skeletal
+      - name: Compare exported poses against Blender
+        working-directory: tests
+        run: npx mocha -r ../tooling/register-assets.cjs -r ts-node/register integration/blender-skeletal-reload.test.ts
+      - run: npm run build:engine
+      - run: npm run test:gpu
+      - run: npm run test:distribution:gpu

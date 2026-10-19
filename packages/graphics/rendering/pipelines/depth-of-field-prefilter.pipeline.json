@@ -1,0 +1,7 @@
+{
+  "$schema": "../../../formats/schemas/pipeline.schema.json",
+  "vertexShader": "./assets/shaders/composite.vertex.glsl",
+  "fragmentShader": "./assets/shaders/depth-of-field-prefilter.fragment.glsl",
+  "depthTest": "always",
+  "depthMask": false
+}

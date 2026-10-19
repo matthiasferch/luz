@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "scene.schema.json",
+  "title": "Scene",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "linearDamping": { "type": "number", "minimum": 0, "default": 0.02 },
+    "angularDamping": { "type": "number", "minimum": 0, "default": 0.05 },
+    "fixedTimeStep": { "type": "number", "exclusiveMinimum": 0, "default": 0.016666666666666666 },
+    "maximumSubsteps": { "type": "integer", "minimum": 1, "default": 4 },
+    "synchronizationPolicy": { "type": "string", "enum": ["drop", "retain"], "default": "drop" },
+    "gravity": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "environment": {
+      "type": "object",
+      "required": ["sky", "radiance", "irradiance"],
+      "properties": {
+        "sky": {
+          "type": "string",
+          "minLength": 1
+        },
+        "radiance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "irradiance": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rotation": {
+          "type": "number",
+          "default": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "entities": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "entity.schema.json"
+      },
+      "default": {}
+    },
+    "colliders": {
+      "type": "object",
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "$ref": "plane.schema.json"
+          },
+          {
+            "$ref": "polygon.schema.json"
+          },
+          {
+            "$ref": "ray.schema.json"
+          }
+        ]
+      },
+      "default": {}
+    }
+  },
+  "required": ["entities"],
+  "additionalProperties": false
+}

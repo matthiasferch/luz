@@ -1,0 +1,8 @@
+{
+  "$schema": "../../../formats/schemas/pipeline.schema.json",
+  "vertexShader": "./assets/shaders/motion-vectors.vertex.glsl",
+  "fragmentShader": "./assets/shaders/motion-vectors.fragment.glsl",
+  "blendMode": "none",
+  "depthTest": "lessEqual",
+  "depthMask": false
+}

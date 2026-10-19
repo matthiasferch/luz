@@ -1,0 +1,52 @@
+{
+  "win32-x64": {
+    "actionlint": {
+      "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.11/actionlint_1.7.11_windows_amd64.zip",
+      "sha256": "5414b7124a91f4b5abee62e5c9d84802237734f8d15b9b7032732a32c3ebffa3"
+    },
+    "shellcheck": {
+      "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.zip",
+      "sha256": "8a4e35ab0b331c85d73567b12f2a444df187f483e5079ceffa6bda1faa2e740e"
+    }
+  },
+  "linux-x64": {
+    "actionlint": {
+      "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.11/actionlint_1.7.11_linux_amd64.tar.gz",
+      "sha256": "900919a84f2229bac68ca9cd4103ea297abc35e9689ebb842c6e34a3d1b01b0a"
+    },
+    "shellcheck": {
+      "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.x86_64.tar.gz",
+      "sha256": "b7af85e41cc99489dcc21d66c6d5f3685138f06d34651e6d34b42ec6d54fe6f6"
+    }
+  },
+  "linux-arm64": {
+    "actionlint": {
+      "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.11/actionlint_1.7.11_linux_arm64.tar.gz",
+      "sha256": "21bc0dfb57a913fe175298c2a9e906ee630f747cb66d0a934d0d4b69f4ee1235"
+    },
+    "shellcheck": {
+      "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.linux.aarch64.tar.gz",
+      "sha256": "68a8133197a50beb8803f8d42f9908d1af1c5540d4bb05fdfca8c1fa47decefc"
+    }
+  },
+  "darwin-x64": {
+    "actionlint": {
+      "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.11/actionlint_1.7.11_darwin_amd64.tar.gz",
+      "sha256": "17ffc17fed8f0258ef6ad4aed932d3272464c7ef7d64e1cb0d65aa97c9752107"
+    },
+    "shellcheck": {
+      "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.x86_64.tar.gz",
+      "sha256": "c2c15e08df0e8fbc374c335b230a7ee958c313fa5714817a59aa59f1aa594f51"
+    }
+  },
+  "darwin-arm64": {
+    "actionlint": {
+      "url": "https://github.com/rhysd/actionlint/releases/download/v1.7.11/actionlint_1.7.11_darwin_arm64.tar.gz",
+      "sha256": "a21ba7366d8329e7223faee0ed69eb13da27fe8acabb356bb7eb0b7f1e1cb6d8"
+    },
+    "shellcheck": {
+      "url": "https://github.com/koalaman/shellcheck/releases/download/v0.11.0/shellcheck-v0.11.0.darwin.aarch64.tar.gz",
+      "sha256": "339b930feb1ea764467013cc1f72d09cd6b869ebf1013296ba9055ab2ffbd26f"
+    }
+  }
+}

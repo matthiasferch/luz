@@ -1,0 +1,53 @@
+{
+  "pipelines": {
+    "depth": {
+      "vertexShader": "./assets/shaders/depth.vertex.glsl",
+      "fragmentShader": "./assets/shaders/depth.fragment.glsl",
+      "depthTest": "less",
+      "depthMask": true,
+      "colorMask": [false, false, false, false]
+    },
+    "ambient": {
+      "vertexShader": "./assets/shaders/scene.vertex.glsl",
+      "fragmentShader": "./assets/shaders/ambient.fragment.glsl",
+      "blendMode": "none",
+      "depthTest": "equal",
+      "depthMask": false
+    },
+    "lighting": {
+      "vertexShader": "./assets/shaders/scene.vertex.glsl",
+      "fragmentShader": "./assets/shaders/physically-based-lighting.fragment.glsl",
+      "blendMode": "additive",
+      "depthTest": "lessEqual",
+      "depthMask": false
+    },
+    "volumetricLighting": {
+      "vertexShader": "./assets/shaders/composite.vertex.glsl",
+      "fragmentShader": "./assets/shaders/volumetric-light.fragment.glsl",
+      "blendMode": "additive",
+      "depthTest": "always",
+      "depthMask": false
+    },
+    "shadowMapping": {
+      "vertexShader": "./assets/shaders/depth.vertex.glsl",
+      "fragmentShader": "./assets/shaders/depth.fragment.glsl",
+      "depthTest": "less",
+      "depthMask": true,
+      "colorMask": [false, false, false, false]
+    },
+    "transparent": {
+      "vertexShader": "./assets/shaders/scene.vertex.glsl",
+      "fragmentShader": "./assets/shaders/scene.fragment.glsl",
+      "blendMode": "transparent",
+      "depthTest": "lessEqual",
+      "depthMask": false
+    },
+    "transmission": {
+      "vertexShader": "./assets/shaders/scene.vertex.glsl",
+      "fragmentShader": "./assets/shaders/transmission.fragment.glsl",
+      "blendMode": "none",
+      "depthTest": "lessEqual",
+      "depthMask": true
+    }
+  }
+}

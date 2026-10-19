@@ -1,0 +1,16 @@
+schema_version = "1.0.0"
+id = "luz_exporter"
+version = "0.9.1"
+name = "luz Scene and Entity Exporter"
+tagline = "Export hierarchical scenes and reusable entity assets for luz"
+maintainer = "Matthias Ferch"
+type = "add-on"
+tags = ["Import-Export"]
+blender_version_min = "5.0.0"
+license = ["SPDX:GPL-3.0-or-later"]
+
+[permissions]
+files = "Read source assets and write exported scenes and entity assets"
+
+[build]
+paths = ["__init__.py", "exporter.py", "LICENSE"]

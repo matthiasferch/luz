@@ -1,0 +1,8 @@
+{
+  "name": "@luz/browser",
+  "license": "MIT",
+  "private": true,
+  "author": "Matthias Ferch",
+  "main": "index.ts",
+  "types": "index.ts"
+}

@@ -1,0 +1,7 @@
+{
+  "name": "@luz/formats",
+  "license": "MIT",
+  "author": "Matthias Ferch",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

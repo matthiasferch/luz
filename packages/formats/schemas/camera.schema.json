@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "camera.schema.json",
+  "title": "Camera",
+  "type": "object",
+  "properties": {
+    "$schema": { "type": "string" },
+    "type": {
+      "type": "string",
+      "const": "camera"
+    },
+    "aspect": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 1.0
+    },
+    "fieldOfView": {
+      "description": "Vertical field of view in degrees.",
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "exclusiveMaximum": 180.0,
+      "default": 90.0
+    },
+    "clipPlanes": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [1.0, 100.0]
+    },
+    "isDepthOfFieldEnabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "focusDistance": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "default": 10.0
+    },
+    "focalLength": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "default": 50.0
+    },
+    "sensorHeight": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "default": 32.0
+    },
+    "fStop": {
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "default": 2.8
+    }
+  },
+  "required": ["type", "fieldOfView", "clipPlanes"],
+  "additionalProperties": false
+}

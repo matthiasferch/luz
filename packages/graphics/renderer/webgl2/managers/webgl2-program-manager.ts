@@ -1,0 +1,296 @@
+import type { Matrix2, Matrix3, Matrix4, Vector2, Vector3, Vector4 } from '@luz/math'
+import type { Attribute } from '../../../types/attribute'
+import type { Program } from '../../../types/program'
+import type { Shader } from '../../../types/shader'
+import type { Texture } from '../../../types/texture'
+import type { ShaderUniform } from '../../../types/uniform'
+import type { ProgramManager, UniformData } from '../../render-backend'
+
+export class WebGL2ProgramManager implements ProgramManager {
+  private readonly programs = new Set<Program>()
+
+  private usedProgram?: Program
+
+  constructor(private gl: WebGL2RenderingContext) {}
+
+  create(vertexShader: Shader, fragmentShader: Shader, data?: UniformData): Program | null {
+    const program = this.gl.createProgram() as Program | null
+
+    if (!program) {
+      return null
+    }
+
+    this.programs.add(program)
+
+    try {
+      this.gl.attachShader(program, vertexShader)
+      this.gl.attachShader(program, fragmentShader)
+
+      // 0: a_position, 1: a_normal, 2: a_coordinates, 3: a_boneIndices, 4: a_boneWeights, 5: a_tangent, 6: a_bitangent
+      this.gl.bindAttribLocation(program, 0, 'a_position')
+      this.gl.bindAttribLocation(program, 1, 'a_normal')
+      this.gl.bindAttribLocation(program, 2, 'a_coordinates')
+      this.gl.bindAttribLocation(program, 3, 'a_boneIndices')
+      this.gl.bindAttribLocation(program, 4, 'a_boneWeights')
+      this.gl.bindAttribLocation(program, 5, 'a_tangent')
+      this.gl.bindAttribLocation(program, 6, 'a_bitangent')
+      this.gl.linkProgram(program)
+
+      const isLinked = this.gl.getProgramParameter(program, this.gl.LINK_STATUS) as boolean
+
+      if (!isLinked || !this.gl.isProgram(program)) {
+        console.error(this.gl.getProgramInfoLog(program))
+        this.destroy(program)
+
+        return null
+      }
+
+      this.initializeAttributes(program)
+      this.initializeUniforms(program)
+      this.initializeUniformBlocks(program)
+      this.initializeTextureSlots(program)
+
+      if (data) {
+        this.update(program, data)
+      }
+
+      return program
+    } catch (error) {
+      this.destroy(program)
+      throw error
+    }
+  }
+
+  update(program: Program, data: UniformData) {
+    this.bind(program)
+
+    if (data.uniforms) {
+      Object.keys(data.uniforms).forEach((name) => {
+        const value = data.uniforms![name]
+
+        if (value === undefined) {
+          console.warn('Skipping undefined uniform value:', name)
+
+          return
+        }
+
+        const uniform = program.uniforms[name]
+
+        if (uniform) {
+          switch (uniform.type) {
+            case this.gl.SAMPLER_2D:
+            case this.gl.SAMPLER_CUBE: {
+              const slot = program.textureSlots[name]
+              const texture = value as Texture
+
+              this.gl.activeTexture(this.gl.TEXTURE0 + slot)
+              this.gl.bindTexture(texture.target, texture)
+              break
+            }
+
+            case this.gl.BOOL: {
+              this.gl.uniform1i(uniform.location, value ? 1 : 0)
+              break
+            }
+
+            case this.gl.INT: {
+              this.gl.uniform1i(uniform.location, value as number)
+              break
+            }
+
+            case this.gl.FLOAT: {
+              this.gl.uniform1f(uniform.location, value as number)
+              break
+            }
+
+            case this.gl.FLOAT_VEC2: {
+              this.gl.uniform2fv(uniform.location, value as Vector2)
+              break
+            }
+
+            case this.gl.FLOAT_VEC3: {
+              this.gl.uniform3fv(uniform.location, value as Vector3)
+              break
+            }
+
+            case this.gl.FLOAT_VEC4: {
+              this.gl.uniform4fv(uniform.location, value as Vector4)
+              break
+            }
+
+            case this.gl.FLOAT_MAT2: {
+              this.gl.uniformMatrix2fv(uniform.location, false, value as Matrix2)
+              break
+            }
+
+            case this.gl.FLOAT_MAT3: {
+              const matrix = value as Matrix3
+
+              this.gl.uniformMatrix3fv(uniform.location, false, matrix)
+              break
+            }
+
+            case this.gl.FLOAT_MAT4: {
+              const matrix = value as Matrix4
+
+              this.gl.uniformMatrix4fv(uniform.location, false, matrix)
+              break
+            }
+
+            default:
+              console.error('Failed to set uniform value:', name, value)
+              break
+          }
+        } else {
+          console.warn('Attempting to update non-existent uniform:', name)
+        }
+      })
+    }
+
+    if (data.uniformBuffers) {
+      Object.keys(data.uniformBuffers).forEach((name) => {
+        const uniformBlock = program.uniformBlocks[name]
+
+        if (uniformBlock) {
+          this.gl.bindBufferBase(this.gl.UNIFORM_BUFFER, uniformBlock.index, data.uniformBuffers![name])
+        }
+      })
+    }
+  }
+
+  bind(program: Program) {
+    if (this.usedProgram === program) {
+      return
+    }
+
+    this.gl.useProgram(program)
+
+    this.usedProgram = program
+  }
+
+  private initializeAttributes(program: Program) {
+    program.attributes = {}
+
+    const activeAttributes = this.gl.getProgramParameter(program, this.gl.ACTIVE_ATTRIBUTES) as number
+
+    for (let index = 0; index < activeAttributes; index++) {
+      const attribute = this.gl.getActiveAttrib(program, index) as Attribute
+      const location = this.gl.getAttribLocation(program, attribute.name)
+
+      attribute.location = location
+      program.attributes[attribute.name] = attribute
+    }
+  }
+
+  private initializeUniforms(program: Program) {
+    program.uniforms = {}
+
+    const activeUniforms = this.gl.getProgramParameter(program, this.gl.ACTIVE_UNIFORMS)
+
+    for (let uniformIndex = 0; uniformIndex < activeUniforms; uniformIndex++) {
+      const uniform = this.gl.getActiveUniform(program, uniformIndex) as ShaderUniform
+
+      if (this.isUniformArray(uniform)) {
+        const name = uniform.name.replace(/\[0\]$/, '')
+        const location = this.gl.getUniformLocation(program, name)
+
+        if (location != null) {
+          uniform.location = location
+          program.uniforms[name] = uniform
+        }
+      } else {
+        const location = this.gl.getUniformLocation(program, uniform.name)
+
+        if (location != null) {
+          uniform.location = location
+          program.uniforms[uniform.name] = uniform
+        }
+      }
+    }
+  }
+
+  private initializeUniformBlocks(program: Program) {
+    program.uniformBlocks = {}
+
+    const activeUniformBlocks = this.gl.getProgramParameter(program, this.gl.ACTIVE_UNIFORM_BLOCKS) as number
+
+    for (let blockIndex = 0; blockIndex < activeUniformBlocks; blockIndex++) {
+      const uniformBlockName = this.gl.getActiveUniformBlockName(program, blockIndex)
+
+      const uniformBlockIndex = this.gl.getUniformBlockIndex(program, uniformBlockName!)
+
+      const uniformBlockBinding = uniformBlockIndex
+
+      this.gl.uniformBlockBinding(program, uniformBlockIndex, uniformBlockBinding)
+
+      const uniformIndices = this.gl.getActiveUniformBlockParameter(
+        program,
+        blockIndex,
+        this.gl.UNIFORM_BLOCK_ACTIVE_UNIFORM_INDICES
+      ) as number[]
+
+      const uniformOffsets = this.gl.getActiveUniforms(program, uniformIndices, this.gl.UNIFORM_OFFSET) as number[]
+
+      const uniformOffsetsByName = uniformIndices.reduce((offsets: Record<string, number>, uniformIndex, index) => {
+        const uniform = this.gl.getActiveUniform(program, uniformIndex)
+
+        offsets[uniform!.name] = uniformOffsets[index]
+
+        return offsets
+      }, {})
+
+      program.uniformBlocks[uniformBlockName!] = {
+        name: uniformBlockName!,
+        index: uniformBlockIndex,
+        binding: uniformBlockBinding,
+        offsets: uniformOffsetsByName
+      }
+    }
+  }
+
+  private initializeTextureSlots(program: Program) {
+    program.textureSlots = {}
+
+    let slot = 0
+
+    this.bind(program)
+    Object.keys(program.uniforms).forEach((name) => {
+      const uniform = program.uniforms[name]
+
+      if (uniform.type === this.gl.SAMPLER_2D || uniform.type === this.gl.SAMPLER_CUBE) {
+        if (slot >= this.gl.getParameter(this.gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS)) {
+          throw new Error('Program exceeds WebGL2 texture slot limits')
+        }
+
+        this.gl.uniform1i(uniform.location, slot)
+
+        program.textureSlots[name] = slot
+        slot = slot + 1
+      }
+    })
+  }
+
+  private isUniformArray(uniform: WebGLActiveInfo) {
+    return uniform.size > 1
+  }
+
+  destroy(program: Program): void {
+    if (!this.programs.delete(program)) {
+      return
+    }
+
+    if (this.usedProgram === program) {
+      this.gl.useProgram(null)
+
+      this.usedProgram = undefined
+    }
+
+    this.gl.deleteProgram(program)
+  }
+
+  destroyAll(): void {
+    for (const program of this.programs) {
+      this.destroy(program)
+    }
+  }
+}

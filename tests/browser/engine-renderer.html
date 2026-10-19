@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Engine rendering integration</title>
+  </head>
+  <body>
+    <pre id="results">Running…</pre>
+    <canvas id="canvas" width="64" height="64"></canvas>
+    <script type="importmap">
+      { "imports": { "luz": "/engine.mjs" } }
+    </script>
+    <script type="module" src="engine-renderer.mjs"></script>
+  </body>
+</html>

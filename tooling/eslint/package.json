@@ -1,0 +1,10 @@
+{
+  "name": "eslint-plugin-luz",
+  "license": "MIT",
+  "version": "0.0.0",
+  "private": true,
+  "main": "index.cjs",
+  "peerDependencies": {
+    "eslint": "^8.50.0"
+  }
+}

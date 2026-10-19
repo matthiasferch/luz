@@ -1,0 +1,1426 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Material",
+  "$id": "material.schema.json",
+  "type": "object",
+  "required": ["graph"],
+  "properties": {
+    "graph": {
+      "type": "object",
+      "required": ["version", "nodes", "outputs"],
+      "properties": {
+        "version": {
+          "const": 1
+        },
+        "nodes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/node"
+          }
+        },
+        "surface": {
+          "$ref": "#/definitions/closure"
+        },
+        "volume": {
+          "$ref": "#/definitions/volume"
+        },
+        "outputs": {
+          "type": "object",
+          "required": [
+            "baseColor",
+            "alpha",
+            "normal",
+            "metallic",
+            "roughness",
+            "occlusion",
+            "emissionColor",
+            "emissionStrength",
+            "transmission",
+            "indexOfRefraction"
+          ],
+          "properties": {
+            "baseColor": {
+              "$ref": "#/definitions/input"
+            },
+            "alpha": {
+              "$ref": "#/definitions/input"
+            },
+            "normal": {
+              "$ref": "#/definitions/input"
+            },
+            "metallic": {
+              "$ref": "#/definitions/input"
+            },
+            "roughness": {
+              "$ref": "#/definitions/input"
+            },
+            "occlusion": {
+              "$ref": "#/definitions/input"
+            },
+            "emissionColor": {
+              "$ref": "#/definitions/input"
+            },
+            "emissionStrength": {
+              "$ref": "#/definitions/input"
+            },
+            "transmission": {
+              "$ref": "#/definitions/input"
+            },
+            "indexOfRefraction": {
+              "$ref": "#/definitions/input"
+            },
+            "specularLevel": {
+              "$ref": "#/definitions/input"
+            },
+            "subsurfaceWeight": {
+              "$ref": "#/definitions/input"
+            },
+            "subsurfaceScale": {
+              "$ref": "#/definitions/input"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "transmissionDepth": {
+      "type": "number",
+      "minimum": 0
+    },
+    "transmissionEdgeFade": {
+      "type": "number",
+      "minimum": 0
+    },
+    "alphaMode": {
+      "type": "string",
+      "enum": ["opaque", "mask", "blend"]
+    },
+    "alphaCutoff": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "blendMode": {
+      "type": "string",
+      "enum": ["none", "transmissive", "additive"]
+    },
+    "isDoubleSided": {
+      "type": "boolean"
+    }
+  },
+  "definitions": {
+    "value": {
+      "oneOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 4
+        }
+      ]
+    },
+    "input": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["value"],
+          "properties": {
+            "value": {
+              "$ref": "#/definitions/value"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["node", "output"],
+          "properties": {
+            "node": {
+              "type": "string",
+              "minLength": 1
+            },
+            "output": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "node": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "textureCoordinate"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "uvMap": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "geometry"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "surface"],
+          "properties": {
+            "type": {
+              "const": "imageTexture"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            },
+            "surface": {
+              "$ref": "#/definitions/surface"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "value"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "rgb"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "mapping"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                },
+                "location": {
+                  "$ref": "#/definitions/input"
+                },
+                "rotation": {
+                  "$ref": "#/definitions/input"
+                },
+                "scale": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "vectorType": {
+                  "type": "string",
+                  "enum": ["POINT", "VECTOR", "NORMAL", "TEXTURE"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "math"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "value1": {
+                  "$ref": "#/definitions/input"
+                },
+                "value2": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": [
+                    "ADD",
+                    "SUBTRACT",
+                    "MULTIPLY",
+                    "DIVIDE",
+                    "MODULO",
+                    "ROUND",
+                    "POWER",
+                    "SNAP",
+                    "GREATER_THAN",
+                    "LESS_THAN",
+                    "SINE",
+                    "COSINE",
+                    "RADIANS"
+                  ]
+                },
+                "isClampingEnabled": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "vectorMath"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector1": {
+                  "$ref": "#/definitions/input"
+                },
+                "vector2": {
+                  "$ref": "#/definitions/input"
+                },
+                "scale": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "operation": {
+                  "type": "string",
+                  "enum": ["ADD", "MULTIPLY", "SCALE"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "mix"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "factor": {
+                  "$ref": "#/definitions/input"
+                },
+                "a": {
+                  "$ref": "#/definitions/input"
+                },
+                "b": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "dataType": {
+                  "type": "string",
+                  "enum": ["FLOAT", "VECTOR", "RGBA"]
+                },
+                "blendType": {
+                  "type": "string",
+                  "enum": [
+                    "MIX",
+                    "MULTIPLY",
+                    "LIGHTEN",
+                    "DARKEN",
+                    "DIFFERENCE",
+                    "SUBTRACT",
+                    "SOFT_LIGHT",
+                    "BURN",
+                    "HUE",
+                    "COLOR"
+                  ]
+                },
+                "isResultClampingEnabled": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "hueSaturation"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                },
+                "hue": {
+                  "$ref": "#/definitions/input"
+                },
+                "saturation": {
+                  "$ref": "#/definitions/input"
+                },
+                "value": {
+                  "$ref": "#/definitions/input"
+                },
+                "factor": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "brightContrast"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                },
+                "bright": {
+                  "$ref": "#/definitions/input"
+                },
+                "contrast": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "gamma"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                },
+                "gamma": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "invert"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                },
+                "factor": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "rgbToBW"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "separateColor"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": ["RGB"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "clamp"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "$ref": "#/definitions/input"
+                },
+                "minimum": {
+                  "$ref": "#/definitions/input"
+                },
+                "maximum": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "clampType": {
+                  "type": "string",
+                  "enum": ["MINMAX"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "mapRange"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "$ref": "#/definitions/input"
+                },
+                "fromMinimum": {
+                  "$ref": "#/definitions/input"
+                },
+                "fromMaximum": {
+                  "$ref": "#/definitions/input"
+                },
+                "toMinimum": {
+                  "$ref": "#/definitions/input"
+                },
+                "toMaximum": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "dataType": {
+                  "type": "string",
+                  "enum": ["FLOAT"]
+                },
+                "interpolation": {
+                  "type": "string",
+                  "enum": ["LINEAR", "SMOOTHSTEP"]
+                },
+                "isClampingEnabled": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "colorRamp"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "factor": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "patternProperties": {
+                "^position(0|[1-9][0-9]*)$": {
+                  "$ref": "#/definitions/input"
+                },
+                "^color(0|[1-9][0-9]*)$": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "elementCount": {
+                  "type": "number"
+                },
+                "interpolation": {
+                  "type": "string",
+                  "enum": ["CONSTANT", "LINEAR", "EASE", "B_SPLINE"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "rgbCurves"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                },
+                "factor": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "patternProperties": {
+                "^position(0|[1-9][0-9]*)$": {
+                  "$ref": "#/definitions/input"
+                },
+                "^value(0|[1-9][0-9]*)$": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "pointCount": {
+                  "type": "number"
+                },
+                "extensionMode": {
+                  "type": "string",
+                  "enum": ["HORIZONTAL", "EXTRAPOLATED"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "separateXYZ"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "combineXYZ"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "$ref": "#/definitions/input"
+                },
+                "y": {
+                  "$ref": "#/definitions/input"
+                },
+                "z": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "noiseTexture"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                },
+                "w": {
+                  "$ref": "#/definitions/input"
+                },
+                "scale": {
+                  "$ref": "#/definitions/input"
+                },
+                "detail": {
+                  "$ref": "#/definitions/input"
+                },
+                "roughness": {
+                  "$ref": "#/definitions/input"
+                },
+                "lacunarity": {
+                  "$ref": "#/definitions/input"
+                },
+                "distortion": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "dimensions": {
+                  "type": "string",
+                  "enum": ["3D", "4D"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "waveTexture"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                },
+                "scale": {
+                  "$ref": "#/definitions/input"
+                },
+                "distortion": {
+                  "$ref": "#/definitions/input"
+                },
+                "detail": {
+                  "$ref": "#/definitions/input"
+                },
+                "detailScale": {
+                  "$ref": "#/definitions/input"
+                },
+                "detailRoughness": {
+                  "$ref": "#/definitions/input"
+                },
+                "phaseOffset": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "waveType": {
+                  "type": "string",
+                  "enum": ["BANDS", "RINGS"]
+                },
+                "bandsDirection": {
+                  "type": "string",
+                  "enum": ["X", "Y", "Z", "DIAGONAL"]
+                },
+                "ringsDirection": {
+                  "type": "string",
+                  "enum": ["X", "Y", "Z", "SPHERICAL"]
+                },
+                "waveProfile": {
+                  "type": "string",
+                  "enum": ["SIN"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "gradientTexture"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "gradientType": {
+                  "type": "string",
+                  "enum": ["LINEAR"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "ambientOcclusion"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                },
+                "distance": {
+                  "$ref": "#/definitions/input"
+                },
+                "normal": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "inside": {
+                  "type": "boolean"
+                },
+                "localOnly": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "checkerTexture"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                },
+                "color1": {
+                  "$ref": "#/definitions/input"
+                },
+                "color2": {
+                  "$ref": "#/definitions/input"
+                },
+                "scale": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "voronoiTexture"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                },
+                "w": {
+                  "$ref": "#/definitions/input"
+                },
+                "scale": {
+                  "$ref": "#/definitions/input"
+                },
+                "randomness": {
+                  "$ref": "#/definitions/input"
+                },
+                "exponent": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "dimensions": {
+                  "type": "string",
+                  "enum": ["3D", "4D"]
+                },
+                "feature": {
+                  "type": "string",
+                  "enum": ["F1", "DISTANCE_TO_EDGE"]
+                },
+                "distance": {
+                  "type": "string",
+                  "enum": ["EUCLIDEAN", "MANHATTAN", "CHEBYCHEV", "MINKOWSKI"]
+                },
+                "isNormalizationEnabled": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "fresnel"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "indexOfRefraction": {
+                  "$ref": "#/definitions/input"
+                },
+                "normal": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "layerWeight"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "blend": {
+                  "$ref": "#/definitions/input"
+                },
+                "normal": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "vectorRotate"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "vector": {
+                  "$ref": "#/definitions/input"
+                },
+                "center": {
+                  "$ref": "#/definitions/input"
+                },
+                "axis": {
+                  "$ref": "#/definitions/input"
+                },
+                "angle": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "isInversionEnabled": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "normalMap"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "color": {
+                  "$ref": "#/definitions/input"
+                },
+                "strength": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "space": {
+                  "type": "string",
+                  "enum": ["TANGENT", "OBJECT", "WORLD"]
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "bump"
+            },
+            "inputs": {
+              "type": "object",
+              "properties": {
+                "height": {
+                  "$ref": "#/definitions/input"
+                },
+                "strength": {
+                  "$ref": "#/definitions/input"
+                },
+                "distance": {
+                  "$ref": "#/definitions/input"
+                },
+                "normal": {
+                  "$ref": "#/definitions/input"
+                }
+              },
+              "additionalProperties": false
+            },
+            "properties": {
+              "type": "object",
+              "properties": {
+                "isInversionEnabled": {
+                  "type": "boolean"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "closure": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["type"],
+          "properties": {
+            "type": {
+              "const": "principled"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "color", "roughness"],
+          "properties": {
+            "type": {
+              "const": "glossy"
+            },
+            "color": {
+              "$ref": "#/definitions/input"
+            },
+            "roughness": {
+              "$ref": "#/definitions/input"
+            },
+            "normal": {
+              "$ref": "#/definitions/input"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "color"],
+          "properties": {
+            "type": {
+              "const": "transparent"
+            },
+            "color": {
+              "$ref": "#/definitions/input"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "color", "strength"],
+          "properties": {
+            "type": {
+              "const": "emission"
+            },
+            "color": {
+              "$ref": "#/definitions/input"
+            },
+            "strength": {
+              "$ref": "#/definitions/input"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "firstClosure", "secondClosure"],
+          "properties": {
+            "type": {
+              "const": "add"
+            },
+            "firstClosure": {
+              "$ref": "#/definitions/closure"
+            },
+            "secondClosure": {
+              "$ref": "#/definitions/closure"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "required": ["type", "factor", "firstClosure", "secondClosure"],
+          "properties": {
+            "type": {
+              "const": "mix"
+            },
+            "factor": {
+              "$ref": "#/definitions/input"
+            },
+            "firstClosure": {
+              "$ref": "#/definitions/closure"
+            },
+            "secondClosure": {
+              "$ref": "#/definitions/closure"
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "volume": {
+      "type": "object",
+      "required": ["type", "color", "density"],
+      "properties": {
+        "type": {
+          "const": "absorption"
+        },
+        "color": {
+          "$ref": "#/definitions/input"
+        },
+        "density": {
+          "$ref": "#/definitions/input"
+        }
+      },
+      "additionalProperties": false
+    },
+    "surface": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "precision": {
+          "type": "number",
+          "enum": [8, 16, 24, 32]
+        },
+        "format": {
+          "type": "string",
+          "enum": ["color", "red", "redGreen", "alpha", "depth"]
+        },
+        "colorSpace": {
+          "type": "string",
+          "enum": ["linear", "sRGB"]
+        },
+        "tiling": {
+          "type": "string",
+          "enum": ["none", "repeat", "mirror"]
+        },
+        "filtering": {
+          "type": "string",
+          "enum": ["none", "linear", "bilinear", "trilinear"]
+        },
+        "areMipmapsEnabled": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

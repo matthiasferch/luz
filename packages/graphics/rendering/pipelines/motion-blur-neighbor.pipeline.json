@@ -1,0 +1,7 @@
+{
+  "$schema": "../../../formats/schemas/pipeline.schema.json",
+  "vertexShader": "./assets/shaders/composite.vertex.glsl",
+  "fragmentShader": "./assets/shaders/motion-blur-neighbor.fragment.glsl",
+  "depthTest": "none",
+  "depthMask": false
+}

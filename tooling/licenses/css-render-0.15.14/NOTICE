@@ -1,0 +1,5 @@
+css-render 0.15.14, @css-render/plugin-bem 0.15.14 and @css-render/vue3-ssr 0.15.14
+
+The npm packages omit their repository's license file. LICENSE is copied
+unchanged from release v0.15.14, commit 4fd3b95ecedb17bffafabc00e93ce6eab843e716:
+https://github.com/07akioni/css-render/blob/4fd3b95ecedb17bffafabc00e93ce6eab843e716/LICENSE

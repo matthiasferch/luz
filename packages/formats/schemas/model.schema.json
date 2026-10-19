@@ -1,0 +1,190 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Model",
+  "$id": "model.schema.json",
+  "type": "object",
+  "required": ["type", "meshes"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "type": { "type": "string", "enum": ["model"] },
+    "isVisible": { "type": "boolean", "default": true },
+    "geometry": {
+      "type": "object",
+      "required": ["uri", "byteLength"],
+      "properties": {
+        "uri": { "type": "string", "minLength": 1 },
+        "byteLength": { "type": "integer", "minimum": 16 }
+      },
+      "additionalProperties": false
+    },
+    "materials": {
+      "type": "object",
+      "additionalProperties": { "$ref": "./material.schema.json" }
+    },
+    "meshes": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["topology", "vertices"],
+        "properties": {
+          "topology": {
+            "type": "string",
+            "enum": ["points", "lines", "lineLoop", "lineStrip", "triangles", "triangleFan", "triangleStrip"]
+          },
+          "vertices": {
+            "oneOf": [
+              { "type": "array", "items": { "type": "number" } },
+              {
+                "type": "object",
+                "required": ["byteOffset", "count", "byteStride", "attributes"],
+                "properties": {
+                  "byteOffset": { "type": "integer", "minimum": 16, "multipleOf": 4 },
+                  "count": { "type": "integer", "minimum": 0 },
+                  "byteStride": { "type": "integer", "minimum": 4, "multipleOf": 4 },
+                  "attributes": {
+                    "type": "object",
+                    "required": ["position"],
+                    "properties": {
+                      "position": { "$ref": "#/definitions/float32x3Attribute" },
+                      "normal": { "$ref": "#/definitions/float32x3Attribute" },
+                      "textureCoordinates": { "$ref": "#/definitions/float32x2Attribute" },
+                      "tangent": { "$ref": "#/definitions/float32x4Attribute" }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
+          "indices": {
+            "oneOf": [
+              { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+              {
+                "type": "object",
+                "required": ["byteOffset", "count", "format"],
+                "properties": {
+                  "byteOffset": { "type": "integer", "minimum": 16, "multipleOf": 4 },
+                  "count": { "type": "integer", "minimum": 0 },
+                  "format": { "type": "string", "enum": ["uint16", "uint32"] }
+                },
+                "additionalProperties": false
+              }
+            ]
+          },
+          "boundingBox": {
+            "type": "object",
+            "required": ["minimum", "maximum"],
+            "properties": {
+              "minimum": { "$ref": "#/definitions/vec3" },
+              "maximum": { "$ref": "#/definitions/vec3" }
+            },
+            "additionalProperties": false
+          },
+          "material": { "type": "string" },
+          "weights": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "vertex": { "type": "integer" },
+                "indices": {
+                  "type": "array",
+                  "items": { "type": "integer" },
+                  "minItems": 4,
+                  "maxItems": 4
+                },
+                "weights": {
+                  "type": "array",
+                  "items": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "minItems": 4,
+                  "maxItems": 4
+                }
+              },
+              "required": ["vertex", "indices", "weights"]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "armatures": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "bones": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "parent": { "type": "string" },
+                "head": {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "tail": {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "minItems": 3,
+                  "maxItems": 3
+                },
+                "bindMatrix": {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "minItems": 16,
+                  "maxItems": 16
+                }
+              },
+              "required": ["name", "head", "tail", "bindMatrix"]
+            }
+          }
+        },
+        "required": ["bones"]
+      }
+    },
+    "animations": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "minLength": 1, "pattern": "\\S" }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "vec3": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3
+    },
+    "float32x2Attribute": {
+      "type": "object",
+      "required": ["format", "byteOffset"],
+      "properties": {
+        "format": { "const": "float32x2" },
+        "byteOffset": { "type": "integer", "minimum": 0, "multipleOf": 4 }
+      },
+      "additionalProperties": false
+    },
+    "float32x3Attribute": {
+      "type": "object",
+      "required": ["format", "byteOffset"],
+      "properties": {
+        "format": { "const": "float32x3" },
+        "byteOffset": { "type": "integer", "minimum": 0, "multipleOf": 4 }
+      },
+      "additionalProperties": false
+    },
+    "float32x4Attribute": {
+      "type": "object",
+      "required": ["format", "byteOffset"],
+      "properties": {
+        "format": { "const": "float32x4" },
+        "byteOffset": { "type": "integer", "minimum": 0, "multipleOf": 4 }
+      },
+      "additionalProperties": false
+    }
+  }
+}

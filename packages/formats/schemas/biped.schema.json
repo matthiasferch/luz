@@ -1,0 +1,63 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "biped.schema.json",
+  "title": "Biped",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "const": "biped"
+    },
+    "mass": {
+      "type": "number",
+      "minimum": 0,
+      "default": 1
+    },
+    "volume": {
+      "$ref": "volume.schema.json"
+    },
+    "motionType": {
+      "type": "string",
+      "enum": ["dynamic", "static", "kinematic"]
+    },
+    "isContinuousCollisionEnabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "restitution": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.2
+    },
+    "friction": {
+      "type": "number",
+      "minimum": 0,
+      "default": 0.2
+    }
+  },
+  "required": ["type", "motionType", "volume"],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "motionType": {
+            "const": "dynamic"
+          }
+        },
+        "required": ["motionType"]
+      },
+      "then": {
+        "properties": {
+          "mass": {
+            "exclusiveMinimum": 0
+          }
+        }
+      }
+    }
+  ]
+}

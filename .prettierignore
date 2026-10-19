@@ -1,0 +1,15 @@
+.git/
+**/dist/
+**/node_modules/
+**/__pycache__/
+apps/editor/public/assets/**/*.json
+apps/editor/public/assets/**/*.geometry
+apps/editor/public/assets/**/*.ktx
+apps/editor/local-assets/
+
+# Valid GLSL constructs currently unsupported by prettier-plugin-glsl.
+packages/graphics/compilers/material/default.glsl
+packages/graphics/rendering/shaders/ambient.fragment.glsl
+packages/graphics/rendering/shaders/ambient-occlusion.fragment.glsl
+packages/graphics/rendering/shaders/physically-based-lighting.fragment.glsl
+packages/graphics/rendering/shaders/scene.fragment.glsl

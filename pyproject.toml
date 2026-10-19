@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["apps/editor", "luz"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "lf"
+quote-style = "single"

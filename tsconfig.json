@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "outDir": "./dist",
+    "declaration": true,
+    "declarationDir": "./dist",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true
+  },
+  "include": ["index.ts", "packages/**/*.ts"],
+  "exclude": ["tests", "apps"]
+}

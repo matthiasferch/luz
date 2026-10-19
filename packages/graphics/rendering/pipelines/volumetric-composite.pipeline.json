@@ -1,0 +1,9 @@
+{
+  "$schema": "../../../formats/schemas/pipeline.schema.json",
+  "vertexShader": "./assets/shaders/composite.vertex.glsl",
+  "fragmentShader": "./assets/shaders/volumetric-composite.fragment.glsl",
+  "blendMode": "additive",
+  "depthTest": "always",
+  "depthMask": false,
+  "colorMask": [true, true, true, false]
+}

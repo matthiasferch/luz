@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Render pipeline",
+  "$id": "pipeline.schema.json",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "cullMode": {
+      "type": "string",
+      "enum": ["none", "front", "back"]
+    },
+    "blendMode": {
+      "type": "string",
+      "enum": ["none", "additive", "transparent", "transmissive"]
+    },
+    "depthTest": {
+      "type": "string",
+      "enum": ["none", "never", "always", "equal", "notEqual", "less", "lessEqual", "greater", "greaterEqual"]
+    },
+    "depthMask": {
+      "type": "boolean"
+    },
+    "colorMask": {
+      "type": "array",
+      "items": {
+        "type": "boolean"
+      },
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "vertexShader": {
+      "type": "string"
+    },
+    "fragmentShader": {
+      "type": "string"
+    }
+  },
+  "required": ["vertexShader", "fragmentShader"],
+  "additionalProperties": false
+}

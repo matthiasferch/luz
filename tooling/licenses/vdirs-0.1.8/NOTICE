@@ -1,0 +1,12 @@
+vdirs 0.1.8
+
+The published package.json declares license "MIT" and author "07akioni".
+Neither the npm package nor its upstream repository supplies a LICENSE file.
+The accompanying LICENSE reproduces the standard MIT terms with the declared
+author credited; it is a reconstructed notice, not a verbatim upstream file.
+No copyright year is inferred.
+
+Package metadata: https://registry.npmjs.org/vdirs/0.1.8
+Upstream: https://github.com/07akioni/vdirs
+License text: https://opensource.org/license/mit
+Reviewed 2026-10-19.

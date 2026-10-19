@@ -1,0 +1,8 @@
+{
+  "$schema": "../../../formats/schemas/pipeline.schema.json",
+  "depthTest": "less",
+  "depthMask": true,
+  "colorMask": [false, false, false, false],
+  "vertexShader": "./assets/shaders/depth.vertex.glsl",
+  "fragmentShader": "./assets/shaders/depth.fragment.glsl"
+}

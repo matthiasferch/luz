@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "light.schema.json",
+  "title": "Light",
+  "type": "object",
+  "properties": {
+    "isVisible": { "type": "boolean", "default": true },
+    "type": {
+      "type": "string",
+      "const": "light"
+    },
+    "lightType": {
+      "type": "string",
+      "enum": ["spot", "directional", "point"]
+    },
+    "aspect": { "type": "number", "exclusiveMinimum": 0, "default": 1 },
+    "shadowSize": {
+      "description": "Directional shadow coverage width and height in world units; illumination is unbounded.",
+      "type": "array",
+      "items": { "type": "number", "exclusiveMinimum": 0 },
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [20, 20]
+    },
+    "range": {
+      "description": "Attenuation distance in world units; ignored by directional lights.",
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "default": 6.0
+    },
+    "coneAngle": {
+      "description": "Full spotlight cone angle in degrees.",
+      "type": "number",
+      "exclusiveMinimum": 0.0,
+      "exclusiveMaximum": 180.0,
+      "default": 90.0
+    },
+    "coneFalloff": {
+      "description": "Difference between outer and inner cone angles in degrees; must not exceed coneAngle.",
+      "type": "number",
+      "minimum": 0.0,
+      "exclusiveMaximum": 180.0,
+      "default": 10.0
+    },
+    "softness": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 1.0
+    },
+    "intensity": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 1.0
+    },
+    "volumetricIntensity": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 0.0
+    },
+    "volumetricDensity": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 0.02
+    },
+    "volumetricAnisotropy": {
+      "type": "number",
+      "minimum": -0.9,
+      "maximum": 0.9,
+      "default": 0.35
+    },
+    "volumetricNoiseScale": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 1.5
+    },
+    "volumetricNoiseSpeed": {
+      "type": "number",
+      "minimum": 0.0,
+      "default": 0.002
+    },
+    "volumetricNoiseStrength": {
+      "type": "number",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.6
+    },
+    "color": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 3,
+      "maxItems": 3,
+      "default": [1, 1, 1]
+    },
+    "clipPlanes": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 2,
+      "maxItems": 2,
+      "default": [1.0, 100.0]
+    }
+  },
+  "required": ["type", "lightType", "range", "intensity", "color"],
+  "if": { "properties": { "lightType": { "const": "spot" } }, "required": ["lightType"] },
+  "then": { "required": ["coneAngle", "coneFalloff"] },
+  "else": { "properties": { "coneAngle": false, "coneFalloff": false } },
+  "additionalProperties": false
+}

@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+*.blend binary
+*.blend1 binary
+*.geometry binary
+*.ktx binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.tif binary
+*.tiff binary
+*.webp binary

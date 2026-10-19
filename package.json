@@ -1,0 +1,54 @@
+{
+  "name": "luz-workspace",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "tests"
+  ],
+  "scripts": {
+    "clean": "rimraf ./dist",
+    "build:engine": "npm run clean && webpack && node tooling/prepare-distribution.cjs",
+    "build": "npm run build:engine && npm --workspace @luz/editor run build",
+    "watch": "webpack --watch",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run validate:textures && npm run validate:shaders && npm test && npm run build && npm run test:distribution",
+    "format": "prettier --write \"*.{ts,mts,cts,js,cjs,mjs,json,md,yml,yaml}\" \".github/**/*.{yml,yaml}\" \"integrations/**/*.md\" \"packages/**/*.{ts,mts,cts,js,cjs,mjs,json,md,glsl}\" \"tests/**/*.{ts,mts,cts,js,cjs,mjs,html,json,md}\" \"tooling/**/*.{ts,mts,cts,js,cjs,mjs,json,md}\" \"apps/editor/*.{ts,mts,cts,js,cjs,mjs,css,html,json,md}\" \"apps/editor/src/**/*.{ts,mts,cts,js,cjs,mjs,vue,css,json,glsl}\" \"apps/editor/tests/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/tooling/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/types/**/*.{ts,mts,cts}\" && python -m ruff format integrations/blender",
+    "format:check": "prettier --check \"*.{ts,mts,cts,js,cjs,mjs,json,md,yml,yaml}\" \".github/**/*.{yml,yaml}\" \"integrations/**/*.md\" \"packages/**/*.{ts,mts,cts,js,cjs,mjs,json,md,glsl}\" \"tests/**/*.{ts,mts,cts,js,cjs,mjs,html,json,md}\" \"tooling/**/*.{ts,mts,cts,js,cjs,mjs,json,md}\" \"apps/editor/*.{ts,mts,cts,js,cjs,mjs,css,html,json,md}\" \"apps/editor/src/**/*.{ts,mts,cts,js,cjs,mjs,vue,css,json,glsl}\" \"apps/editor/tests/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/tooling/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/types/**/*.{ts,mts,cts}\" && python -m ruff format --check integrations/blender",
+    "lint": "eslint index.ts packages tests tooling \"*.{js,cjs,mjs}\" --ext .ts,.mts,.cts,.js,.cjs,.mjs --max-warnings 0 && npm --workspace @luz/editor run lint && npm run lint:python && npm run lint:styles && npm run lint:html && npm run lint:workflows && npm run lint:powershell",
+    "lint:fix": "eslint index.ts packages tests tooling \"*.{js,cjs,mjs}\" --ext .ts,.mts,.cts,.js,.cjs,.mjs --fix --max-warnings 0 && npm --workspace @luz/editor run lint -- --fix",
+    "lint:python": "python -m ruff check integrations/blender && python -m compileall -q integrations/blender",
+    "test": "npm --workspace @luz/tests test && npm --workspace @luz/editor test",
+    "typecheck": "tsc --noEmit && tsc -p tests/tsconfig.json --noEmit && npm --workspace @luz/editor run typecheck",
+    "validate:shaders": "node tooling/shaders/validate-shaders.cjs",
+    "test:gpu": "node tests/browser/run-all.cjs",
+    "test:gpu:smoke": "node tests/browser/run.cjs engine-renderer && node tests/browser/run.cjs debug-overlay",
+    "test:gpu:skeletal": "node tests/browser/run.cjs skeletal-animation",
+    "test:fixture:skeletal": "node tooling/create-skeletal-fixture.cjs",
+    "build:engine:production": "npm run clean && webpack --mode production && node tooling/prepare-distribution.cjs",
+    "test:distribution": "npm run build:engine:production && node tooling/test-distribution.cjs",
+    "test:distribution:gpu": "npm run test:distribution -- --browser",
+    "lint:styles": "stylelint \"apps/editor/**/*.css\" \"apps/editor/src/**/*.vue\" --max-warnings 0",
+    "lint:html": "html-validate \"apps/editor/index.html\" \"tests/**/*.html\"",
+    "lint:workflows": "node tooling/lint-workflows.cjs",
+    "lint:powershell": "pwsh -NoProfile -File tooling/lint-powershell.ps1",
+    "generate:textures": "node tooling/textures/generate-textures.cjs",
+    "validate:textures": "node tooling/textures/generate-textures.cjs --check"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.71.1",
+    "@typescript-eslint/parser": "^8.71.1",
+    "eslint": "^8.57.1",
+    "eslint-plugin-luz": "file:tooling/eslint",
+    "glslang-validator-prebuilt-predownloaded": "^0.0.2",
+    "html-validate": "11.16.4",
+    "postcss-html": "2.0.0",
+    "prettier": "^3.3.3",
+    "prettier-plugin-glsl": "^0.3.1",
+    "stylelint": "17.16.0",
+    "stylelint-config-standard": "40.0.0"
+  },
+  "engines": {
+    "node": "^22.22.0 || ^24.8.0 || >=26.0.0"
+  }
+}
