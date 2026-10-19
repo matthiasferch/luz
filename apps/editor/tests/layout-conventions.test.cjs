@@ -35,7 +35,7 @@ const unpaddedFunction = `function calculate(isReady) {
 it('enforces and fixes all six statement types across both ESLint configurations', async () => {
   for (const fileName of [
     'tests/unit/projector.test.ts',
-    'eslint-layout.cjs',
+    'tooling/eslint/config/layout.cjs',
     'apps/editor/tooling/check.js',
     'apps/editor/tooling/check.mjs',
     'apps/editor/src/editor/components/SimulationPanel.vue'
@@ -72,7 +72,9 @@ it('does not pad block starts, unbraced bodies, branch continuations, or trailin
 
     try { return 1 } catch { return 2 } finally { return 3 }
   }`
-  const [result] = await linter.lintText(source, { filePath: path.join(workspaceRoot, 'eslint-layout.cjs') })
+  const [result] = await linter.lintText(source, {
+    filePath: path.join(workspaceRoot, 'tooling/eslint/config/layout.cjs')
+  })
 
   assert.deepEqual(getPaddingMessages(result), [])
 })
@@ -90,7 +92,9 @@ it('requires actual empty lines around comments and inside switch cases', async 
       default: return 0
     }
   }`
-  const [result] = await linter.lintText(source, { filePath: path.join(workspaceRoot, 'eslint-layout.cjs') })
+  const [result] = await linter.lintText(source, {
+    filePath: path.join(workspaceRoot, 'tooling/eslint/config/layout.cjs')
+  })
 
   assert.equal(getPaddingMessages(result).length, 2)
 })
@@ -200,7 +204,7 @@ it('requires braces for every branch and loop body, including empty bodies', asy
   }`
 
   for (const fileName of [
-    'eslint-layout.cjs',
+    'tooling/eslint/config/layout.cjs',
     'apps/editor/tooling/check.mjs',
     'apps/editor/src/editor/components/SimulationPanel.vue'
   ]) {

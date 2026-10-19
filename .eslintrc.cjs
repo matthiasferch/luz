@@ -6,8 +6,8 @@ module.exports = {
   plugins: ['@typescript-eslint', 'luz'],
   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'prettier'],
   rules: {
-    ...require('./eslint-layout.cjs'),
-    ...require('./eslint-unused.cjs')
+    ...require('./tooling/eslint/config/layout.cjs'),
+    ...require('./tooling/eslint/config/unused.cjs')
   },
   ignorePatterns: ['node_modules/', 'dist/', '**/._*'],
   overrides: [
@@ -18,8 +18,8 @@ module.exports = {
         tsconfigRootDir: __dirname
       },
       rules: {
-        ...require('./eslint-types.cjs'),
-        '@typescript-eslint/naming-convention': ['error', ...require('./eslint-naming.cjs')],
+        ...require('./tooling/eslint/config/types.cjs'),
+        '@typescript-eslint/naming-convention': ['error', ...require('./tooling/eslint/config/naming.cjs')],
         '@typescript-eslint/await-thenable': 'error',
         '@typescript-eslint/no-floating-promises': 'error',
         '@typescript-eslint/no-misused-promises': 'error',
@@ -46,7 +46,7 @@ module.exports = {
       rules: {
         '@typescript-eslint/naming-convention': [
           'error',
-          ...require('./eslint-naming.cjs').filter((rule) => !rule.types)
+          ...require('./tooling/eslint/config/naming.cjs').filter((rule) => !rule.types)
         ],
         '@typescript-eslint/no-require-imports': 'off'
       }

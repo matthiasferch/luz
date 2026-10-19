@@ -19,8 +19,8 @@ module.exports = {
   },
   ignorePatterns: ['node_modules/', 'dist/', 'src/assets/**/*.json'],
   rules: {
-    ...require('../../eslint-layout.cjs'),
-    ...require('../../eslint-unused.cjs'),
+    ...require('../../tooling/eslint/config/layout.cjs'),
+    ...require('../../tooling/eslint/config/unused.cjs'),
     '@typescript-eslint/await-thenable': 'error',
     '@typescript-eslint/no-floating-promises': 'error',
     '@typescript-eslint/no-misused-promises': 'error',
@@ -30,8 +30,8 @@ module.exports = {
     {
       files: ['**/*.ts', '**/*.mts', '**/*.cts', '**/*.vue'],
       rules: {
-        ...require('../../eslint-types.cjs'),
-        '@typescript-eslint/naming-convention': ['error', ...require('../../eslint-naming.cjs')]
+        ...require('../../tooling/eslint/config/types.cjs'),
+        '@typescript-eslint/naming-convention': ['error', ...require('../../tooling/eslint/config/naming.cjs')]
       }
     },
     {
@@ -41,7 +41,7 @@ module.exports = {
       rules: {
         '@typescript-eslint/naming-convention': [
           'error',
-          ...require('../../eslint-naming.cjs').filter((rule) => !rule.types)
+          ...require('../../tooling/eslint/config/naming.cjs').filter((rule) => !rule.types)
         ],
         '@typescript-eslint/await-thenable': 'off',
         '@typescript-eslint/no-floating-promises': 'off',
@@ -56,7 +56,7 @@ module.exports = {
       rules: {
         '@typescript-eslint/naming-convention': [
           'error',
-          ...require('../../eslint-naming.cjs').filter((rule) => !rule.types)
+          ...require('../../tooling/eslint/config/naming.cjs').filter((rule) => !rule.types)
         ],
         '@typescript-eslint/await-thenable': 'off',
         '@typescript-eslint/no-floating-promises': 'off',

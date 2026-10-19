@@ -2,7 +2,7 @@ const { it } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('node:path')
 const { ESLint } = require('eslint')
-const typeRules = require('../../../eslint-types.cjs')
+const typeRules = require('../../../tooling/eslint/config/types.cjs')
 
 const workspaceRoot = path.resolve(__dirname, '../../..')
 const linter = new ESLint({ cwd: workspaceRoot })

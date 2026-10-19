@@ -234,7 +234,7 @@ it('enforces the rule through the engine, editor, Vue, and math configurations',
   for (const fileName of [
     'packages/physics/components/body.ts',
     'packages/math/vector3.ts',
-    'eslint-layout.cjs',
+    'tooling/eslint/config/layout.cjs',
     'apps/editor/tooling/check.js',
     'apps/editor/tooling/check.mjs',
     'apps/editor/src/editor/components/SimulationPanel.vue'

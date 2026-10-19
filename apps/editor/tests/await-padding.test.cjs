@@ -13,7 +13,7 @@ const configuration = {
   parserOptions: { ecmaVersion: 2022, sourceType: 'module' },
   rules: { [ruleName]: 'error' }
 }
-const sharedConfiguration = { ...configuration, rules: require('../../../eslint-layout.cjs') }
+const sharedConfiguration = { ...configuration, rules: require('../../../tooling/eslint/config/layout.cjs') }
 
 for (const [name, rule] of Object.entries(rules)) {
   linter.defineRule(`luz/${name}`, rule)
@@ -170,7 +170,7 @@ it('enforces and fixes await padding in engine, math, editor, and Vue configurat
   for (const fileName of [
     'packages/physics/components/body.ts',
     'packages/math/vector3.ts',
-    'eslint-layout.cjs',
+    'tooling/eslint/config/layout.cjs',
     'apps/editor/tooling/check.js',
     'apps/editor/tooling/check.mjs',
     'apps/editor/src/editor/components/SimulationPanel.vue'

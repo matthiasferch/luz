@@ -142,7 +142,7 @@ it('loads the local plugin through engine, editor, Vue, and math ESLint configur
   for (const fileName of [
     'tests/unit/projector.test.ts',
     'packages/math/vector3.ts',
-    'eslint-layout.cjs',
+    'tooling/eslint/config/layout.cjs',
     'apps/editor/tooling/check.js',
     'apps/editor/tooling/check.mjs',
     'apps/editor/src/editor/components/SimulationPanel.vue'

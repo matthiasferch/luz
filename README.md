@@ -2,6 +2,8 @@
 
 luz (pronounced [ˈluθ] or [ˈlus], Spanish for _light_) is a 3D game engine for the web, written from scratch in Typescript and WebGL 2.0. Its features include dynamic lighting and shadows, collision detection and response, visibility determination and hierarchical space partitioning.
 
+![luz editor preview](preview.jpg)
+
 ## Overview
 
 The engine bundle includes its runtime dependencies, shaders and lookup textures.
@@ -70,6 +72,3 @@ when redistributing the bundles.
 The engine textures are generated reproducibly by [repository tooling](tooling/textures/README.md).
 Run `npm run validate:textures` to verify their contents. Application-supplied assets
 retain their own licensing requirements.
-
-See the [dependency security notes](SECURITY.md) for the remaining development-only
-advisory and its current handling.

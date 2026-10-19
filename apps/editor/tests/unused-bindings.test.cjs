@@ -6,7 +6,7 @@ const { ESLint } = require('eslint')
 const workspaceRoot = path.resolve(__dirname, '../../..')
 const linter = new ESLint({ cwd: workspaceRoot })
 const ruleName = '@typescript-eslint/no-unused-vars'
-const getUnusedMessages = async (source, fileName = 'eslint-unused.cjs') => {
+const getUnusedMessages = async (source, fileName = 'tooling/eslint/config/unused.cjs') => {
   const [result] = await linter.lintText(source, { filePath: path.join(workspaceRoot, fileName) })
 
   assert.equal(result.fatalErrorCount, 0, JSON.stringify(result.messages))
@@ -32,7 +32,7 @@ try { calculate() } catch (unusedError) { calculate() }
   for (const fileName of [
     'packages/physics/components/body.ts',
     'packages/math/vector3.ts',
-    'eslint-unused.cjs',
+    'tooling/eslint/config/unused.cjs',
     'apps/editor/tooling/check.js',
     'apps/editor/tooling/check.cjs',
     'apps/editor/tooling/check.mjs',

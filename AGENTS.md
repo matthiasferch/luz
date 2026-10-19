@@ -67,7 +67,7 @@ Write the project name `luz` in lowercase in prose, UI text, logs, and comments.
 Preserve uppercase protocol and tooling identifiers such as the `LUZG` binary
 magic and `LUZ_*` environment variables.
 
-Shared naming checks live in `eslint-naming.cjs`. Type-aware Boolean prefix checks
+Shared naming checks live in `tooling/eslint/config/naming.cjs`. Type-aware Boolean prefix checks
 run on all TypeScript, including `packages/math`; JavaScript, CommonJS, and ECMAScript
 modules use the checks that do not require type information. Vue script blocks enable the same naming checks. The prose naming and comment rules above
 remain review requirements even where lint does not enforce them. Preserve the
@@ -78,7 +78,7 @@ configured external exceptions, including `depthMask` and build-defined globals.
 Use interfaces for object contracts and type aliases for unions, tuples, callable
 signatures, mapped types, and compositions. Use classes when runtime behavior,
 initialization, identity, inheritance, decorators, or registration require them.
-Shared TypeScript rules in `eslint-types.cjs` enforce object interfaces and
+Shared TypeScript rules in `tooling/eslint/config/types.cjs` enforce object interfaces and
 type-only imports/exports. Keep value imports needed by decorator metadata;
 ambient declarations may use inline import type annotations. Engine packages
 reject explicit `any`; validate `unknown` at external boundaries instead. Vue
@@ -168,7 +168,7 @@ These layout rules apply to TypeScript, JavaScript, CommonJS, ECMAScript modules
 Vue script blocks, and GLSL, including math code. The naming and comment
 exceptions above remain unchanged. Python is excluded.
 
-Keep shared engine and editor layout rules in `eslint-layout.cjs`, with custom
+Keep shared engine and editor layout rules in `tooling/eslint/config/layout.cjs`, with custom
 rules in the local `tooling/eslint` plugin. The root `.eslintrc.cjs` and
 `apps/editor/.eslintrc.cjs` configure parsers, scope, and shared rule imports. Run
 `npm run lint:fix` to apply the JavaScript/TypeScript/Vue brace and spacing fixes,
@@ -189,7 +189,7 @@ in the ESLint commands, including configuration files and ambient declarations.
 
 Reject unused variables, imports, functions, parameters, and catch bindings in
 TypeScript, JavaScript, CommonJS, ECMAScript modules, and Vue scripts, including
-math code. Use the shared `eslint-unused.cjs` configuration and
+math code. Use the shared `tooling/eslint/config/unused.cjs` configuration and
 `@typescript-eslint/no-unused-vars`; disable the base `no-unused-vars` rule to
 avoid duplicate or incorrect TypeScript diagnostics. Do not exempt local
 variables or catch bindings merely because their names start with `_`.
