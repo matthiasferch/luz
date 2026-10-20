@@ -1,6 +1,8 @@
 <img src="docs/assets/logo.png" style="width: 260px" />
 
-luz (pronounced [ˈluθ] or [ˈlus], Spanish for _light_) is a 3D game engine for the web, written from scratch in Typescript and WebGL 2.0. Its features include dynamic lighting and shadows, collision detection and response, visibility determination and hierarchical space partitioning.
+luz (pronounced [ˈluθ] or [ˈlus], Spanish for _light_) is a 3D game engine for the web, written from scratch in Typescript and WebGL 2.0. 
+
+Its features include dynamic lighting and shadows, visibility determination and hierarchical space partitioning, collision detection and response, and rigid-body simulation with continuous collision detection.
 
 ![luz editor preview](preview.jpg)
 
