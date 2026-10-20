@@ -57,7 +57,7 @@ npm run check
 ```
 
 This checks formatting, lint, source and test types, shaders, unit/integration tests,
-builds, and the production distribution in an isolated consumer. 
+builds, and the production distribution in an isolated consumer.
 
 Browser GPU tests and generated Blender fixtures have a [separate guide](tests/browser/README.md).
 
