@@ -170,36 +170,15 @@ const createDemoAssets = () => {
   const sphere = createSphere()
   const documents = {
     'models/floor.model.json': createModel(box, createMaterial([0.15, 0.19, 0.24], 0.65)),
-    'models/plinth.model.json': createModel(box, createMaterial([0.28, 0.32, 0.38], 0.4)),
     'models/cube.model.json': createModel(box, createMaterial([0.08, 0.52, 0.65], 0.3)),
     'models/ball.model.json': createModel(sphere, createMaterial([0.95, 0.3, 0.08], 0.25))
   }
-  const materials = createStage()
-  const physics = createStage()
-
-  for (let row = 0; row < 2; row++) {
-    for (let column = 0; column < 3; column++) {
-      const name = `${row === 0 ? 'Ceramic' : 'Metal'}${column + 1}`
-      const modelName = `models/material${row}${column}.model.json`
-      const translation = [(column - 1) * 3.2, 1.25, (row - 0.5) * 3.2]
-
-      documents[modelName] = createModel(
-        sphere,
-        createMaterial(row === 0 ? [0.08, 0.5, 0.62] : [0.95, 0.63, 0.25], 0.12 + column * 0.35, row)
-      )
-      materials.entities[name] = { translation, components: { model: `../${modelName}` } }
-      materials.entities[`${name} plinth`] = {
-        translation: [translation[0], 0.125, translation[2]],
-        scale: [1.15, 0.125, 1.15],
-        components: { model: '../models/plinth.model.json' }
-      }
-    }
-  }
+  const scene = createStage()
 
   for (let index = 0; index < 6; index++) {
     const translation = [((index % 3) - 1) * 1.8, 0.65 + Math.floor(index / 3) * 1.35, 0]
 
-    physics.entities[index === 0 ? 'Cuboid' : `Cube ${index + 1}`] = {
+    scene.entities[index === 0 ? 'Cuboid' : `Cube ${index + 1}`] = {
       translation,
       scale: [0.6, 0.6, 0.6],
       components: {
@@ -218,7 +197,7 @@ const createDemoAssets = () => {
   }
 
   for (let index = 0; index < 3; index++) {
-    physics.entities[index === 0 ? 'Sphere' : `Ball ${index + 1}`] = {
+    scene.entities[index === 0 ? 'Sphere' : `Ball ${index + 1}`] = {
       translation: [(index - 1) * 1.65, 4.5 + index * 0.8, 0.3],
       scale: [0.7, 0.7, 0.7],
       components: {
@@ -236,8 +215,7 @@ const createDemoAssets = () => {
     }
   }
 
-  documents['scenes/lighting-and-materials.scene.json'] = materials
-  documents['scenes/rigid-body-playground.scene.json'] = physics
+  documents['scenes/rigid-body-playground.scene.json'] = scene
 
   return documents
 }

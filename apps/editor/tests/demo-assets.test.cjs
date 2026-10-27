@@ -10,7 +10,7 @@ const { createDemoAssets } = require('../tooling/demo-assets.cjs')
 const { validateDemoAssets } = require('../tooling/validate-demo.cjs')
 const { createDemoServer } = require('../tooling/serve-demo.cjs')
 
-test('showcases load through the engine without local or external assets and physics resets', async () => {
+test('the rigid body showcase loads without local or external assets and physics resets', async () => {
   const documents = createDemoAssets()
   const readJson = async (url) => {
     const filename = new URL(url).pathname.slice('/assets/'.length)
@@ -23,6 +23,10 @@ test('showcases load through the engine without local or external assets and phy
 
   validateDemoAssets(documents)
   assert.deepEqual(documents, createDemoAssets())
+  assert.deepEqual(
+    Object.keys(documents).filter((filename) => filename.endsWith('.scene.json')),
+    ['scenes/rigid-body-playground.scene.json']
+  )
 
   for (const document of Object.values(documents).filter((document) => document.type === 'model')) {
     for (const mesh of Object.values(document.meshes)) {
@@ -39,26 +43,22 @@ test('showcases load through the engine without local or external assets and phy
     }
   }
 
-  for (const filename of Object.keys(documents).filter((filename) => filename.endsWith('.scene.json'))) {
-    const scene = await loader.loadScene(`https://example.test/assets/${filename}`)
+  const scene = await loader.loadScene('https://example.test/assets/scenes/rigid-body-playground.scene.json')
 
-    scene.selectCamera()
-    scene.update(0)
+  scene.selectCamera()
+  scene.update(0)
 
-    if (filename.includes('rigid-body')) {
-      const ball = scene.entities.Sphere
-      const initialHeight = ball.translation.y
+  const ball = scene.entities.Sphere
+  const initialHeight = ball.translation.y
 
-      for (let frame = 0; frame < 120; frame++) {
-        scene.update(1 / 60)
-      }
-
-      assert.ok(ball.translation.y < initialHeight - 1, 'Ball falls when simulation runs')
-      assert.ok(ball.translation.y > 0.5, 'Ball remains above the floor')
-      scene.resetSimulation()
-      assert.equal(ball.translation.y, initialHeight)
-    }
+  for (let frame = 0; frame < 120; frame++) {
+    scene.update(1 / 60)
   }
+
+  assert.ok(ball.translation.y < initialHeight - 1, 'Ball falls when simulation runs')
+  assert.ok(ball.translation.y > 0.5, 'Ball remains above the floor')
+  scene.resetSimulation()
+  assert.equal(ball.translation.y, initialHeight)
 })
 test('demo validation rejects broken references, external assets and malformed scenes', () => {
   const documents = createDemoAssets()
@@ -69,14 +69,14 @@ test('demo validation rejects broken references, external assets and malformed s
 
   const externalDocuments = createDemoAssets()
 
-  externalDocuments['scenes/lighting-and-materials.scene.json'].entities.Floor.components.model =
+  externalDocuments['scenes/rigid-body-playground.scene.json'].entities.Floor.components.model =
     'https://example.test/private.model.json'
 
   assert.throws(() => validateDemoAssets(externalDocuments), /Unsupported demo reference/)
 
   const malformedDocuments = createDemoAssets()
 
-  malformedDocuments['scenes/lighting-and-materials.scene.json'].entities.Camera.components.camera.fieldOfView = -1
+  malformedDocuments['scenes/rigid-body-playground.scene.json'].entities.Camera.components.camera.fieldOfView = -1
 
   assert.throws(() => validateDemoAssets(malformedDocuments), /Invalid demo asset/)
 

@@ -129,9 +129,9 @@ jobs:
           curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 \
             https://demo.luzjs.dev/ --output /dev/null
           curl --fail --silent --show-error \
-            https://demo.luzjs.dev/assets/scenes/lighting-and-materials.scene.json --output /dev/null
-          curl --fail --silent --show-error \
             https://demo.luzjs.dev/assets/scenes/rigid-body-playground.scene.json --output /dev/null
-          missingStatus=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-            https://demo.luzjs.dev/__missing_demo_asset__.json)
-          test "$missingStatus" = 404
+          for missingPath in __missing_demo_asset__.json assets/scenes/lighting-and-materials.scene.json; do
+            missingStatus=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
+              "https://demo.luzjs.dev/$missingPath")
+            test "$missingStatus" = 404
+          done
