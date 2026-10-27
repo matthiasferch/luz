@@ -35,7 +35,6 @@ const layout = createPanelLayout()
 const viewMenuVisible = ref(false)
 const sceneMenuVisible = ref(false)
 const sceneDialogVisible = ref(false)
-const isNavigationHelpVisible = ref(false)
 const sceneCatalogRefreshing = ref(false)
 const selectedSceneId = ref<string | null>(null)
 const sceneThumbnailUrls = ref<Record<string, string>>({})
@@ -94,11 +93,6 @@ const onResetCamera = () => {
   viewMenuVisible.value = false
 
   store.resetCamera()
-}
-
-const onNavigationHelp = () => {
-  viewMenuVisible.value = false
-  isNavigationHelpVisible.value = true
 }
 
 const revokeThumbnailUrls = () => {
@@ -259,7 +253,6 @@ onBeforeUnmount(() => {
             <NDivider />
             <NButton class="reset-layout" text @click.stop="resetLayout">Reset layout</NButton>
             <NButton class="view-command" text @click="onResetCamera">Reset camera</NButton>
-            <NButton class="view-command" text @click="onNavigationHelp">Navigation help</NButton>
           </div>
         </NPopover>
       </div>
@@ -427,41 +420,6 @@ onBeforeUnmount(() => {
         {{ store.error.value }}
       </NAlert>
 
-      <NModal v-model:show="isNavigationHelpVisible">
-        <NCard
-          class="navigation-help"
-          title="Navigation"
-          role="dialog"
-          aria-label="Navigation"
-          aria-modal="true"
-          data-editor-interactive
-        >
-          <template #header-extra>
-            <DialogCloseButton label="Close Navigation" @click="isNavigationHelpVisible = false" />
-          </template>
-          <p><strong>Touch</strong></p>
-          <dl>
-            <dt>One-finger drag</dt>
-            <dd>Turn the camera.</dd>
-            <dt>Two-finger drag</dt>
-            <dd>Pan sideways and vertically.</dd>
-            <dt>Pinch apart / together</dt>
-            <dd>Move forward / backward.</dd>
-          </dl>
-          <p>You can pan and pinch together. Start gestures on the scene; drag panel title bars to move panels.</p>
-          <p><strong>Mouse</strong></p>
-          <dl>
-            <dt>Left-button drag</dt>
-            <dd>Turn the camera.</dd>
-            <dt>Middle- or right-button drag</dt>
-            <dd>Pan sideways and vertically.</dd>
-            <dt>Mouse wheel</dt>
-            <dd>Move forward and backward.</dd>
-          </dl>
-          <p>View → Reset camera restores the original view. Stop camera animations before navigating or resetting.</p>
-        </NCard>
-      </NModal>
-
       <NModal v-model:show="sceneDialogVisible" :mask-closable="false">
         <NCard class="scene-browser" title="Load scene" role="dialog" aria-modal="true" data-editor-interactive>
           <template #header-extra>
@@ -598,24 +556,6 @@ onBeforeUnmount(() => {
 .view-command {
   justify-content: flex-start;
   width: 100%;
-}
-
-.navigation-help {
-  width: min(440px, calc(100vw - 24px));
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  pointer-events: auto;
-}
-
-.navigation-help dl {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 10px 16px;
-}
-
-.navigation-help dd {
-  margin: 0;
-  color: rgb(255 255 255 / 65%);
 }
 
 .scene-reload-status {
