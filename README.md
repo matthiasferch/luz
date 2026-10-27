@@ -43,10 +43,12 @@ To run the editor:
 npm --workspace @luz/editor run serve
 ```
 
-For the self-contained showcase, run `npm run build:demo` followed by `npm run preview:demo`,
+Try the [live showcase](https://demo.luzjs.dev/) in a WebGL2-capable browser.
+
+To run the self-contained showcase locally, run `npm run build:demo` followed by `npm run preview:demo`,
 then open `http://127.0.0.1:4173/`. It includes two original scenes and the full editor.
-See the [showcase guide](apps/editor/SHOWCASE.md) and [deployment plan](apps/editor/DEPLOYMENT.md)
-for the registered luzjs.dev domain and deployment to demo.luzjs.dev.
+See the [showcase guide](apps/editor/SHOWCASE.md) for controls and the
+[deployment guide](apps/editor/DEPLOYMENT.md) for publishing from `main`.
 
 For your own scenes, export into `apps/editor/public/assets/scenes/`
 with dependencies under `apps/editor/public/assets/`. These local assets are excluded from the showcase build.
