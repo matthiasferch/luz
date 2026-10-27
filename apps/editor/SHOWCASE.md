@@ -8,7 +8,9 @@ The source recipe is `apps/editor/tooling/demo-assets.cjs`. The demo build gener
 its JSON assets afresh; generated files do not need to be checked into Git.
 
 The **rigid body playground** is the only bundled scene and loads at startup. It contains
-a stack of cubes and three falling balls. Open Simulation and press Start. Reset restores
+a stack of cubes and three falling balls. When the Simulation panel is hidden, use the
+Start, Pause and Reset buttons at the bottom of the scene. Open the panel through View
+for the full simulation settings. Reset restores
 the initial arrangement. While running, WASD applies force to the first ball and TFGH to
 the first cube. Expand lights in the Entities panel to toggle them, or Settings to explore
 shadows and rendering effects.

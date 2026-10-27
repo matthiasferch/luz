@@ -99,6 +99,7 @@ describe('Vue editor interface', () => {
     expect(wrapper.text()).toContain('Loading scene')
     expect(wrapper.text()).toContain('Preparing renderer')
     expect(wrapper.find('.editor-toolbar').exists()).toBe(false)
+    expect(wrapper.find('.simulation-controls').exists()).toBe(false)
     store.setLoadingProgress({ stage: 'Loading models', completed: 12, total: 28 })
 
     await nextTick()
@@ -109,6 +110,7 @@ describe('Vue editor interface', () => {
     expect(wrapper.text()).toContain('Scene initialization failed')
     expect(wrapper.text()).toContain('WebGL unavailable')
     expect(wrapper.find('.editor-toolbar').exists()).toBe(false)
+    expect(wrapper.find('.simulation-controls').exists()).toBe(false)
     wrapper.unmount()
   })
   it('shows only Scene and View in the toolbar', async () => {
@@ -120,6 +122,7 @@ describe('Vue editor interface', () => {
     const labels = wrapper.findAll('.toolbar-item').map((button) => button.text())
 
     expect(wrapper.findAll('.floating-panel')).toHaveLength(4)
+    expect(wrapper.find('.simulation-controls').exists()).toBe(false)
     expect(wrapper.get('.floating-panel[aria-label="Entities"]').classes()).not.toContain('auto-height')
     expect(wrapper.findAll('.floating-panel.auto-height')).toHaveLength(3)
     expect(
@@ -187,17 +190,48 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.scene-reload-status').exists()).toBe(false)
     wrapper.unmount()
   })
-  it('starts mobile with hidden panels and lets View open and reset them', async () => {
+  it('offers simulation controls while mobile panels are hidden and switches back when the panel opens', async () => {
     vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(390)
     localStorage.removeItem('luz.editor.layout.mobile')
 
     const store = createEditorStore()
+    const setSimulationRunning = vi.fn((isRunning: boolean) => isRunning)
+    const resetSimulation = vi.fn(() => ({ isRunning: false, timeScale: 1, gravity: -9.81 }))
 
-    store.attach(makeRuntime())
+    store.attach(makeRuntime({ setSimulationRunning, resetSimulation }))
 
     const wrapper = mount(App, provideStore(store))
 
     expect(wrapper.findAll('.floating-panel')).toHaveLength(0)
+
+    const startButton = wrapper.get('button[aria-label="Start simulation"]')
+    const pauseButton = wrapper.get('button[aria-label="Pause simulation"]')
+
+    expect(startButton.attributes('disabled')).toBeUndefined()
+    expect(pauseButton.attributes('disabled')).toBeDefined()
+
+    await startButton.trigger('click')
+    expect(setSimulationRunning).toHaveBeenLastCalledWith(true)
+    expect(startButton.attributes('disabled')).toBeDefined()
+    expect(pauseButton.attributes('disabled')).toBeUndefined()
+
+    await startButton.trigger('click')
+    expect(setSimulationRunning).toHaveBeenCalledOnce()
+
+    await pauseButton.trigger('click')
+    expect(setSimulationRunning).toHaveBeenLastCalledWith(false)
+    expect(store.isSimulationRunning.value).toBe(false)
+    expect(resetSimulation).not.toHaveBeenCalled()
+
+    await startButton.trigger('click')
+
+    await wrapper.get('button[aria-label="Reset simulation"]').trigger('click')
+    expect(resetSimulation).toHaveBeenCalledOnce()
+    expect(store.isSimulationRunning.value).toBe(false)
+    expect(startButton.attributes('disabled')).toBeUndefined()
+    expect(pauseButton.attributes('disabled')).toBeDefined()
+
+    await startButton.trigger('click')
 
     await wrapper.findAll('.toolbar-item')[1].trigger('click')
 
@@ -208,12 +242,19 @@ describe('Vue editor interface', () => {
     await nextTick()
     expect(wrapper.findAll('.floating-panel')).toHaveLength(1)
     expect(wrapper.find('.floating-panel[aria-label="Simulation"]').exists()).toBe(true)
+    expect(wrapper.find('.simulation-controls').exists()).toBe(false)
+    expect(wrapper.get('.simulation-actions button').text()).toBe('Stop')
+
+    await wrapper.get('button[aria-label="Hide Simulation"]').trigger('click')
+    expect(wrapper.get('button[aria-label="Pause simulation"]').attributes('disabled')).toBeUndefined()
+    expect(store.isSimulationRunning.value).toBe(true)
 
     await wrapper.find('.reset-layout').trigger('click')
 
     await nextTick()
     expect(wrapper.findAll('.floating-panel')).toHaveLength(0)
     expect(wrapper.find('.editor-toolbar').exists()).toBe(true)
+    expect(wrapper.find('.simulation-controls').exists()).toBe(true)
     wrapper.unmount()
   })
   it('selects a valid scene explicitly and prevents loading malformed scenes', async () => {

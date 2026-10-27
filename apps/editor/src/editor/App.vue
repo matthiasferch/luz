@@ -26,6 +26,7 @@ import EntitiesPanel from './components/EntitiesPanel.vue'
 import AnimationPanel from './components/AnimationPanel.vue'
 import EnvironmentPanel from './components/EnvironmentPanel.vue'
 import SimulationPanel from './components/SimulationPanel.vue'
+import SimulationControls from './components/SimulationControls.vue'
 import { createPanelLayout, type PanelId } from './panel-layout'
 import { useEditorStore } from './editor-store'
 import { loadSceneThumbnails, SCENE_THUMBNAIL_UPDATED_EVENT } from './scene-thumbnails'
@@ -292,6 +293,8 @@ onBeforeUnmount(() => {
       </NAlert>
 
       <template v-else>
+        <SimulationControls v-if="!layout.panels.simulation.isVisible" />
+
         <Transition name="dialog" appear>
           <FloatingPanel
             ref="entitiesPanel"
