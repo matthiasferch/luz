@@ -381,6 +381,31 @@ export class Editor implements EditorApi {
       }
     }
 
+    this.restoreImportedCamera()
+    this.sceneRenderer?.invalidateHistory()
+    this.persistSettings()
+
+    return this.captureEditorState()
+  }
+
+  resetCamera(): SceneSettings['camera'] {
+    for (let entity: Entity | undefined = this.cameraEntity; entity; entity = entity.parent) {
+      if (entity.animationMixer?.hasActiveAnimations) {
+        throw new Error('Stop the camera animation before resetting the camera.')
+      }
+    }
+
+    this.restoreImportedCamera()
+    this.sceneRenderer?.invalidateHistory()
+    this.persistSettings()
+
+    return {
+      position: this.settings.camera.position ? [...this.settings.camera.position] : null,
+      rotation: this.settings.camera.rotation ? [...this.settings.camera.rotation] : null
+    }
+  }
+
+  private restoreImportedCamera(): void {
     if (this.blenderCameraPose) {
       const { position, rotation } = this.blenderCameraPose
 
@@ -395,11 +420,6 @@ export class Editor implements EditorApi {
       this.camera.update(this.cameraEntity, 0)
       this.cameraController.setTransform(this.cameraEntity)
     }
-
-    this.sceneRenderer?.invalidateHistory()
-    this.persistSettings()
-
-    return this.captureEditorState()
   }
 
   private persistSettings(): void {

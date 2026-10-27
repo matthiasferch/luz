@@ -64,6 +64,47 @@ const availableScenes: SceneDescriptor[] = [
 ]
 
 describe('Vue editor interface', () => {
+  it('provides navigation help and resets the camera without changing panels or simulation', async () => {
+    const resetCamera = vi.fn(() => ({ position: null, rotation: null }))
+    const resetSimulation = vi.fn()
+    const store = createEditorStore()
+
+    store.attach(makeRuntime({ resetCamera, resetSimulation }))
+
+    const wrapper = mount(App, provideStore(store))
+    const panelCount = wrapper.findAll('.floating-panel').length
+
+    await wrapper.findAll('.toolbar-item')[1].trigger('click')
+
+    await wrapper
+      .findAll('.view-command')
+      .find((button) => button.text() === 'Reset camera')!
+      .trigger('click')
+    expect(resetCamera).toHaveBeenCalledOnce()
+    expect(resetSimulation).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.floating-panel')).toHaveLength(panelCount)
+
+    await wrapper.findAll('.toolbar-item')[1].trigger('click')
+
+    await wrapper
+      .findAll('.view-command')
+      .find((button) => button.text() === 'Navigation help')!
+      .trigger('click')
+    expect(wrapper.get('.navigation-help').text()).toContain('One-finger drag')
+    expect(wrapper.get('.navigation-help').text()).toContain('Two-finger drag')
+    expect(wrapper.get('.navigation-help').text()).toContain('Pinch apart / together')
+
+    await wrapper.get('button[aria-label="Close Navigation"]').trigger('click')
+    expect(wrapper.find('.navigation-help').exists()).toBe(false)
+    resetCamera.mockImplementation(() => {
+      throw new Error('Stop the camera animation before resetting the camera.')
+    })
+    store.resetCamera()
+
+    await nextTick()
+    expect(wrapper.get('.operation-error').text()).toContain('Stop the camera animation')
+    wrapper.unmount()
+  })
   it('shows loading and initialization errors', async () => {
     const store = createEditorStore()
     const wrapper = mount(App, provideStore(store))

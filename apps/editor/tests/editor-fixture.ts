@@ -143,6 +143,8 @@ export const makeRuntime = (overrides: Partial<EditorApi> = {}): EditorApi => {
 
     resetSimulation: () => ({ isRunning: false, timeScale: 1, gravity: -9.81 }),
 
+    resetCamera: () => ({ ...settings.camera }),
+
     setLightEnabled: (_key, isEnabled) => isEnabled,
 
     setComponentVisible: (_path, _name, isVisible) => isVisible,

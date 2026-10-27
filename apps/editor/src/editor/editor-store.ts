@@ -426,6 +426,20 @@ export const createEditorStore = () => {
     }
   }
 
+  const resetCamera = () => {
+    if (!runtime.value || !settings.value) {
+      return
+    }
+
+    error.value = null
+
+    try {
+      settings.value.camera = runtime.value.resetCamera()
+    } catch (reason) {
+      error.value = reason instanceof Error ? reason.message : String(reason)
+    }
+  }
+
   const currentDebugVisualization = computed<DebugVisualization | 'none'>(() => {
     if (!settings.value) {
       return 'none'
@@ -477,6 +491,7 @@ export const createEditorStore = () => {
     setGravity,
     toggleSimulation,
     resetSimulation,
+    resetCamera,
     setEnvironmentSetting,
     setLightEnabled,
     setComponentVisible,

@@ -3,20 +3,25 @@ import { TransformAnimation, Camera, Entity, Transform } from '@luz/core'
 import { Scene } from '@luz/scene'
 import { Quaternion, Vector2, Vector3 } from '@luz/math'
 import { CameraController } from '../src/runtime/camera-controller'
-import type { InputManager } from '../src/runtime/input-manager'
+import { TouchNavigation } from '../src/runtime/touch-navigation'
 
 const convertRadiansToDegrees = (angle: number) => (angle * 180) / Math.PI
 
 const createFixture = (rotation: Quaternion) => {
   const transform = new Transform({ rotation })
   const delta = new Vector2()
+  const buttons: Record<number, boolean> = { 0: true }
   const input = {
-    buttons: { 0: true },
-    captureMouseDelta: () => delta,
+    buttons,
+    captureNavigation: () => ({
+      rotationDelta: buttons[0] ? delta : new Vector2(),
+      panDelta: !buttons[0] && (buttons[1] || buttons[2]) ? delta : new Vector2(),
+      dollyDelta: 0
+    }),
 
-    captureWheelDelta: () => 0
+    resetNavigation: () => {}
   }
-  const controller = new CameraController(input as unknown as InputManager)
+  const controller = new CameraController(input)
   const camera = new Camera()
 
   controller.setTransform(transform)
@@ -41,24 +46,57 @@ const createFixture = (rotation: Quaternion) => {
 }
 
 describe('CameraController pitch limits', () => {
+  it('applies touch pan and pinch together, drains animated input, and resets pending gestures on reattachment', () => {
+    const navigation = new TouchNavigation()
+    const input = {
+      captureNavigation: () => navigation.capture(),
+
+      resetNavigation: () => navigation.reset()
+    }
+    const controller = new CameraController(input)
+    const transform = new Transform({ rotation: Quaternion.setFromAxisAngle(Vector3.createRight(), Math.PI / 2) })
+
+    controller.setTransform(transform)
+    navigation.start(1, 100, 100)
+    navigation.start(2, 200, 100)
+    navigation.move(1, 80, 130, 600, 800)
+    navigation.move(2, 280, 130, 600, 800)
+    controller.update()
+    expect(transform.translation.x).toBeCloseTo(-0.3)
+    expect(transform.translation.y).toBeCloseTo(0.3)
+    expect(transform.translation.z).toBeCloseTo(-4 * Math.log(2))
+
+    const position = transform.translation.clone()
+
+    navigation.move(1, 40, 100, 600, 800)
+    controller.update(true)
+    controller.update(false)
+    expect([...transform.translation]).toEqual([...position])
+    navigation.start(1, 100, 100)
+    navigation.move(1, 200, 200, 600, 800)
+    controller.setTransform(transform)
+    controller.update()
+    expect([...transform.translation]).toEqual([...position])
+    expect(controller.yaw).toBeCloseTo(0)
+    expect(controller.pitch).toBeCloseTo(0)
+  })
   it('yields navigation to playing and scrubbed animation without simulation and synchronizes on Stop', () => {
     const scene = new Scene()
     const entity = new Entity()
     const animation = new TransformAnimation()
     const delta = new Vector2([100, 20])
     const input = {
-      buttons: { 0: true },
-      captureMouseDelta: () => {
+      captureNavigation: () => {
         const movement = delta.clone()
 
         delta.reset()
 
-        return movement
+        return { rotationDelta: movement, panDelta: new Vector2(), dollyDelta: 0 }
       },
 
-      captureWheelDelta: () => 0
+      resetNavigation: () => {}
     }
-    const controller = new CameraController(input as unknown as InputManager)
+    const controller = new CameraController(input)
 
     animation.duration = 1
     animation.tracks.rotation = [

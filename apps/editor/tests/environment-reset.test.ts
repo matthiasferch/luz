@@ -1,11 +1,69 @@
 import { it, vi } from 'vitest'
+import { reactive } from 'vue'
 import assert from 'node:assert/strict'
 import { normalizeSceneSettings } from '../src/settings'
-import { Entity, Light, Camera, isLight } from '@luz/core'
+import { Entity, Light, Camera, TransformAnimation, isLight } from '@luz/core'
 import { Scene } from '@luz/scene'
 import { Model } from '@luz/graphics'
 import { Vector3 } from '@luz/math'
 import { Editor } from '../src/runtime/editor-runtime'
+
+it('resets only the authored camera pose, including its parent-relative position', () => {
+  const cameraEntity = new Entity()
+  const parent = new Entity()
+  const scene = new Scene()
+  const settings = normalizeSceneSettings({
+    camera: { position: [9, 8, 7], rotation: [0, 1, 0, 0] },
+    models: { mesh: { isVisible: false } },
+    simulation: { timeScale: 0.5, gravity: -3 }
+  })
+  const previousSettings = structuredClone(settings)
+  const cameraController = { setTransform: vi.fn() }
+  const sceneRenderer = { invalidateHistory: vi.fn() }
+  const persistSettings = vi.fn()
+
+  parent.translation.x = 10
+  parent.children.camera = cameraEntity
+  scene.entities.parent = parent
+
+  cameraEntity.translation.set([9, 8, 7])
+
+  const runtime = Object.assign(Object.create(Editor.prototype), {
+    cameraEntity,
+    scene,
+    settings: reactive(settings),
+    cameraController,
+    sceneRenderer,
+    persistSettings,
+    camera: new Camera(),
+    simulation: { isRunning: true },
+    blenderCameraPose: { position: [1, 2, 3], rotation: [0, 0, 0, 1] }
+  })
+  const result = runtime.resetCamera()
+
+  assert.deepEqual(result, { position: [1, 2, 3], rotation: [0, 0, 0, 1] })
+  assert.deepEqual([...cameraEntity.worldTranslation], [11, 2, 3])
+  assert.deepEqual(settings, { ...previousSettings, camera: result })
+  assert.notEqual(result, settings.camera)
+  assert.notEqual(result.position, settings.camera.position)
+  assert.equal(runtime.simulation.isRunning, true)
+  assert.equal(cameraController.setTransform.mock.calls[0][0], cameraEntity)
+  assert.equal(sceneRenderer.invalidateHistory.mock.calls.length, 1)
+  assert.equal(persistSettings.mock.calls.length, 1)
+
+  const animation = new TransformAnimation()
+
+  animation.duration = 1
+  animation.tracks.translation = [
+    { time: 0, value: [10, 0, 0] },
+    { time: 1, value: [10, 1, 0] }
+  ]
+  parent.components.motion = animation
+
+  parent.animationMixer!.play('motion')
+  assert.throws(() => runtime.resetCamera(), /Stop the camera animation/)
+  assert.equal(persistSettings.mock.calls.length, 1)
+})
 
 for (const hasEnvironment of [true, false]) {
   it(`resets only environment overrides (${hasEnvironment ? 'imported environment' : 'no environment'})`, async () => {

@@ -146,6 +146,7 @@ export interface EditorApi {
   setGravity(value: number): number
   setSimulationRunning(isRunning: boolean): boolean
   resetSimulation(): SimulationState
+  resetCamera(): SceneSettings['camera']
   setLightEnabled(key: string, isEnabled: boolean): boolean
   setComponentVisible(entityPath: string, componentName: string, isVisible: boolean): boolean | undefined
   resetImportedEnvironment(): Promise<SceneSettings['environment']>

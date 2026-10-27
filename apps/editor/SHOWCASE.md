@@ -18,5 +18,10 @@ Use View to open a panel, then drag its title bar to move it. Panel contents sti
 normally. Mobile and desktop layouts are saved separately; View → Reset layout restores
 the defaults for the current viewport.
 
-Drag the canvas with the left mouse button to turn the camera; the mouse wheel moves it
-forward and backward. The editor stores settings and thumbnails locally in the browser.
+Drag the canvas with one finger to turn the camera. Drag with two fingers to pan, and
+pinch apart or together to move forward or backward. Panning and pinching can be combined.
+With a mouse, use left-button drag to turn, middle- or right-button drag to pan, and the
+wheel to move forward and backward. View → Navigation help lists these controls.
+View → Reset camera restores the authored view without resetting the simulation or panels.
+Stop camera animations before navigating or resetting the camera.
+The editor stores settings and thumbnails locally in the browser.

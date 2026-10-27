@@ -18,11 +18,12 @@ export class CameraController {
   dollySpeed: number = -0.002
   rotationSpeed: number = 0.005
 
-  constructor(private inputManager: InputManager) {}
+  constructor(private inputManager: Pick<InputManager, 'captureNavigation' | 'resetNavigation'>) {}
 
   setTransform(transform: Transform): void {
     this.transform = transform
 
+    this.inputManager.resetNavigation()
     transform.refreshWorldTransform()
 
     const viewRotation = Quaternion.multiply(transform.worldRotation, CameraController.viewCorrection)
@@ -42,27 +43,17 @@ export class CameraController {
 
     this.isAnimationActive = isAnimationActive
 
-    if (isAnimationActive) {
-      this.inputManager.captureMouseDelta()
-      this.inputManager.captureWheelDelta()
+    const { rotationDelta, panDelta, dollyDelta } = this.inputManager.captureNavigation()
 
+    if (isAnimationActive) {
       return
     }
 
-    const { buttons } = this.inputManager
+    this.rotate(rotationDelta)
+    this.pan(panDelta)
 
-    const mouseDelta = this.inputManager.captureMouseDelta()
-
-    if (buttons[0]) {
-      this.rotate(mouseDelta)
-    } else if (buttons[1] || buttons[2]) {
-      this.pan(mouseDelta)
-    }
-
-    const wheelDelta = this.inputManager.captureWheelDelta()
-
-    if (wheelDelta !== 0) {
-      this.dolly(wheelDelta)
+    if (dollyDelta !== 0) {
+      this.dolly(dollyDelta)
     }
   }
 
@@ -100,7 +91,7 @@ export class CameraController {
   }
 
   private pan({ x, y }: Vector2): void {
-    if (!this.transform) {
+    if (!this.transform || (x === 0 && y === 0)) {
       return
     }
 
