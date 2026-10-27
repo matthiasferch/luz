@@ -30,30 +30,22 @@ const onPause = () => {
       class="simulation-control"
       quaternary
       circle
-      title="Start simulation"
       aria-label="Start simulation"
       :disabled="store.isSimulationRunning.value"
       @click="onStart"
-      ><Play :size="20" aria-hidden="true"
+      ><Play :size="16" aria-hidden="true"
     /></NButton>
     <NButton
       class="simulation-control"
       quaternary
       circle
-      title="Pause simulation"
       aria-label="Pause simulation"
       :disabled="!store.isSimulationRunning.value"
       @click="onPause"
-      ><Pause :size="20" aria-hidden="true"
+      ><Pause :size="16" aria-hidden="true"
     /></NButton>
-    <NButton
-      class="simulation-control"
-      quaternary
-      circle
-      title="Reset simulation"
-      aria-label="Reset simulation"
-      @click="store.resetSimulation"
-      ><RotateCcw :size="20" aria-hidden="true"
+    <NButton class="simulation-control" quaternary circle aria-label="Reset simulation" @click="store.resetSimulation"
+      ><RotateCcw :size="16" aria-hidden="true"
     /></NButton>
   </div>
 </template>
@@ -78,7 +70,7 @@ const onPause = () => {
 }
 
 .simulation-control {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
 }
 </style>
