@@ -29,6 +29,7 @@ __pycache__/
 npm-stdout.txt
 npm-stderr.txt
 .tmp/
+.wrangler/
 
 # Local Blender source and third-party asset libraries
 apps/editor/local-assets/

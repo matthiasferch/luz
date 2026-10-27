@@ -7,16 +7,19 @@ const packageJson = require('./package.json')
 const { scanSceneCatalog } = require('./tooling/scene-catalog')
 const { createLicensePlugin } = require('../../tooling/dependency-licenses.cjs')
 
-const sceneDirectory = path.resolve(__dirname, 'public/assets/scenes')
-
-module.exports = (environment = {}) => {
+module.exports = (environment = {}, argumentsObject = {}) => {
   const isServing = Boolean(environment.WEBPACK_SERVE)
+  const isDemo = typeof environment.demoAssetsDirectory === 'string'
+  const assetDirectory = isDemo ? environment.demoAssetsDirectory : path.resolve(__dirname, 'public/assets')
+  const sceneDirectory = path.join(assetDirectory, 'scenes')
   const sceneCatalog = scanSceneCatalog(sceneDirectory)
+  const mode = argumentsObject.mode ?? 'development'
 
   return {
-    mode: 'development',
+    mode,
+    context: __dirname,
     entry: './src/main.ts',
-    devtool: 'inline-source-map',
+    devtool: mode === 'production' ? false : 'inline-source-map',
     module: {
       rules: [
         { test: /\.png$/, type: 'asset/inline' },
@@ -71,9 +74,13 @@ module.exports = (environment = {}) => {
             new CopyPlugin({
               patterns: [
                 {
-                  from: 'public/assets/',
+                  from: isDemo ? assetDirectory : 'public/assets/',
                   to: 'assets/',
-                  noErrorOnMissing: true
+                  noErrorOnMissing: !isDemo
+                },
+                {
+                  from: 'index.html',
+                  to: 'index.html'
                 },
                 {
                   from: '../../packages/formats/schemas/',
@@ -83,7 +90,8 @@ module.exports = (environment = {}) => {
                   from: '../../LICENSE',
                   to: 'LICENSE',
                   toType: 'file'
-                }
+                },
+                ...(isDemo ? [{ from: 'SHOWCASE.md', to: 'assets/README.md' }] : [])
               ]
             })
           ])
@@ -93,7 +101,7 @@ module.exports = (environment = {}) => {
     },
     output: {
       filename: 'editor.js',
-      path: path.resolve(__dirname, 'dist'),
+      path: path.resolve(__dirname, isDemo ? 'dist/demo' : 'dist'),
       clean: true
     },
     watchOptions: { ignored: ['**/node_modules/**'] },

@@ -48,11 +48,14 @@ test('development server treats a missing optional Blender export marker as no c
   assert.equal(statusCode, 204)
 })
 test('production build supports optional local assets', () => {
-  const configuration = createWebpackConfiguration()
+  const configuration = createWebpackConfiguration({}, { mode: 'production' })
   const definitions = configuration.plugins.find((plugin) => plugin.constructor.name === 'DefinePlugin').definitions
   const copyPlugin = configuration.plugins.find((plugin) => plugin.constructor.name === 'CopyPlugin')
 
   assert.ok(copyPlugin)
+  assert.equal(configuration.devtool, false)
+  assert.equal(configuration.mode, 'production')
+  assert.ok(copyPlugin.patterns.some((pattern) => pattern.from === 'index.html'))
   assert.equal(copyPlugin.patterns[0].from, 'public/assets/')
   assert.equal(copyPlugin.patterns[0].noErrorOnMissing, true)
   assert.equal(

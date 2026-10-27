@@ -43,8 +43,13 @@ To run the editor:
 npm --workspace @luz/editor run serve
 ```
 
-Demo assets are not included in this repository. Export your own scenes into `apps/editor/public/assets/scenes/`
-with their dependencies under `apps/editor/public/assets/`.
+For the self-contained showcase, run `npm run build:demo` followed by `npm run preview:demo`,
+then open `http://127.0.0.1:4173/`. It includes two original scenes and the full editor.
+See the [showcase guide](apps/editor/SHOWCASE.md) and [deployment plan](apps/editor/DEPLOYMENT.md)
+for the registered luzjs.dev domain and deployment to demo.luzjs.dev.
+
+For your own scenes, export into `apps/editor/public/assets/scenes/`
+with dependencies under `apps/editor/public/assets/`. These local assets are excluded from the showcase build.
 
 ## Development checks
 

@@ -11,8 +11,11 @@
     "clean": "rimraf ./dist",
     "build:engine": "npm run clean && webpack && node tooling/prepare-distribution.cjs",
     "build": "npm run build:engine && npm --workspace @luz/editor run build",
+    "build:demo": "npm --workspace @luz/editor run build:demo",
+    "preview:demo": "npm --workspace @luz/editor run preview:demo",
+    "deploy:demo": "wrangler deploy --config apps/editor/wrangler.json",
     "watch": "webpack --watch",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run validate:textures && npm run validate:shaders && npm test && npm run build && npm run test:distribution",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run validate:textures && npm run validate:shaders && npm test && npm run build && npm run build:demo && npm run test:distribution",
     "format": "prettier --write \"*.{ts,mts,cts,js,cjs,mjs,json,md,yml,yaml}\" \".github/**/*.{yml,yaml}\" \"integrations/**/*.md\" \"packages/**/*.{ts,mts,cts,js,cjs,mjs,json,md,glsl}\" \"tests/**/*.{ts,mts,cts,js,cjs,mjs,html,json,md}\" \"tooling/**/*.{ts,mts,cts,js,cjs,mjs,json,md}\" \"apps/editor/*.{ts,mts,cts,js,cjs,mjs,css,html,json,md}\" \"apps/editor/src/**/*.{ts,mts,cts,js,cjs,mjs,vue,css,json,glsl}\" \"apps/editor/tests/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/tooling/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/types/**/*.{ts,mts,cts}\" && python -m ruff format integrations/blender",
     "format:check": "prettier --check \"*.{ts,mts,cts,js,cjs,mjs,json,md,yml,yaml}\" \".github/**/*.{yml,yaml}\" \"integrations/**/*.md\" \"packages/**/*.{ts,mts,cts,js,cjs,mjs,json,md,glsl}\" \"tests/**/*.{ts,mts,cts,js,cjs,mjs,html,json,md}\" \"tooling/**/*.{ts,mts,cts,js,cjs,mjs,json,md}\" \"apps/editor/*.{ts,mts,cts,js,cjs,mjs,css,html,json,md}\" \"apps/editor/src/**/*.{ts,mts,cts,js,cjs,mjs,vue,css,json,glsl}\" \"apps/editor/tests/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/tooling/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/types/**/*.{ts,mts,cts}\" && python -m ruff format --check integrations/blender",
     "lint": "eslint index.ts packages tests tooling \"*.{js,cjs,mjs}\" --ext .ts,.mts,.cts,.js,.cjs,.mjs --max-warnings 0 && npm --workspace @luz/editor run lint && npm run lint:python && npm run lint:styles && npm run lint:html && npm run lint:workflows && npm run lint:powershell",
@@ -46,7 +49,8 @@
     "prettier": "^3.3.3",
     "prettier-plugin-glsl": "^0.3.1",
     "stylelint": "17.16.0",
-    "stylelint-config-standard": "40.0.0"
+    "stylelint-config-standard": "40.0.0",
+    "wrangler": "4.154.0"
   },
   "engines": {
     "node": "^22.22.0 || ^24.8.0 || >=26.0.0"

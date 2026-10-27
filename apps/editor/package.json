@@ -10,6 +10,8 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint src tests tooling types webpack.config.js vitest.config.mts .eslintrc.cjs --ext .ts,.mts,.cts,.vue,.js,.cjs,.mjs --max-warnings 0",
     "build": "rimraf ./dist && webpack",
+    "build:demo": "node tooling/build-demo.cjs",
+    "preview:demo": "node tooling/serve-demo.cjs",
     "watch": "webpack --watch",
     "serve": "webpack serve --open"
   },
