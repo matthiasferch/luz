@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   clampPanel,
   createPanelLayout,
@@ -34,6 +35,39 @@ describe('editor panel layout', () => {
     expect(panels.animations).toMatchObject({ isVisible: false, hasAutomaticHeight: false })
     expect(panels.debug.isVisible).toBe(false)
     expect(panels.diagnostics.isVisible).toBe(false)
+  })
+  it('hides every panel on narrow screens and on wider devices with a coarse pointer', () => {
+    expect(Object.values(createDefaultPanelLayout(390, 844)).every((panel) => !panel.isVisible)).toBe(true)
+
+    const pointerQuery = window.matchMedia('(pointer: coarse)')
+
+    vi.spyOn(window, 'matchMedia').mockReturnValue({ ...pointerQuery, matches: true })
+    expect(Object.values(createDefaultPanelLayout(1024, 768)).every((panel) => !panel.isVisible)).toBe(true)
+  })
+  it('saves mobile choices separately from desktop layouts and resets them to hidden', async () => {
+    const desktopLayout = createDefaultPanelLayout(1200, 800)
+    const desktopState = JSON.stringify(desktopLayout)
+
+    localStorage.setItem('luz.editor.layout', desktopState)
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(390)
+
+    const layout = createPanelLayout()
+
+    expect(Object.values(layout.panels).every((panel) => !panel.isVisible)).toBe(true)
+    layout.setVisible('simulation', true)
+    layout.move('simulation', 20, 100)
+
+    await nextTick()
+
+    const restoredLayout = createPanelLayout()
+
+    expect(restoredLayout.panels.simulation).toMatchObject({ isVisible: true, x: 20, y: 100 })
+    expect(localStorage.getItem('luz.editor.layout')).toBe(desktopState)
+    restoredLayout.reset()
+
+    await nextTick()
+    expect(Object.values(createPanelLayout().panels).every((panel) => !panel.isVisible)).toBe(true)
+    expect(localStorage.getItem('luz.editor.layout')).toBe(desktopState)
   })
   it('clamps movement and resizing to the viewport', () => {
     const panel = clampPanel(

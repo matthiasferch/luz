@@ -16,6 +16,8 @@ export interface PanelState {
 export type PanelLayout = Record<PanelId, PanelState>
 
 const STORAGE_KEY = 'luz.editor.layout'
+const MOBILE_STORAGE_KEY = 'luz.editor.layout.mobile'
+const MOBILE_VIEWPORT_WIDTH = 768
 const MINIMUM_WIDTH = 280
 const MINIMUM_HEIGHT = 160
 const HEADER_HEIGHT = 42
@@ -24,6 +26,9 @@ const VERTICAL_EDGE_MARGIN = 8
 const RIGHT_PANEL_WIDTH = 340
 const PANEL_STACK_GAP = 16
 const PANEL_GAP = 8
+
+const isMobileViewport = (viewportWidth = window.innerWidth): boolean =>
+  viewportWidth <= MOBILE_VIEWPORT_WIDTH || window.matchMedia('(pointer: coarse)').matches
 
 type PanelRectangle = Pick<PanelState, 'x' | 'y' | 'width' | 'height' | 'isCollapsed'>
 
@@ -83,6 +88,7 @@ export const createDefaultPanelLayout = (
   viewportWidth = window.innerWidth,
   viewportHeight = window.innerHeight
 ): PanelLayout => {
+  const arePrimaryPanelsVisible = !isMobileViewport(viewportWidth)
   const environmentHeight = 238
   const entitiesHeight = Math.max(
     MINIMUM_HEIGHT,
@@ -99,7 +105,7 @@ export const createDefaultPanelLayout = (
       height: Math.max(MINIMUM_HEIGHT, Math.min(720, viewportHeight - 74)),
       hasAutomaticHeight: true,
       isCollapsed: false,
-      isVisible: true,
+      isVisible: arePrimaryPanelsVisible,
       z: 4
     },
     entities: {
@@ -109,7 +115,7 @@ export const createDefaultPanelLayout = (
       height: entitiesHeight,
       hasAutomaticHeight: false,
       isCollapsed: false,
-      isVisible: true,
+      isVisible: arePrimaryPanelsVisible,
       z: 1
     },
     animations: {
@@ -129,7 +135,7 @@ export const createDefaultPanelLayout = (
       height: environmentHeight,
       hasAutomaticHeight: true,
       isCollapsed: false,
-      isVisible: true,
+      isVisible: arePrimaryPanelsVisible,
       z: 2
     },
     simulation: {
@@ -139,7 +145,7 @@ export const createDefaultPanelLayout = (
       height: MINIMUM_HEIGHT,
       hasAutomaticHeight: true,
       isCollapsed: false,
-      isVisible: true,
+      isVisible: arePrimaryPanelsVisible,
       z: 3
     },
     debug: {
@@ -248,9 +254,10 @@ export const parsePanelLayout = (
 }
 
 export const createPanelLayout = () => {
-  const panels = reactive<PanelLayout>(parsePanelLayout(localStorage.getItem(STORAGE_KEY)))
+  const storageKey = isMobileViewport() ? MOBILE_STORAGE_KEY : STORAGE_KEY
+  const panels = reactive<PanelLayout>(parsePanelLayout(localStorage.getItem(storageKey)))
 
-  const persist = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(panels))
+  const persist = () => localStorage.setItem(storageKey, JSON.stringify(panels))
 
   persist()
   watch(panels, persist, { deep: true })

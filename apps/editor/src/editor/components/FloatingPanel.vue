@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount } from 'vue'
 import { NButton } from 'naive-ui'
 import type { PanelId, PanelState } from '../panel-layout'
 import DialogCloseButton from './DialogCloseButton.vue'
@@ -16,22 +16,30 @@ const emit = defineEmits<{
   close: [id: PanelId]
 }>()
 
-let drag:
-  | { pointerId: number; startX: number; startY: number; panelX: number; panelY: number; renderedHeight: number }
-  | undefined
+interface PanelDrag {
+  pointerId: number
+  captureTarget: HTMLElement
+  startX: number
+  startY: number
+  panelX: number
+  panelY: number
+  renderedHeight: number
+}
 
 type ResizeDirection = 'right' | 'bottom' | 'corner'
 
-let resizing:
-  | {
-      pointerId: number
-      direction: ResizeDirection
-      startX: number
-      startY: number
-      width: number
-      height: number
-    }
-  | undefined
+interface PanelResize {
+  pointerId: number
+  captureTarget: HTMLElement
+  direction: ResizeDirection
+  startX: number
+  startY: number
+  width: number
+  height: number
+}
+
+let panelDrag: PanelDrag | undefined
+let panelResize: PanelResize | undefined
 
 const style = computed(() => ({
   left: `${props.panel.x}px`,
@@ -46,15 +54,26 @@ const style = computed(() => ({
   zIndex: props.panel.z
 }))
 
-const startDrag = (event: PointerEvent) => {
-  if (event.button !== 0 || (event.target as HTMLElement).closest('button')) {
+const onDragStart = (event: PointerEvent) => {
+  if (
+    event.button !== 0 ||
+    !event.isPrimary ||
+    panelDrag ||
+    panelResize ||
+    (event.target as HTMLElement).closest('button')
+  ) {
     return
   }
 
-  const panel = (event.currentTarget as HTMLElement).closest<HTMLElement>('.floating-panel')
+  event.preventDefault()
+  event.stopPropagation()
 
-  drag = {
+  const captureTarget = event.currentTarget as HTMLElement
+  const panel = captureTarget.closest<HTMLElement>('.floating-panel')
+
+  panelDrag = {
     pointerId: event.pointerId,
+    captureTarget,
     startX: event.clientX,
     startY: event.clientY,
     panelX: props.panel.x,
@@ -62,43 +81,55 @@ const startDrag = (event: PointerEvent) => {
     renderedHeight: panel?.getBoundingClientRect().height ?? props.panel.height
   }
 
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+  captureTarget.setPointerCapture(event.pointerId)
   emit('focus', props.id)
 }
 
-const dragPanel = (event: PointerEvent) => {
-  if (!drag || drag.pointerId !== event.pointerId) {
+const onDragMove = (event: PointerEvent) => {
+  if (!panelDrag || panelDrag.pointerId !== event.pointerId) {
     return
   }
 
   emit(
     'move',
     props.id,
-    drag.panelX + event.clientX - drag.startX,
-    drag.panelY + event.clientY - drag.startY,
-    drag.renderedHeight
+    panelDrag.panelX + event.clientX - panelDrag.startX,
+    panelDrag.panelY + event.clientY - panelDrag.startY,
+    panelDrag.renderedHeight
   )
 }
 
-const endDrag = (event: PointerEvent) => {
-  if (drag?.pointerId === event.pointerId) {
-    drag = undefined
+const releasePointer = (captureTarget: HTMLElement, pointerId: number) => {
+  if (captureTarget.hasPointerCapture(pointerId)) {
+    captureTarget.releasePointerCapture(pointerId)
   }
 }
 
-const startResize = (event: PointerEvent, direction: ResizeDirection) => {
-  if (event.button !== 0) {
+const onDragEnd = (event: PointerEvent) => {
+  if (panelDrag?.pointerId === event.pointerId) {
+    const { captureTarget, pointerId } = panelDrag
+
+    panelDrag = undefined
+
+    releasePointer(captureTarget, pointerId)
+  }
+}
+
+const onResizeStart = (event: PointerEvent, direction: ResizeDirection) => {
+  if (event.button !== 0 || !event.isPrimary || panelDrag || panelResize) {
     return
   }
 
   event.preventDefault()
   event.stopPropagation()
 
-  const panel = (event.currentTarget as HTMLElement).closest<HTMLElement>('.floating-panel')
+  const captureTarget = event.currentTarget as HTMLElement
+  const panel = captureTarget.closest<HTMLElement>('.floating-panel')
   const rectangle = panel?.getBoundingClientRect()
 
-  resizing = {
+  panelResize = {
     pointerId: event.pointerId,
+    captureTarget,
     direction,
     startX: event.clientX,
     startY: event.clientY,
@@ -106,40 +137,54 @@ const startResize = (event: PointerEvent, direction: ResizeDirection) => {
     height: rectangle?.height ?? props.panel.height
   }
 
-  ;(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId)
+  captureTarget.setPointerCapture(event.pointerId)
   emit('focus', props.id)
 }
 
-const resizePanel = (event: PointerEvent) => {
-  if (!resizing || resizing.pointerId !== event.pointerId) {
+const onResizeMove = (event: PointerEvent) => {
+  if (!panelResize || panelResize.pointerId !== event.pointerId) {
     return
   }
 
-  const isHorizontal = resizing.direction === 'right' || resizing.direction === 'corner'
-  const isVertical = resizing.direction === 'bottom' || resizing.direction === 'corner'
+  const isHorizontal = panelResize.direction === 'right' || panelResize.direction === 'corner'
+  const isVertical = panelResize.direction === 'bottom' || panelResize.direction === 'corner'
 
   emit(
     'resize',
     props.id,
-    resizing.width + (isHorizontal ? event.clientX - resizing.startX : 0),
-    resizing.height + (isVertical ? event.clientY - resizing.startY : 0),
+    panelResize.width + (isHorizontal ? event.clientX - panelResize.startX : 0),
+    panelResize.height + (isVertical ? event.clientY - panelResize.startY : 0),
     isVertical
   )
 }
 
-const endResize = (event: PointerEvent) => {
-  if (resizing?.pointerId === event.pointerId) {
-    resizing = undefined
+const onResizeEnd = (event: PointerEvent) => {
+  if (panelResize?.pointerId === event.pointerId) {
+    const { captureTarget, pointerId } = panelResize
+
+    panelResize = undefined
+
+    releasePointer(captureTarget, pointerId)
   }
 }
 
-const fitAfterSectionToggle = (event: MouseEvent) => {
+const onSectionToggle = (event: MouseEvent) => {
   if (!(event.target instanceof Element) || !event.target.closest('.n-collapse-item__header')) {
     return
   }
 
   emit('fit', props.id)
 }
+
+onBeforeUnmount(() => {
+  if (panelDrag) {
+    releasePointer(panelDrag.captureTarget, panelDrag.pointerId)
+  }
+
+  if (panelResize) {
+    releasePointer(panelResize.captureTarget, panelResize.pointerId)
+  }
+})
 </script>
 
 <template>
@@ -150,14 +195,15 @@ const fitAfterSectionToggle = (event: MouseEvent) => {
     :aria-label="title"
     data-editor-interactive
     @pointerdown="emit('focus', id)"
-    @click="fitAfterSectionToggle"
+    @click="onSectionToggle"
   >
     <header
       class="panel-header"
-      @pointerdown="startDrag"
-      @pointermove="dragPanel"
-      @pointerup="endDrag"
-      @pointercancel="endDrag"
+      @pointerdown="onDragStart"
+      @pointermove="onDragMove"
+      @pointerup="onDragEnd"
+      @pointercancel="onDragEnd"
+      @lostpointercapture="onDragEnd"
     >
       <span class="panel-title">{{ title }}</span>
       <div class="panel-actions">
@@ -185,26 +231,29 @@ const fitAfterSectionToggle = (event: MouseEvent) => {
       <div
         class="panel-resize-handle right"
         aria-hidden="true"
-        @pointerdown="startResize($event, 'right')"
-        @pointermove="resizePanel"
-        @pointerup="endResize"
-        @pointercancel="endResize"
+        @pointerdown="onResizeStart($event, 'right')"
+        @pointermove="onResizeMove"
+        @pointerup="onResizeEnd"
+        @pointercancel="onResizeEnd"
+        @lostpointercapture="onResizeEnd"
       />
       <div
         class="panel-resize-handle bottom"
         aria-hidden="true"
-        @pointerdown="startResize($event, 'bottom')"
-        @pointermove="resizePanel"
-        @pointerup="endResize"
-        @pointercancel="endResize"
+        @pointerdown="onResizeStart($event, 'bottom')"
+        @pointermove="onResizeMove"
+        @pointerup="onResizeEnd"
+        @pointercancel="onResizeEnd"
+        @lostpointercapture="onResizeEnd"
       />
       <div
         class="panel-resize-handle corner"
         aria-hidden="true"
-        @pointerdown="startResize($event, 'corner')"
-        @pointermove="resizePanel"
-        @pointerup="endResize"
-        @pointercancel="endResize"
+        @pointerdown="onResizeStart($event, 'corner')"
+        @pointermove="onResizeMove"
+        @pointerup="onResizeEnd"
+        @pointercancel="onResizeEnd"
+        @lostpointercapture="onResizeEnd"
       />
     </template>
   </section>
@@ -242,6 +291,7 @@ const fitAfterSectionToggle = (event: MouseEvent) => {
   gap: 8px;
   padding: 0 8px 0 14px;
   cursor: move;
+  touch-action: none;
   user-select: none;
   border-bottom: 1px solid rgb(255 255 255 / 8%);
 }
@@ -280,6 +330,7 @@ const fitAfterSectionToggle = (event: MouseEvent) => {
   flex: 1;
   min-height: 0;
   overflow: hidden auto;
+  overscroll-behavior: contain;
   padding: 8px 12px 14px;
   scrollbar-color: rgb(184 184 184 / 42%) rgb(255 255 255 / 3.5%);
   scrollbar-width: thin;
@@ -337,5 +388,20 @@ const fitAfterSectionToggle = (event: MouseEvent) => {
   width: 10px;
   height: 10px;
   cursor: nwse-resize;
+}
+
+@media (pointer: coarse) {
+  .panel-resize-handle.right {
+    width: 16px;
+  }
+
+  .panel-resize-handle.bottom {
+    height: 16px;
+  }
+
+  .panel-resize-handle.corner {
+    width: 24px;
+    height: 24px;
+  }
 }
 </style>

@@ -13,5 +13,10 @@ the initial arrangement. While running, WASD applies force to the first ball and
 the first cube. Expand lights in the Entities panel to toggle them, or Settings to explore
 shadows and rendering effects.
 
+On phones, narrow screens and devices with a coarse primary pointer, panels start hidden.
+Use View to open a panel, then drag its title bar to move it. Panel contents still scroll
+normally. Mobile and desktop layouts are saved separately; View → Reset layout restores
+the defaults for the current viewport.
+
 Drag the canvas with the left mouse button to turn the camera; the mouse wheel moves it
 forward and backward. The editor stores settings and thumbnails locally in the browser.

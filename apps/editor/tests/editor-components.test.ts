@@ -159,6 +159,35 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.scene-reload-status').exists()).toBe(false)
     wrapper.unmount()
   })
+  it('starts mobile with hidden panels and lets View open and reset them', async () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(390)
+    localStorage.removeItem('luz.editor.layout.mobile')
+
+    const store = createEditorStore()
+
+    store.attach(makeRuntime())
+
+    const wrapper = mount(App, provideStore(store))
+
+    expect(wrapper.findAll('.floating-panel')).toHaveLength(0)
+
+    await wrapper.findAll('.toolbar-item')[1].trigger('click')
+
+    const simulationToggle = wrapper.findAllComponents(NCheckbox).find((checkbox) => checkbox.text() === 'Simulation')!
+
+    simulationToggle.vm.$emit('update:checked', true)
+
+    await nextTick()
+    expect(wrapper.findAll('.floating-panel')).toHaveLength(1)
+    expect(wrapper.find('.floating-panel[aria-label="Simulation"]').exists()).toBe(true)
+
+    await wrapper.find('.reset-layout').trigger('click')
+
+    await nextTick()
+    expect(wrapper.findAll('.floating-panel')).toHaveLength(0)
+    expect(wrapper.find('.editor-toolbar').exists()).toBe(true)
+    wrapper.unmount()
+  })
   it('selects a valid scene explicitly and prevents loading malformed scenes', async () => {
     const activate = vi.fn()
     const refresh = vi.fn(async () => availableScenes)
