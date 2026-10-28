@@ -158,6 +158,14 @@ const createModel = (mesh, material) => ({ type: 'model', materials: { surface: 
 
 const createRotation = (angle) => [Math.sin(angle / 2), 0, 0, Math.cos(angle / 2)]
 
+const createLightRotation = (translation, target) => {
+  const direction = target.map((coordinate, index) => coordinate - translation[index])
+  const rotation = [-direction[2], 0, direction[0], Math.hypot(...direction) - direction[1]]
+  const magnitude = Math.hypot(...rotation)
+
+  return rotation.map((value) => value / magnitude)
+}
+
 const createStage = () => ({
   gravity: [0, -9.81, 0],
   environment: {
@@ -173,7 +181,7 @@ const createStage = () => ({
       components: { camera: { type: 'camera', fieldOfView: 48, clipPlanes: [0.1, 80] } }
     },
     Key: {
-      translation: [-4, 7, 5],
+      translation: [0, 7, 7],
       rotation: createRotation(Math.PI / 4),
       components: {
         light: {
@@ -189,11 +197,32 @@ const createStage = () => ({
     },
     Fill: {
       translation: [4, 4, 3],
-      components: { light: { type: 'light', lightType: 'point', range: 20, intensity: 22, color: [0.35, 0.65, 1] } }
+      components: {
+        light: {
+          type: 'light',
+          lightType: 'point',
+          range: 20,
+          intensity: 22,
+          volumetricIntensity: 0.01,
+          color: [0.35, 0.65, 1]
+        }
+      }
     },
     Rim: {
       translation: [-3, 3, -4],
-      components: { light: { type: 'light', lightType: 'point', range: 16, intensity: 18, color: [1, 0.4, 0.2] } }
+      rotation: createLightRotation([-3, 3, -4], [0, 1, 0]),
+      components: {
+        light: {
+          type: 'light',
+          lightType: 'spot',
+          coneAngle: 32,
+          coneFalloff: 12,
+          range: 16,
+          intensity: 18,
+          volumetricIntensity: 0.12,
+          color: [1, 0.4, 0.2]
+        }
+      }
     },
     Floor: {
       translation: [0, -0.25, 0],

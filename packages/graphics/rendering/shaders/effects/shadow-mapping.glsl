@@ -34,6 +34,28 @@ vec2 rotateShadowSample(vec2 sampleOffset, float angle) {
   return vec2(cosine * sampleOffset.x - sine * sampleOffset.y, sine * sampleOffset.x + cosine * sampleOffset.y);
 }
 
+vec2 calculateShadowDepthGradient(vec3 coordinates) {
+  vec3 derivativeX = dFdx(coordinates);
+  vec3 derivativeY = dFdy(coordinates);
+  float determinant = derivativeX.x * derivativeY.y - derivativeX.y * derivativeY.x;
+  float derivativeScale = length(derivativeX.xy) * length(derivativeY.xy);
+
+  if (abs(determinant) <= max(derivativeScale * 0.000001, 0.00000000000000000001)) {
+    return vec2(0.0);
+  }
+
+  return vec2(
+    derivativeY.y * derivativeX.z - derivativeX.y * derivativeY.z,
+    derivativeX.x * derivativeY.z - derivativeY.x * derivativeX.z
+  ) /
+  determinant;
+}
+
+vec2 calculateShadowSampleCoordinates(vec2 coordinates, vec2 resolution) {
+  // Match the nearest depth texel so the receiver plane is evaluated at its center.
+  return (clamp(floor(coordinates * resolution), vec2(0.0), resolution - 1.0) + 0.5) / resolution;
+}
+
 float linearizeShadowDepth(float depth) {
   float normalizedDeviceDepth = depth * 2.0 - 1.0;
   float nearPlane = light.clipPlanes.x;
@@ -123,12 +145,12 @@ float calculateShadow(
     return calculatePointShadow(shadowMap, worldPosition - light.translation, normalLightDot);
   }
 
-  if (lightProjection.w <= 0.0) {
-    return 1.0;
-  }
+  vec3 projectedCoordinates = lightProjection.xyz / max(lightProjection.w, 0.000001);
 
-  vec3 projectedCoordinates = lightProjection.xyz / lightProjection.w;
+  // Derivatives must be evaluated before fragments leave the shadow-map coverage.
+  vec2 depthGradient = calculateShadowDepthGradient(projectedCoordinates);
   bool isInRange =
+    lightProjection.w > 0.0 &&
     projectedCoordinates.x >= 0.0 &&
     projectedCoordinates.x <= 1.0 &&
     projectedCoordinates.y >= 0.0 &&
@@ -171,8 +193,12 @@ float calculateShadow(
 
   for (int sampleIndex = 0; sampleIndex < 16; ++sampleIndex) {
     vec2 sampleOffset = rotateShadowSample(SHADOW_POISSON[sampleIndex], rotation);
-    vec2 sampleCoordinates = clamp(projectedCoordinates.xy + sampleOffset * searchRadius, vec2(0.0), vec2(1.0));
-    float sampledDepth = texture(shadowMap, sampleCoordinates).r;
+    vec2 sampleCoordinates = calculateShadowSampleCoordinates(
+      projectedCoordinates.xy + sampleOffset * searchRadius,
+      shadowResolution
+    );
+    float depthAdjustment = dot(depthGradient, sampleCoordinates - projectedCoordinates.xy);
+    float sampledDepth = texture(shadowMap, sampleCoordinates).r - depthAdjustment;
 
     if (sampledDepth < receiverDepth) {
       blockerDepthSum += linearizeShadowDepth(sampledDepth);
@@ -197,9 +223,13 @@ float calculateShadow(
 
   for (int sampleIndex = 0; sampleIndex < 16; ++sampleIndex) {
     vec2 sampleOffset = rotateShadowSample(SHADOW_POISSON[sampleIndex], rotation);
-    vec2 sampleCoordinates = clamp(projectedCoordinates.xy + sampleOffset * filterRadius, vec2(0.0), vec2(1.0));
+    vec2 sampleCoordinates = calculateShadowSampleCoordinates(
+      projectedCoordinates.xy + sampleOffset * filterRadius,
+      shadowResolution
+    );
+    float sampleReceiverDepth = receiverDepth + dot(depthGradient, sampleCoordinates - projectedCoordinates.xy);
 
-    visibility += step(receiverDepth, texture(shadowMap, sampleCoordinates).r);
+    visibility += step(sampleReceiverDepth, texture(shadowMap, sampleCoordinates).r);
   }
 
   return visibility / 16.0;

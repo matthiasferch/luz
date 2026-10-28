@@ -44,6 +44,10 @@ Rendering defaults enable volumetric lighting and bloom. Planar reflections, amb
 subsurface lighting, motion blur and depth of field start disabled. Saved settings for each scene
 take precedence over these defaults.
 
+The warm rim spotlight and faint blue fill contribute visible atmospheric lighting when
+Volumetric lighting is enabled. Expand its settings to adjust the intensity multiplier,
+density and noise. Disabling it removes the light scattering and restores the black backdrop.
+
 On phones, narrow screens and devices with a coarse primary pointer, panels start hidden.
 Use View to open a panel, then drag its title bar to move it. Panel contents still scroll
 normally. Mobile and desktop layouts are saved separately; View → Reset layout restores

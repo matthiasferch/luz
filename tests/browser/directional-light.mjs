@@ -267,6 +267,78 @@ try {
   )
   messages.push('PASS shallow directional contact shadows across a wide depth range')
 
+  const receiver = new Entity()
+
+  receiver.components.Surface = model
+
+  receiver.rotation.set(Quaternion.setFromEulerAngles(0.4, 0.6, 0))
+  receiver.refreshWorldTransform()
+
+  const renderSlopedReceiver = (areShadowsEnabled, shadowGrain) => {
+    lightTransform.update(0)
+    light.update(lightTransform, 0)
+    renderer.clear()
+    renderer.renderFrame(
+      { shadowMapping: shadowPipeline, lighting: lightingPipeline },
+      { camera, time: 0, target: { width: 64, height: 64, frameBuffer: lightingBuffer } },
+      [{ light, entities: [receiver] }],
+      [{ transform: receiver, model: renderModel }],
+      [],
+      {
+        clear: { shadowMapping: { depth: 1 }, lighting: { color: new Vector4([0, 0, 0, 0]) } },
+        overrideTargets: { shadowMapping: { width: 128, height: 128, frameBuffer: shadowBuffer } },
+        additionalUniforms: {
+          lighting: { shadowTexture: renderedDepth, areShadowsEnabled, shadowGrain, isEmissionSuppressed: true }
+        }
+      }
+    )
+
+    const pixels = new Float32Array(32 * 32 * 4)
+
+    gl.readPixels(16, 16, 32, 32, gl.RGBA, gl.FLOAT, pixels)
+    assertCondition(gl.getError() === gl.NO_ERROR, 'Sloped receiver has no WebGL errors')
+    assertCondition(pixels.every(Number.isFinite), 'Sloped receiver has finite output')
+
+    return pixels
+  }
+
+  light.range = 10
+  light.coneAngle = 90
+  light.coneFalloff = 10
+
+  light.clipPlanes.set([0.1, 40])
+
+  for (const lightType of ['directional', 'spot']) {
+    light.lightType = lightType
+
+    for (const x of [0, 1]) {
+      lightTransform.translation.set([x, 0, 2])
+
+      const referencePixels = renderSlopedReceiver(false, 0)
+      const maximumBrightness = Math.max(...referencePixels.filter((_, index) => index % 4 !== 3))
+
+      assertCondition(maximumBrightness > 0.01, `${lightType} sloped receiver is illuminated`)
+
+      for (const softness of [0, 0.15, 2]) {
+        light.softness = softness
+
+        for (const grain of [0, 0.7]) {
+          const shadowedPixels = renderSlopedReceiver(true, grain)
+          const maximumError = Math.max(
+            ...shadowedPixels.map((value, index) => Math.abs(value - referencePixels[index]))
+          )
+
+          assertCondition(
+            maximumError < maximumBrightness * 0.001 + 0.00001,
+            `${lightType} receiver self-shadows at x=${x}, softness=${softness}, grain=${grain}: ${maximumError}`
+          )
+        }
+      }
+    }
+  }
+
+  messages.push('PASS sloped receivers stay fully lit across shadow filters, grain, coverage edges and light types')
+
   results.dataset.status = 'passed'
   results.textContent = messages.join('\n')
 } catch (error) {
