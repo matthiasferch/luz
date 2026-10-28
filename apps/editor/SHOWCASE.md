@@ -1,11 +1,16 @@
 # luz showcase assets
 
-This scene, its meshes and materials are original procedural assets created for luz.
-They are distributed under the project's MIT license (see `../LICENSE` in the built demo).
-No downloaded models, photographs, HDR environments, BlendKit or Poliigon assets are included.
+This scene, its meshes and material setup are original assets created for luz, distributed
+under the project's MIT license (see `../LICENSE` in the built demo).
+The boxes use the **Metal 038** textures from [ambientCG](https://ambientcg.com/view?id=Metal038),
+released under [CC0 1.0](https://docs.ambientcg.com/license/). The unmodified 1K base-color,
+OpenGL normal, metallic and roughness maps are bundled locally; see
+`textures/galvanizedMetal/LICENSE.txt` in the built demo for source filenames and license details.
+No BlendKit or Poliigon assets are included.
 
 The source recipe is `apps/editor/tooling/demo-assets.cjs`. The demo build generates
-its JSON assets afresh; generated files do not need to be checked into Git.
+its JSON assets afresh and copies only the approved, checksum-verified textures from
+`apps/editor/demo-assets/`. Builds and runtime loading do not download external assets.
 
 The **rigid body playground** is the only bundled scene and loads at startup. It contains
 a stack of cubes and three falling balls. When the Simulation panel is hidden, use the

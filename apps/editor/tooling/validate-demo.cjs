@@ -1,6 +1,8 @@
 const fs = require('node:fs')
 const path = require('node:path')
+const { createHash } = require('node:crypto')
 const Ajv = require('ajv')
+const { textureHashes } = require('./demo-textures.cjs')
 
 const MAXIMUM_FILE_BYTES = 25 * 1024 * 1024
 const schemaDirectory = path.resolve(__dirname, '../../../packages/formats/schemas')
@@ -10,7 +12,21 @@ for (const filename of fs.readdirSync(schemaDirectory)) {
   validator.addSchema(JSON.parse(fs.readFileSync(path.join(schemaDirectory, filename), 'utf8')))
 }
 
-const validateDemoAssets = (documents) => {
+const validateDemoAssets = (documents, textures = {}) => {
+  for (const [filename, contents] of Object.entries(textures)) {
+    if (!Object.hasOwn(textureHashes, filename) || !Buffer.isBuffer(contents)) {
+      throw new Error(`Unsupported demo texture: ${filename}`)
+    }
+
+    if (contents.length > MAXIMUM_FILE_BYTES) {
+      throw new Error(`Demo asset exceeds 25 MiB: ${filename}`)
+    }
+
+    if (createHash('sha256').update(contents).digest('hex') !== textureHashes[filename]) {
+      throw new Error(`Demo texture does not match the licensed source: ${filename}`)
+    }
+  }
+
   for (const [filename, document] of Object.entries(documents)) {
     if (!/^(scenes|models)\/[a-zA-Z0-9-]+\.(scene|model)\.json$/.test(filename)) {
       throw new Error(`Unsupported demo asset path: ${filename}`)
@@ -31,8 +47,12 @@ const validateDemoAssets = (documents) => {
         return
       }
 
-      if (value.environment || value.geometry || value.animations || value.entity || value.surface?.path) {
-        throw new Error(`Demo assets must use procedural geometry and materials: ${filename}`)
+      if (value.environment || value.geometry || value.animations || value.entity) {
+        throw new Error(`Demo assets must use procedural geometry: ${filename}`)
+      }
+
+      if (value.surface?.path && !Object.hasOwn(textures, value.surface.path)) {
+        throw new Error(`Missing approved demo texture '${value.surface.path}' in '${filename}'`)
       }
 
       for (const component of Object.values(value.components ?? {})) {

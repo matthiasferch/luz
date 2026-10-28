@@ -1,0 +1,17 @@
+Metal 038 by ambientCG
+License: Creative Commons CC0 1.0 Universal (CC0-1.0)
+
+Asset: https://ambientcg.com/view?id=Metal038
+License statement: https://docs.ambientcg.com/license/
+License: https://creativecommons.org/publicdomain/zero/1.0/
+Source download: https://ambientcg.com/get?file=Metal038_1K-JPG.zip
+Retrieved: 2026-10-27
+
+The four JPEG files are unmodified 1024 x 1024 source maps, renamed as follows:
+Metal038_1K-JPG_Color.jpg -> baseColor.jpg
+Metal038_1K-JPG_Metalness.jpg -> metallic.jpg
+Metal038_1K-JPG_NormalGL.jpg -> normal.jpg
+Metal038_1K-JPG_Roughness.jpg -> roughness.jpg
+
+These textures are CC0 assets, separate from the MIT-licensed luz code and
+procedural geometry. Redistribution of these files is permitted under CC0.

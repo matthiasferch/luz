@@ -19,6 +19,39 @@ const createMaterial = (color, roughness, metallic = 0) => ({
   }
 })
 
+const createMetalMaterial = () => {
+  const material = createMaterial([1, 1, 1], 0.3, 1)
+  const createTexture = (name, colorSpace = 'linear') => ({
+    type: 'imageTexture',
+    surface: {
+      path: `textures/galvanizedMetal/${name}.jpg`,
+      format: 'color',
+      colorSpace,
+      tiling: 'repeat',
+      filtering: 'trilinear',
+      areMipmapsEnabled: true
+    }
+  })
+
+  material.graph.nodes = {
+    baseColor: createTexture('baseColor', 'sRGB'),
+    metallic: createTexture('metallic'),
+    roughness: createTexture('roughness'),
+    normalTexture: createTexture('normal'),
+    normal: {
+      type: 'normalMap',
+      inputs: { color: { node: 'normalTexture', output: 'Color' }, strength: { value: 1 } },
+      properties: { space: 'TANGENT' }
+    }
+  }
+  material.graph.outputs.baseColor = { node: 'baseColor', output: 'Color' }
+  material.graph.outputs.metallic = { node: 'metallic', output: 'Color' }
+  material.graph.outputs.roughness = { node: 'roughness', output: 'Color' }
+  material.graph.outputs.normal = { node: 'normal', output: 'Normal' }
+
+  return material
+}
+
 const createBox = () => {
   const vertices = []
   const indices = []
@@ -170,7 +203,7 @@ const createDemoAssets = () => {
   const sphere = createSphere()
   const documents = {
     'models/floor.model.json': createModel(box, createMaterial([0.15, 0.19, 0.24], 0.65)),
-    'models/cube.model.json': createModel(box, createMaterial([0.08, 0.52, 0.65], 0.3)),
+    'models/cube.model.json': createModel(box, createMetalMaterial()),
     'models/ball.model.json': createModel(sphere, createMaterial([0.95, 0.3, 0.08], 0.25))
   }
   const scene = createStage()

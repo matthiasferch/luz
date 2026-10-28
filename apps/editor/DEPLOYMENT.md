@@ -20,13 +20,13 @@ It can be served directly by a static host. No development server or backend is 
 The preview binds only to localhost and serves missing files as 404 responses.
 
 The build uses a temporary asset directory, never `public/assets/` or `local-assets/`.
-It validates generated scenes against the current schemas and checks model references
-and the 25 MiB hosting limit per file. Production source maps are disabled. The normal
+It validates generated scenes against the current schemas and checks model references,
+approved texture checksums and the 25 MiB hosting limit per file. Production source maps are disabled. The normal
 editor development workflow still uses local Blender exports. A normal editor build
 cleans `apps/editor/dist/`, so run `build:demo` again after that build.
 
-The [showcase guide](SHOWCASE.md) describes the assets and controls. The scene uses only
-original geometry and constant materials, with no texture or environment downloads.
+The [showcase guide](SHOWCASE.md) describes the assets and controls. The scene uses
+original geometry and bundled CC0 metal textures, with no external texture or environment requests.
 The existing editor stylesheet requests the optional Outfit font from Google Fonts;
 the UI falls back to sans-serif if it is unavailable. No application account is required.
 

@@ -4,12 +4,14 @@ const os = require('node:os')
 const webpack = require('webpack')
 const createWebpackConfiguration = require('../webpack.config')
 const { createDemoAssets } = require('./demo-assets.cjs')
+const { readDemoTextures } = require('./demo-textures.cjs')
 const { MAXIMUM_FILE_BYTES, validateDemoAssets } = require('./validate-demo.cjs')
 
 const buildDemo = async () => {
   const documents = createDemoAssets()
+  const textures = readDemoTextures()
 
-  validateDemoAssets(documents)
+  validateDemoAssets(documents, textures)
 
   const assetDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'luz-demo-assets-'))
 
@@ -28,6 +30,19 @@ const buildDemo = async () => {
 
       await fs.writeFile(target, JSON.stringify(document))
     }
+
+    for (const [filename, contents] of Object.entries(textures)) {
+      const target = path.join(assetDirectory, filename)
+
+      await fs.mkdir(path.dirname(target), { recursive: true })
+
+      await fs.writeFile(target, contents)
+    }
+
+    await fs.copyFile(
+      path.resolve(__dirname, '../demo-assets/textures/galvanizedMetal/LICENSE.txt'),
+      path.join(assetDirectory, 'textures/galvanizedMetal/LICENSE.txt')
+    )
 
     const configuration = createWebpackConfiguration({ demoAssetsDirectory: assetDirectory }, { mode: 'production' })
     const compiler = webpack(configuration)
