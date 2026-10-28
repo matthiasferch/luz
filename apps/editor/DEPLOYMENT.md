@@ -15,7 +15,7 @@ npm run preview:demo
 
 Open `http://127.0.0.1:4173/`. The output is `apps/editor/dist/demo/`, containing the
 editor, HTML entry point, JSON worker, schemas, notices and two showcase scenes.
-The rigid body playground loads at first startup; Scene → Load scene also offers Skeletal Animation.
+Skeletal Animation loads at first startup; Scene → Load scene also offers the rigid body playground.
 Later visits restore the last selected scene.
 It can be served directly by a static host. No development server or backend is required.
 The preview binds only to localhost and serves missing files as 404 responses.

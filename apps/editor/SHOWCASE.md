@@ -24,14 +24,14 @@ The source recipe is `apps/editor/tooling/demo-assets.cjs`. The demo build gener
 its scenes afresh and loads the selected, checksum-verified character assets and textures from
 `apps/editor/demo-assets/`. Builds and runtime loading do not download external assets.
 
-The **rigid body playground** loads at first startup. It contains
+Use Scene → Load scene to switch to the **rigid body playground**. It contains
 a stack of cubes and three falling balls. Physics starts automatically whenever a scene loads.
 Open View → Simulation to pause, restart or reset physics and adjust its settings. Reset restores
 the initial arrangement and pauses physics. While running, WASD applies force to the first ball and TFGH to
 the first cube. Expand lights in the Entities panel to toggle them, or Settings to explore
 shadows and rendering effects.
 
-Use Scene → Load scene to switch to **Skeletal Animation**. Walking plays automatically on a loop;
+**Skeletal Animation** loads at first startup. Walking plays automatically on a loop;
 use the bottom Previous, Play, Pause, Next and Loop buttons when the Animations panel is hidden.
 Previous and Next cycle through each target's clips, wrapping at either end and preserving pause.
 Loop toggles repetition for the active clips; the crossed-out repeat icon means looping is disabled.

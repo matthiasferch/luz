@@ -22,7 +22,7 @@ export interface ExportProgress {
 
 export const SCENE_SELECTION_STORAGE_KEY = 'luz.scene.current'
 
-const DEFAULT_SCENE_ID = 'editor.scene.json'
+const DEFAULT_SCENE_ID = 'sala-character.scene.json'
 
 const isSceneDescriptor = (value: unknown): value is SceneDescriptor => {
   if (!value || typeof value !== 'object') {
@@ -90,6 +90,7 @@ export const selectInitialScene = (
   return (
     validScenes.find(({ id }) => id === storedId) ??
     validScenes.find(({ id }) => id === DEFAULT_SCENE_ID) ??
+    validScenes.find(({ id }) => id === 'editor.scene.json') ??
     validScenes[0]
   )
 }
