@@ -282,6 +282,9 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.floating-panel[aria-label="Simulation"]').exists()).toBe(true)
     expect(wrapper.find('.animation-controls').exists()).toBe(true)
     expect(wrapper.get('.simulation-actions button').text()).toBe('Stop')
+    expect(wrapper.findAllComponents(NPopover)[1].props('show')).toBe(false)
+
+    await wrapper.findAll('.toolbar-item')[1].trigger('click')
 
     const animationsToggle = wrapper.findAllComponents(NCheckbox).find((checkbox) => checkbox.text() === 'Animations')!
 
@@ -289,12 +292,15 @@ describe('Vue editor interface', () => {
 
     await nextTick()
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
+    expect(wrapper.findAllComponents(NPopover)[1].props('show')).toBe(false)
 
     await wrapper.get('button[aria-label="Hide Animations"]').trigger('click')
     expect(wrapper.get('button[aria-label="Pause animations"]').attributes('disabled')).toBeUndefined()
     expect(store.isSimulationRunning.value).toBe(true)
     expect(setSimulationRunning).not.toHaveBeenCalled()
     expect(resetSimulation).not.toHaveBeenCalled()
+
+    await wrapper.findAll('.toolbar-item')[1].trigger('click')
 
     await wrapper.find('.reset-layout').trigger('click')
 
@@ -333,6 +339,7 @@ describe('Vue editor interface', () => {
 
     await nextTick()
     expect(refresh).toHaveBeenCalledOnce()
+    expect(wrapper.findAllComponents(NPopover)[0].props('show')).toBe(false)
     expect(wrapper.find('.scene-browser').text()).toContain('2.0 KB')
     expect(wrapper.find('.scene-browser').text()).toContain('12 entities')
     expect(wrapper.find('.scene-browser').text()).toContain('1 light')

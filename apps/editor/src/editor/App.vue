@@ -88,7 +88,11 @@ const themeOverrides: GlobalThemeOverrides = {
 
 const resize = () => layout.clampAll()
 
-const togglePanel = (id: PanelId, isVisible: boolean) => layout.setVisible(id, isVisible)
+const onTogglePanel = (id: PanelId, isVisible: boolean) => {
+  viewMenuVisible.value = false
+
+  layout.setVisible(id, isVisible)
+}
 
 const onResetCamera = () => {
   viewMenuVisible.value = false
@@ -248,7 +252,7 @@ onBeforeUnmount(() => {
               :key="item.id"
               size="small"
               :checked="layout.panels[item.id].isVisible"
-              @update:checked="togglePanel(item.id, $event)"
+              @update:checked="onTogglePanel(item.id, $event)"
               >{{ item.label }}</NCheckbox
             >
             <NDivider />
