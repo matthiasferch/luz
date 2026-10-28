@@ -32,8 +32,9 @@ the first cube. Expand lights in the Entities panel to toggle them, or Settings 
 shadows and rendering effects.
 
 Use Scene → Load scene to switch to **Skeletal Animation**. Walking plays automatically on a loop;
-use the bottom Play, Pause and Reset buttons to control all scene animations when the Animations panel is hidden.
-Reset rewinds the selected animations and pauses them; Play resumes playback.
+use the bottom Previous, Play, Pause, Next and Loop buttons when the Animations panel is hidden.
+Previous and Next cycle through each target's clips, wrapping at either end and preserving pause.
+Loop toggles repetition for the active clips; the highlighted button means looping is enabled.
 Open View → Animations to play walking, running, jumping, strafing and turning clips,
 adjust speed, pause playback or blend animations. Both skinned meshes share the same
 controls. Animation controls do not pause or reset physics. Scenes without animations hide these buttons.

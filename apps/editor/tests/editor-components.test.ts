@@ -214,15 +214,8 @@ describe('Vue editor interface', () => {
         clip.isPlaying = action === 'resume'
       }
     })
-    const seekAnimation = vi.fn((key: string, progress: number) => {
-      const group = groups.find((group) => group.key === key)!
-
-      group.isPaused = true
-
-      for (const clip of group.clips) {
-        clip.time = clip.duration * progress
-        clip.isPlaying = false
-      }
+    const setAnimationPlayback = vi.fn((key: string, name: string, playback: 'loop' | 'once') => {
+      groups.find((group) => group.key === key)!.clips.find((clip) => clip.name === name)!.playback = playback
     })
     const state = makeRuntime().captureEditorState()
 
@@ -234,7 +227,7 @@ describe('Vue editor interface', () => {
 
         collectAnimationGroups: () => structuredClone(groups),
         controlAnimation,
-        seekAnimation,
+        setAnimationPlayback,
         setSimulationRunning,
         resetSimulation
       })
@@ -268,16 +261,15 @@ describe('Vue editor interface', () => {
       ['Platform', 'resume']
     ])
 
-    await wrapper.get('button[aria-label="Reset animations"]').trigger('click')
-    expect(seekAnimation.mock.calls).toEqual([
-      ['Character', 0],
-      ['Platform', 0]
+    await wrapper.get('button[aria-label="Loop animations"]').trigger('click')
+    expect(setAnimationPlayback.mock.calls).toEqual([
+      ['Character', 'Walking', 'once'],
+      ['Platform', 'Walking', 'once']
     ])
-    expect(groups.every((group) => group.clips[0].weight === 1 && group.clips[0].time === 0)).toBe(true)
-    expect(playButton.attributes('disabled')).toBeUndefined()
-    expect(pauseButton.attributes('disabled')).toBeDefined()
-
-    await playButton.trigger('click')
+    expect(playButton.attributes('disabled')).toBeDefined()
+    expect(pauseButton.attributes('disabled')).toBeUndefined()
+    expect(wrapper.get('button[aria-label="Previous animation"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('button[aria-label="Next animation"]').attributes('disabled')).toBeDefined()
 
     await wrapper.findAll('.toolbar-item')[1].trigger('click')
 
