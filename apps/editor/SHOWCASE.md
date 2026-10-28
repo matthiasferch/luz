@@ -34,11 +34,15 @@ shadows and rendering effects.
 Use Scene → Load scene to switch to **Skeletal Animation**. Walking plays automatically on a loop;
 use the bottom Previous, Play, Pause, Next and Loop buttons when the Animations panel is hidden.
 Previous and Next cycle through each target's clips, wrapping at either end and preserving pause.
-Loop toggles repetition for the active clips; the highlighted button means looping is enabled.
+Loop toggles repetition for the active clips; the crossed-out repeat icon means looping is disabled.
 Open View → Animations to play walking, running, jumping, strafing and turning clips,
 adjust speed, pause playback or blend animations. Both skinned meshes share the same
 controls. Animation controls do not pause or reset physics. Scenes without animations hide these buttons.
 The editor remembers the last selected scene.
+
+Rendering defaults enable volumetric lighting and bloom. Planar reflections, ambient occlusion,
+subsurface lighting, motion blur and depth of field start disabled. Saved settings for each scene
+take precedence over these defaults.
 
 On phones, narrow screens and devices with a coarse primary pointer, panels start hidden.
 Use View to open a panel, then drag its title bar to move it. Panel contents still scroll

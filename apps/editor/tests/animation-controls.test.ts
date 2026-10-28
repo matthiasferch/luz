@@ -136,7 +136,6 @@ describe('Animation overlay', () => {
     const loopButton = wrapper.get('button[aria-label="Loop animations"]')
 
     expect(loopButton.attributes('aria-pressed')).toBe('true')
-    expect(loopButton.classes()).toContain('is-active')
 
     await loopButton.trigger('click')
     expect(groups.every((group) => group.clips[0].playback === 'once')).toBe(true)

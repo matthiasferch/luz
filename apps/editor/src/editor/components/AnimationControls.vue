@@ -125,7 +125,6 @@ const onToggleLoop = () => {
     /></NButton>
     <NButton
       class="animation-control"
-      :class="{ 'is-active': isLoopEnabled }"
       quaternary
       circle
       aria-label="Loop animations"
@@ -158,10 +157,5 @@ const onToggleLoop = () => {
 .animation-control {
   width: 36px;
   height: 36px;
-}
-
-.animation-control.is-active {
-  color: #63e2b7;
-  background: rgb(99 226 183 / 14%);
 }
 </style>

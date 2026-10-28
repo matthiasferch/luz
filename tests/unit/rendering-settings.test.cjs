@@ -25,7 +25,7 @@ it('normalizes partial and malformed settings without mutating input or sharing 
 
   assert.equal(settings.motionBlur.shutterAngle, 360)
   assert.equal(settings.motionBlur.maximumSamples, 24)
-  assert.equal(settings.bloom.isEnabled, false)
+  assert.equal(settings.bloom.isEnabled, true)
   assert.equal(settings.bloom.intensity, 0.35)
   assert.equal(settings.antialiasing.method, 'taa')
   assert.equal(settings.ambientOcclusion.quality, 'high')

@@ -157,6 +157,8 @@ try {
   renderer.setEnvironmentSetting('ambientBrightness', 0.5)
   renderer.setRenderingSetting('ambientOcclusion', 'isEnabled', true)
   renderer.setRenderingSetting('bloom', 'isEnabled', true)
+  renderer.setRenderingSetting('motionBlur', 'isEnabled', true)
+  renderer.setRenderingSetting('depthOfField', 'isEnabled', true)
 
   camera.isDepthOfFieldEnabled = true
 

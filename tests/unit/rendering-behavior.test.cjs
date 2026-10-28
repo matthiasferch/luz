@@ -13,7 +13,12 @@ async function createFixture() {
     backend,
     models: { requireCompiledModel: (model) => ({ source: model, primitives: {}, materials: {} }) },
     decodeImage: async () => ({ width: 1, height: 1 }),
-    settings: { ambientOcclusion: { isEnabled: true }, bloom: { isEnabled: true } }
+    settings: {
+      ambientOcclusion: { isEnabled: true },
+      bloom: { isEnabled: true },
+      motionBlur: { isEnabled: true },
+      depthOfField: { isEnabled: true }
+    }
   })
   const scene = new Scene()
   const context = { camera: new Camera(), target: { width: 65, height: 49 }, time: 0 }

@@ -27,6 +27,6 @@ describe('Volumetric quality settings', () => {
     assert.equal(settings.volumetricLighting.intensityMultiplier, 0.6)
     assert.equal(settings.volumetricLighting.noiseSpeed, 0)
     assert.equal(settings.debug.isVolumetricLightVisualized, false)
-    assert.equal(settings.lighting.isSubsurfaceLightingEnabled, true)
+    assert.equal(settings.lighting.isSubsurfaceLightingEnabled, false)
   })
 })

@@ -165,7 +165,7 @@ it('omits all depth-of-field passes for a zero radius and all shadow maps when s
     backend,
     models: { requireCompiledModel: () => compiledModel },
     decodeImage: async () => ({ width: 1, height: 1 }),
-    settings: { shadows: { isEnabled: false }, depthOfField: { maximumBlurRadius: 0 } }
+    settings: { shadows: { isEnabled: false }, depthOfField: { isEnabled: true, maximumBlurRadius: 0 } }
   })
   const scene = new Scene()
   const camera = new Camera()

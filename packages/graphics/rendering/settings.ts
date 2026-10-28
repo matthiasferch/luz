@@ -135,7 +135,7 @@ export type DebugVisualization = (typeof DEBUG_VISUALIZATION_KEYS)[number]
 export const DEFAULT_RENDERING_SETTINGS: Readonly<RenderingSettings> = {
   lighting: {
     scissorMargin: 2,
-    isSubsurfaceLightingEnabled: true
+    isSubsurfaceLightingEnabled: false
   },
   shadows: {
     isEnabled: true,
@@ -143,7 +143,7 @@ export const DEFAULT_RENDERING_SETTINGS: Readonly<RenderingSettings> = {
     grain: 0.7
   },
   planarReflections: {
-    isEnabled: true
+    isEnabled: false
   },
   antialiasing: {
     method: 'taa'
@@ -168,21 +168,21 @@ export const DEFAULT_RENDERING_SETTINGS: Readonly<RenderingSettings> = {
     noiseStrength: 0.6
   },
   bloom: {
-    isEnabled: false,
+    isEnabled: true,
     threshold: 1,
     knee: 0.5,
     intensity: 0.35,
     scatter: 0.7
   },
   motionBlur: {
-    isEnabled: true,
+    isEnabled: false,
     isCameraBlurEnabled: true,
     shutterAngle: 180,
     maximumRadius: 32,
     maximumSamples: 24
   },
   depthOfField: {
-    isEnabled: true,
+    isEnabled: false,
     isCameraOverridden: false,
     focusDistance: 10,
     focalLength: 50,
