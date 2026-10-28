@@ -5,8 +5,6 @@ const test = require('node:test')
 const fs = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
-const { Light, Transform } = require('@luz/core')
-const { Vector3, Vector4, Quaternion } = require('@luz/math')
 const { EntityLoader, EnvironmentLoader, ImageLoader, ModelLoader, isModel } = require('@luz/graphics')
 const { AnimationController } = require('../src/runtime/animation-controller.ts')
 const { SimulationController } = require('../src/runtime/simulation-controller.ts')
@@ -16,42 +14,6 @@ const { readDemoTextures } = require('../tooling/demo-textures.cjs')
 const { validateDemoAssets } = require('../tooling/validate-demo.cjs')
 const { createDemoServer } = require('../tooling/serve-demo.cjs')
 
-test('showcase lights cover the stage with shadows and provide visible volumetric contributions', async () => {
-  const documents = createDemoAssets()
-
-  for (const filename of ['scenes/rigid-body-playground.scene.json', 'scenes/sala-character.scene.json']) {
-    const { entities } = documents[filename]
-    const definition = entities.Key
-    const light = await Light.deserialize(definition.components.light)
-    const transform = new Transform({
-      translation: new Vector3(definition.translation),
-      rotation: new Quaternion(definition.rotation)
-    })
-
-    transform.update(0)
-    light.update(transform, 0)
-
-    for (const x of [-entities.Floor.scale[0], 0, entities.Floor.scale[0]]) {
-      for (const z of [-entities.Floor.scale[2], 0, entities.Floor.scale[2]]) {
-        const coordinates = light.textureMatrix.transform(new Vector4([x, 0, z, 1]))
-
-        assert.ok(
-          Array.from(coordinates)
-            .slice(0, 3)
-            .every((value) => value > 0.01 && value < 0.99),
-          `${filename}: stage point ${x},0,${z} must stay inside shadow coverage with a filter margin`
-        )
-      }
-    }
-
-    for (const name of ['Fill', 'Rim']) {
-      const volumeLight = await Light.deserialize(entities[name].components.light)
-
-      assert.ok(volumeLight.volumetricIntensity > 0 && volumeLight.volumetricDensity > 0)
-      assert.ok(volumeLight.intensity > 0 && volumeLight.range > 0)
-    }
-  }
-})
 test('the rigid body showcase starts physics on load and preserves manual reset', async () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()

@@ -158,14 +158,6 @@ const createModel = (mesh, material) => ({ type: 'model', materials: { surface: 
 
 const createRotation = (angle) => [Math.sin(angle / 2), 0, 0, Math.cos(angle / 2)]
 
-const createLightRotation = (translation, target) => {
-  const direction = target.map((coordinate, index) => coordinate - translation[index])
-  const rotation = [-direction[2], 0, direction[0], Math.hypot(...direction) - direction[1]]
-  const magnitude = Math.hypot(...rotation)
-
-  return rotation.map((value) => value / magnitude)
-}
-
 const createStage = () => ({
   gravity: [0, -9.81, 0],
   environment: {
@@ -180,49 +172,13 @@ const createStage = () => ({
       rotation: createRotation(Math.PI / 2 - Math.atan2(5.5, 15)),
       components: { camera: { type: 'camera', fieldOfView: 48, clipPlanes: [0.1, 80] } }
     },
-    Key: {
-      translation: [0, 7, 7],
-      rotation: createRotation(Math.PI / 4),
-      components: {
-        light: {
-          type: 'light',
-          lightType: 'directional',
-          range: 30,
-          intensity: 3,
-          color: [1, 0.88, 0.72],
-          shadowSize: [22, 22],
-          clipPlanes: [0.1, 40]
-        }
-      }
-    },
     Fill: {
       translation: [4, 4, 3],
-      components: {
-        light: {
-          type: 'light',
-          lightType: 'point',
-          range: 20,
-          intensity: 22,
-          volumetricIntensity: 0.01,
-          color: [0.35, 0.65, 1]
-        }
-      }
+      components: { light: { type: 'light', lightType: 'point', range: 20, intensity: 22, color: [0.35, 0.65, 1] } }
     },
     Rim: {
       translation: [-3, 3, -4],
-      rotation: createLightRotation([-3, 3, -4], [0, 1, 0]),
-      components: {
-        light: {
-          type: 'light',
-          lightType: 'spot',
-          coneAngle: 32,
-          coneFalloff: 12,
-          range: 16,
-          intensity: 18,
-          volumetricIntensity: 0.12,
-          color: [1, 0.4, 0.2]
-        }
-      }
+      components: { light: { type: 'light', lightType: 'point', range: 16, intensity: 18, color: [1, 0.4, 0.2] } }
     },
     Floor: {
       translation: [0, -0.25, 0],
@@ -302,8 +258,6 @@ const createCharacterScene = () => {
 
   delete scene.entities.Floor.components.body
 
-  scene.entities.Key.components.light.shadowSize = [7, 7]
-  scene.entities.Key.components.light.intensity = 1
   scene.entities.Fill.components.light.intensity = 3
   scene.entities.Rim.components.light.intensity = 2
   scene.entities.Character = {
