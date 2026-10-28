@@ -12,7 +12,10 @@ module.exports = (environment = {}, argumentsObject = {}) => {
   const isDemo = typeof environment.demoAssetsDirectory === 'string'
   const assetDirectory = isDemo ? environment.demoAssetsDirectory : path.resolve(__dirname, 'public/assets')
   const sceneDirectory = path.join(assetDirectory, 'scenes')
-  const sceneCatalog = scanSceneCatalog(sceneDirectory)
+  const sceneCatalog = scanSceneCatalog(sceneDirectory).map((scene) => ({
+    ...scene,
+    label: environment.sceneLabels?.[scene.id] ?? scene.label
+  }))
   const mode = argumentsObject.mode ?? 'development'
 
   return {

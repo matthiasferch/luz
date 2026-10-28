@@ -53,7 +53,13 @@ const buildDemo = async () => {
       await fs.copyFile(path.resolve(__dirname, '../demo-assets', filename), target)
     }
 
-    const configuration = createWebpackConfiguration({ demoAssetsDirectory: assetDirectory }, { mode: 'production' })
+    const configuration = createWebpackConfiguration(
+      {
+        demoAssetsDirectory: assetDirectory,
+        sceneLabels: { 'sala-character.scene.json': 'Skeletal Animation' }
+      },
+      { mode: 'production' }
+    )
     const compiler = webpack(configuration)
 
     try {

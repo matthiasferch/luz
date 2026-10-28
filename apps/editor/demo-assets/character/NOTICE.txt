@@ -1,4 +1,4 @@
-Sala character showcase
+Skeletal Animation showcase
 
 The character meshes, skeleton and animation clips originate from Adobe / Mixamo
 and were taken from the existing Sala locomotion asset exports. They are third-party
@@ -18,7 +18,7 @@ Left Turn 90, Right Strafe, Right Strafe Walking, Right Turn, Right Turn 90,
 Running, Walking.
 
 Preparation preserves the exported meshes, skin weights, skeleton, material graphs
-and animation keyframes. Asset references are relocated, Idle starts automatically,
+and animation keyframes. Asset references are relocated, Walking starts automatically,
 and locomotion clips loop. Jump and turns play once. JSON is compacted and animation
 filenames are regenerated from their canonical contents. No external textures,
 Sala furnishings, BlendKit or Poliigon content are included.

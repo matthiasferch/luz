@@ -113,7 +113,11 @@ test('the character showcase loads shared clips and keeps both meshes synchroniz
   assert.equal(groups.length, 1)
   assert.equal(groups[0].clips.length, 12)
   assert.equal(models.length, 2)
-  assert.equal(groups[0].clips.find(({ name }) => name === 'Idle').isPlaying, true)
+  assert.deepEqual(
+    groups[0].clips.filter(({ isPlaying }) => isPlaying).map(({ name }) => name),
+    ['Walking']
+  )
+  assert.equal(groups[0].clips.find(({ name }) => name === 'Walking').playback, 'loop')
 
   for (const [filename, count] of requests) {
     if (filename.startsWith('animations/')) {
@@ -127,7 +131,18 @@ test('the character showcase loads shared clips and keeps both meshes synchroniz
   const initialPose = [...models[0].boneMatrices]
 
   scene.update(0.5, false)
-  assert.notDeepEqual([...models[0].boneMatrices], initialPose, 'Idle animates without starting physics')
+  assert.notDeepEqual([...models[0].boneMatrices], initialPose, 'Walking animates without starting physics')
+
+  const walkingDuration = models[0].animations.Walking.duration
+
+  scene.update(walkingDuration * 2, false)
+
+  for (const model of models) {
+    assert.equal(model.animations.Walking.state, 'playing', 'Walking continues beyond the end of the clip')
+    assert.ok(Math.abs(model.animations.Walking.time - 0.5) < 0.00001, 'Walking wraps on each loop')
+    assert.equal(model.animations.Idle.state, 'stopped')
+  }
+
   controller.control(groups[0].key, 'pause')
 
   const pausedPose = [...models[0].boneMatrices]

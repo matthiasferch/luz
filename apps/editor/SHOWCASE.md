@@ -15,7 +15,7 @@ A separate black sky cubemap preserves the simple backdrop. The Environment pane
 the lighting rotation and diffuse/specular strengths. Source and conversion details are in
 `environments/studio/LICENSE.txt` in the built demo.
 
-The **Sala character** scene uses the existing Adobe / Mixamo character and its 12
+The **Skeletal Animation** scene uses the existing Adobe / Mixamo character and its 12
 animation clips. This third-party content is separate from the MIT-licensed luz code
 and the CC0 textures; its licensing review remains pending. See `character/NOTICE.txt`
 in the built demo for provenance and preparation details.
@@ -32,7 +32,7 @@ the initial arrangement. While running, WASD applies force to the first ball and
 the first cube. Expand lights in the Entities panel to toggle them, or Settings to explore
 shadows and rendering effects.
 
-Use Scene → Load scene to switch to **Sala character**. Idle plays automatically;
+Use Scene → Load scene to switch to **Skeletal Animation**. Walking plays automatically on a loop;
 open View → Animations to play walking, running, jumping, strafing and turning clips,
 adjust speed, pause playback or blend animations. Both skinned meshes share the same
 controls. Character animation runs independently of the physics simulation buttons.

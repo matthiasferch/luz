@@ -15,7 +15,7 @@ npm run preview:demo
 
 Open `http://127.0.0.1:4173/`. The output is `apps/editor/dist/demo/`, containing the
 editor, HTML entry point, JSON worker, schemas, notices and two showcase scenes.
-The rigid body playground loads at first startup; Scene → Load scene also offers Sala character.
+The rigid body playground loads at first startup; Scene → Load scene also offers Skeletal Animation.
 Later visits restore the last selected scene.
 It can be served directly by a static host. No development server or backend is required.
 The preview binds only to localhost and serves missing files as 404 responses.
@@ -30,7 +30,7 @@ cleans `apps/editor/dist/`, so run `build:demo` again after that build.
 The [showcase guide](SHOWCASE.md) describes the assets and controls. The scenes use
 original stage geometry, bundled CC0 metal textures and a prefiltered CC0 studio environment,
 with no external texture or environment requests. The visible sky remains black.
-Sala character additionally bundles the existing Mixamo meshes and 12 animation clips.
+Skeletal Animation additionally bundles the existing Mixamo meshes and 12 animation clips.
 Their provenance and pending licensing review are recorded in `demo-assets/character/NOTICE.txt`;
 these assets are not covered by the project's MIT license.
 The existing editor stylesheet requests the optional Outfit font from Google Fonts;

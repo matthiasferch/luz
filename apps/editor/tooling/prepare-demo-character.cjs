@@ -52,7 +52,7 @@ for (const [sourceName, name] of [
 
     delete animation.$schema
 
-    animation.isAutoplayEnabled = clipName === 'Idle'
+    animation.isAutoplayEnabled = clipName === 'Walking'
     animation.playback = clipName === 'Jump' || clipName.includes('Turn') ? 'once' : 'loop'
 
     const contents = JSON.stringify(sortDocument(animation))
