@@ -1,3 +1,5 @@
+const { readCharacterDocuments } = require('./demo-character.cjs')
+
 const createMaterial = (color, roughness, metallic = 0) => ({
   graph: {
     version: 1,
@@ -208,6 +210,7 @@ const createDemoAssets = () => {
   const box = createBox()
   const sphere = createSphere()
   const documents = {
+    ...readCharacterDocuments(),
     'models/floor.model.json': createModel(box, createMaterial([0.15, 0.19, 0.24], 0.65)),
     'models/cube.model.json': createModel(box, createMetalMaterial()),
     'models/ball.model.json': createModel(sphere, createMaterial([0.95, 0.3, 0.08], 0.25))
@@ -255,8 +258,35 @@ const createDemoAssets = () => {
   }
 
   documents['scenes/rigid-body-playground.scene.json'] = scene
+  documents['scenes/sala-character.scene.json'] = createCharacterScene()
 
   return documents
+}
+
+const createCharacterScene = () => {
+  const scene = createStage()
+
+  scene.entities.Camera.translation = [0, 1.65, 4.5]
+  scene.entities.Camera.rotation = createRotation(Math.PI / 2 - Math.atan2(0.7, 4.5))
+  scene.entities.Floor.translation = [0, -0.1, 0]
+  scene.entities.Floor.scale = [2.5, 0.1, 2.5]
+
+  delete scene.entities.Floor.components.body
+
+  scene.entities.Key.components.light.shadowSize = [7, 7]
+  scene.entities.Key.components.light.intensity = 1
+  scene.entities.Fill.components.light.intensity = 3
+  scene.entities.Rim.components.light.intensity = 2
+  scene.entities.Character = {
+    rotation: [Math.SQRT1_2, 0, 0, Math.SQRT1_2],
+    scale: [0.01, 0.01, 0.01],
+    children: {
+      Joints: { components: { model: '../models/character-joints.model.json' } },
+      Surface: { components: { model: '../models/character-surface.model.json' } }
+    }
+  }
+
+  return scene
 }
 
 module.exports = { createDemoAssets }

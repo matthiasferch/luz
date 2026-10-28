@@ -5,8 +5,10 @@ const test = require('node:test')
 const fs = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
-const { EntityLoader, EnvironmentLoader, ImageLoader, ModelLoader } = require('@luz/graphics')
+const { EntityLoader, EnvironmentLoader, ImageLoader, ModelLoader, isModel } = require('@luz/graphics')
+const { AnimationController } = require('../src/runtime/animation-controller.ts')
 const { createDemoAssets } = require('../tooling/demo-assets.cjs')
+const { readCharacterGeometry } = require('../tooling/demo-character.cjs')
 const { readDemoTextures } = require('../tooling/demo-textures.cjs')
 const { validateDemoAssets } = require('../tooling/validate-demo.cjs')
 const { createDemoServer } = require('../tooling/serve-demo.cjs')
@@ -23,11 +25,11 @@ test('the rigid body showcase loads with bundled assets and physics resets', asy
   }
   const loader = new EntityLoader(new ModelLoader(readJson), readJson)
 
-  validateDemoAssets(documents, textures)
+  validateDemoAssets(documents, textures, readCharacterGeometry())
   assert.deepEqual(documents, createDemoAssets())
   assert.deepEqual(
     Object.keys(documents).filter((filename) => filename.endsWith('.scene.json')),
-    ['scenes/rigid-body-playground.scene.json']
+    ['scenes/rigid-body-playground.scene.json', 'scenes/sala-character.scene.json']
   )
 
   const material = documents['models/cube.model.json'].materials.surface
@@ -45,7 +47,9 @@ test('the rigid body showcase loads with bundled assets and physics resets', asy
     assert.equal(texture.areMipmapsEnabled, true)
   }
 
-  for (const document of Object.values(documents).filter((document) => document.type === 'model')) {
+  for (const document of Object.values(documents).filter(
+    (document) => document.type === 'model' && !document.geometry
+  )) {
     for (const mesh of Object.values(document.meshes)) {
       assert.equal(mesh.vertices.length % 8, 0)
 
@@ -76,6 +80,75 @@ test('the rigid body showcase loads with bundled assets and physics resets', asy
   assert.ok(ball.translation.y > 0.5, 'Ball remains above the floor')
   scene.resetSimulation()
   assert.equal(ball.translation.y, initialHeight)
+})
+test('the character showcase loads shared clips and keeps both meshes synchronized through playback', async () => {
+  const documents = createDemoAssets()
+  const geometry = readCharacterGeometry()
+  const requests = new Map()
+  const readJson = async (url) => {
+    const filename = new URL(url).pathname.slice('/assets/'.length)
+
+    assert.ok(Object.hasOwn(documents, filename), `Unexpected character request: ${url}`)
+    requests.set(filename, (requests.get(filename) ?? 0) + 1)
+
+    return structuredClone(documents[filename])
+  }
+
+  const readBinary = async (url) => {
+    const filename = new URL(url).pathname.slice('/assets/'.length)
+    const contents = geometry[filename]
+
+    assert.ok(contents, `Unexpected geometry request: ${url}`)
+
+    return contents.buffer.slice(contents.byteOffset, contents.byteOffset + contents.byteLength)
+  }
+  const loader = new EntityLoader(new ModelLoader(readJson, readBinary), readJson)
+  const scene = await loader.loadScene('https://example.test/assets/scenes/sala-character.scene.json')
+  const controller = new AnimationController(scene)
+  const groups = controller.collectGroups()
+  const models = [...scene.entities.Character.iterateEntries('Character')].flatMap(([, entity]) =>
+    Object.values(entity.components).filter(isModel)
+  )
+
+  assert.equal(groups.length, 1)
+  assert.equal(groups[0].clips.length, 12)
+  assert.equal(models.length, 2)
+  assert.equal(groups[0].clips.find(({ name }) => name === 'Idle').isPlaying, true)
+
+  for (const [filename, count] of requests) {
+    if (filename.startsWith('animations/')) {
+      assert.equal(count, 1, 'Both skinned meshes share one download per clip')
+    }
+  }
+
+  scene.selectCamera()
+  scene.update(0)
+
+  const initialPose = [...models[0].boneMatrices]
+
+  scene.update(0.5, false)
+  assert.notDeepEqual([...models[0].boneMatrices], initialPose, 'Idle animates without starting physics')
+  controller.control(groups[0].key, 'pause')
+
+  const pausedPose = [...models[0].boneMatrices]
+
+  scene.update(0.5, false)
+  assert.deepEqual([...models[0].boneMatrices], pausedPose)
+  controller.control(groups[0].key, 'resume')
+
+  for (const clip of groups[0].clips) {
+    controller.setMix(groups[0].key, { [clip.name]: 1 }, 0.2, true)
+    scene.update(0.5, false)
+
+    for (const model of models) {
+      assert.ok([...model.boneMatrices].every(Number.isFinite), clip.name)
+      assert.equal(model.animations[clip.name].weight, 1)
+      assert.equal(model.animations[clip.name].time, models[0].animations[clip.name].time)
+    }
+  }
+
+  controller.control(groups[0].key, 'stop')
+  assert.ok(controller.collectGroups()[0].clips.every(({ isPlaying }) => !isPlaying))
 })
 test('the bundled studio loads HDR lighting and roughness mips separately from the black sky', async () => {
   const documents = createDemoAssets()
@@ -125,23 +198,24 @@ test('the bundled studio loads HDR lighting and roughness mips separately from t
 test('demo validation rejects broken references, external assets and malformed scenes', () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()
+  const geometry = readCharacterGeometry()
 
   delete documents['models/floor.model.json']
 
-  assert.throws(() => validateDemoAssets(documents, textures), /Missing demo asset/)
+  assert.throws(() => validateDemoAssets(documents, textures, geometry), /Missing demo asset/)
 
   const externalDocuments = createDemoAssets()
 
   externalDocuments['scenes/rigid-body-playground.scene.json'].entities.Floor.components.model =
     'https://example.test/private.model.json'
 
-  assert.throws(() => validateDemoAssets(externalDocuments, textures), /Unsupported demo reference/)
+  assert.throws(() => validateDemoAssets(externalDocuments, textures, geometry), /Unsupported demo reference/)
 
   const malformedDocuments = createDemoAssets()
 
   malformedDocuments['scenes/rigid-body-playground.scene.json'].entities.Camera.components.camera.fieldOfView = -1
 
-  assert.throws(() => validateDemoAssets(malformedDocuments, textures), /Invalid demo asset/)
+  assert.throws(() => validateDemoAssets(malformedDocuments, textures, geometry), /Invalid demo asset/)
 
   const textureDocuments = createDemoAssets()
 
@@ -150,8 +224,8 @@ test('demo validation rejects broken references, external assets and malformed s
     surface: { path: 'poliigon/private.png' }
   }
 
-  assert.throws(() => validateDemoAssets(textureDocuments, textures), /Missing approved demo texture/)
-  assert.throws(() => validateDemoAssets(createDemoAssets()), /Missing approved demo texture/)
+  assert.throws(() => validateDemoAssets(textureDocuments, textures, geometry), /Missing approved demo texture/)
+  assert.throws(() => validateDemoAssets(createDemoAssets(), {}, geometry), /Missing approved demo texture/)
   assert.throws(
     () => validateDemoAssets(createDemoAssets(), { ...textures, 'textures/private.jpg': Buffer.from('unapproved') }),
     /Unsupported demo texture/
@@ -164,14 +238,53 @@ test('demo validation rejects broken references, external assets and malformed s
 test('demo validation rejects missing or external environment maps', () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()
+  const geometry = readCharacterGeometry()
 
   delete textures['environments/studio/radiance.ktx']
 
-  assert.throws(() => validateDemoAssets(documents, textures), /Missing approved demo environment/)
+  assert.throws(() => validateDemoAssets(documents, textures, geometry), /Missing approved demo environment/)
 
   documents['scenes/rigid-body-playground.scene.json'].environment.sky = 'https://example.test/private.ktx'
 
-  assert.throws(() => validateDemoAssets(documents, readDemoTextures()), /Unsupported demo environment reference/)
+  assert.throws(
+    () => validateDemoAssets(documents, readDemoTextures(), geometry),
+    /Unsupported demo environment reference/
+  )
+})
+test('demo validation rejects missing, external and altered character dependencies', () => {
+  const documents = createDemoAssets()
+  const textures = readDemoTextures()
+  const geometry = readCharacterGeometry()
+  const model = documents['models/character-surface.model.json']
+  const idleReference = model.animations.Idle
+  const idlePath = path.posix.normalize(path.posix.join('models', idleReference))
+  const idleDocument = documents[idlePath]
+
+  assert.throws(() => validateDemoAssets(documents, textures), /Missing demo geometry/)
+
+  delete documents[idlePath]
+
+  assert.throws(() => validateDemoAssets(documents, textures, geometry), /Missing demo animation/)
+
+  documents[idlePath] = idleDocument
+  model.animations.Idle = 'https://example.test/private.animation.json'
+
+  assert.throws(() => validateDemoAssets(documents, textures, geometry), /Unsupported demo animation reference/)
+
+  model.animations.Idle = idleReference
+  model.geometry.uri = '../private.geometry'
+
+  assert.throws(() => validateDemoAssets(documents, textures, geometry), /Unsupported demo geometry reference/)
+
+  model.geometry.uri = 'character-surface.geometry'
+  model.geometry.byteLength += 1
+
+  assert.throws(() => validateDemoAssets(documents, textures, geometry), /Incorrect demo geometry length/)
+
+  model.geometry.byteLength -= 1
+  geometry['models/character-surface.geometry'][0] ^= 1
+
+  assert.throws(() => validateDemoAssets(documents, textures, geometry), /does not match the character manifest/)
 })
 test('preview serves only its build directory, supports HEAD and returns genuine missing-file responses', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'luz-demo-server-'))

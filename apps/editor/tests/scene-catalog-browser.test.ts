@@ -26,6 +26,15 @@ const createSceneDescriptor = (id: string, isValid = true): SceneDescriptor => (
 })
 
 describe('scene selection', () => {
+  it('starts the demo on the rigid body playground and restores a selected character scene', () => {
+    const scenes = normalizeSceneCatalog([
+      createSceneDescriptor('sala-character.scene.json'),
+      createSceneDescriptor('rigid-body-playground.scene.json')
+    ])
+
+    expect(selectInitialScene(scenes)?.id).toBe('rigid-body-playground.scene.json')
+    expect(selectInitialScene(scenes, 'sala-character.scene.json')?.id).toBe('sala-character.scene.json')
+  })
   it('restores a valid stored scene, then falls back to editor and alphabetical order', () => {
     const scenes = normalizeSceneCatalog([
       createSceneDescriptor('z.scene.json'),

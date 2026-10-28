@@ -14,20 +14,25 @@ npm run preview:demo
 ```
 
 Open `http://127.0.0.1:4173/`. The output is `apps/editor/dist/demo/`, containing the
-editor, HTML entry point, JSON worker, schemas, licenses and the original rigid body playground.
-The playground is the only bundled scene and loads automatically at startup.
+editor, HTML entry point, JSON worker, schemas, notices and two showcase scenes.
+The rigid body playground loads at first startup; Scene → Load scene also offers Sala character.
+Later visits restore the last selected scene.
 It can be served directly by a static host. No development server or backend is required.
 The preview binds only to localhost and serves missing files as 404 responses.
 
 The build uses a temporary asset directory, never `public/assets/` or `local-assets/`.
-It validates generated scenes against the current schemas and checks model references,
-approved texture checksums and the 25 MiB hosting limit per file. Production source maps are disabled. The normal
+It validates scenes, models and skeletal clips against the current schemas and checks
+model, geometry and animation references, asset checksums and the 25 MiB hosting limit per file.
+Production source maps are disabled. The normal
 editor development workflow still uses local Blender exports. A normal editor build
 cleans `apps/editor/dist/`, so run `build:demo` again after that build.
 
-The [showcase guide](SHOWCASE.md) describes the assets and controls. The scene uses
-original geometry, bundled CC0 metal textures and a prefiltered CC0 studio environment,
+The [showcase guide](SHOWCASE.md) describes the assets and controls. The scenes use
+original stage geometry, bundled CC0 metal textures and a prefiltered CC0 studio environment,
 with no external texture or environment requests. The visible sky remains black.
+Sala character additionally bundles the existing Mixamo meshes and 12 animation clips.
+Their provenance and pending licensing review are recorded in `demo-assets/character/NOTICE.txt`;
+these assets are not covered by the project's MIT license.
 The existing editor stylesheet requests the optional Outfit font from Google Fonts;
 the UI falls back to sans-serif if it is unavailable. No application account is required.
 
@@ -66,7 +71,7 @@ environment secret before expiration; the already deployed site remains live if 
 expires, but new releases cannot deploy until credentials are updated.
 
 The deploy job runs `npm run deploy:demo` using the pinned Wrangler dependency, then
-checks HTTPS and the rigid body scene, plus 404 responses for missing files and the removed
+checks HTTPS and both showcase scenes, plus 404 responses for missing files and the removed
 materials scene. Verify startup and simulation controls in a WebGL2-capable browser after release.
 
 For an authorized manual deployment, build first and authenticate with Wrangler or

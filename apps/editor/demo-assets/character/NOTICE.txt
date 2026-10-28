@@ -1,0 +1,30 @@
+Sala character showcase
+
+The character meshes, skeleton and animation clips originate from Adobe / Mixamo
+and were taken from the existing Sala locomotion asset exports. They are third-party
+content, not original luz assets, and are not covered by the project's MIT license
+or by CC0. Adobe retains rights in its content. Licensing review is pending.
+
+Mixamo: https://www.mixamo.com/
+Terms: https://www.adobe.com/legal/terms.html
+Additional terms:
+https://wwwimages2.adobe.com/content/dam/cc/en/legal/servicetou/Mixamo-Addl-Terms-en_US-20210623.pdf
+FAQ:
+https://helpx.adobe.com/creative-cloud/faq/mixamo-faq.html
+
+Included character: Alpha_Surface and Alpha_Joints from locomotion.entity.json.
+Included clips: Idle, Jump, Left Strafe, Left Strafe Walking, Left Turn,
+Left Turn 90, Right Strafe, Right Strafe Walking, Right Turn, Right Turn 90,
+Running, Walking.
+
+Preparation preserves the exported meshes, skin weights, skeleton, material graphs
+and animation keyframes. Asset references are relocated, Idle starts automatically,
+and locomotion clips loop. Jump and turns play once. JSON is compacted and animation
+filenames are regenerated from their canonical contents. No external textures,
+Sala furnishings, BlendKit or Poliigon content are included.
+
+To regenerate from the existing local Sala exports, run from the repository root:
+node apps/editor/tooling/prepare-demo-character.cjs
+
+The manifest records SHA-256 checksums for the prepared runtime assets. The demo
+build loads only those files; it does not read local source libraries.

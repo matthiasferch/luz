@@ -3,6 +3,7 @@ const path = require('node:path')
 const { createHash } = require('node:crypto')
 const Ajv = require('ajv')
 const { textureHashes } = require('./demo-textures.cjs')
+const { characterHashes } = require('./demo-character.cjs')
 
 const MAXIMUM_FILE_BYTES = 25 * 1024 * 1024
 const schemaDirectory = path.resolve(__dirname, '../../../packages/formats/schemas')
@@ -12,7 +13,7 @@ for (const filename of fs.readdirSync(schemaDirectory)) {
   validator.addSchema(JSON.parse(fs.readFileSync(path.join(schemaDirectory, filename), 'utf8')))
 }
 
-const validateDemoAssets = (documents, textures = {}) => {
+const validateDemoAssets = (documents, textures = {}, geometry = {}) => {
   for (const [filename, contents] of Object.entries(textures)) {
     if (!Object.hasOwn(textureHashes, filename) || !Buffer.isBuffer(contents)) {
       throw new Error(`Unsupported demo texture: ${filename}`)
@@ -27,16 +28,36 @@ const validateDemoAssets = (documents, textures = {}) => {
     }
   }
 
+  for (const [filename, contents] of Object.entries(geometry)) {
+    if (!filename.endsWith('.geometry') || !Object.hasOwn(characterHashes, filename) || !Buffer.isBuffer(contents)) {
+      throw new Error(`Unsupported demo geometry: ${filename}`)
+    }
+
+    if (contents.length > MAXIMUM_FILE_BYTES) {
+      throw new Error(`Demo asset exceeds 25 MiB: ${filename}`)
+    }
+
+    if (createHash('sha256').update(contents).digest('hex') !== characterHashes[filename]) {
+      throw new Error(`Demo geometry does not match the character manifest: ${filename}`)
+    }
+  }
+
   for (const [filename, document] of Object.entries(documents)) {
-    if (!/^(scenes|models)\/[a-zA-Z0-9-]+\.(scene|model)\.json$/.test(filename)) {
+    const schema = /^scenes\/[a-zA-Z0-9-]+\.scene\.json$/.test(filename)
+      ? 'scene.schema.json'
+      : /^models\/[a-zA-Z0-9-]+\.model\.json$/.test(filename)
+        ? 'model.schema.json'
+        : /^animations\/[a-f0-9]{64}\.animation\.json$/.test(filename)
+          ? 'skeletal-animation.schema.json'
+          : undefined
+
+    if (!schema) {
       throw new Error(`Unsupported demo asset path: ${filename}`)
     }
 
     if (Buffer.byteLength(JSON.stringify(document)) > MAXIMUM_FILE_BYTES) {
       throw new Error(`Demo asset exceeds 25 MiB: ${filename}`)
     }
-
-    const schema = filename.endsWith('.scene.json') ? 'scene.schema.json' : 'model.schema.json'
 
     if (!validator.validate(schema, document)) {
       throw new Error(`Invalid demo asset '${filename}': ${validator.errorsText()}`)
@@ -47,8 +68,38 @@ const validateDemoAssets = (documents, textures = {}) => {
         return
       }
 
-      if (value.geometry || value.animations || value.entity) {
-        throw new Error(`Demo assets must use procedural geometry: ${filename}`)
+      if (value.entity) {
+        throw new Error(`Demo entities must be embedded in their scene: ${filename}`)
+      }
+
+      if (value.geometry) {
+        const reference = value.geometry.uri
+
+        if (!/^[a-zA-Z0-9-]+\.geometry$/.test(reference)) {
+          throw new Error(`Unsupported demo geometry reference '${reference}' in '${filename}'`)
+        }
+
+        const dependency = path.posix.join(path.posix.dirname(filename), reference)
+
+        if (!Object.hasOwn(geometry, dependency)) {
+          throw new Error(`Missing demo geometry '${dependency}' in '${filename}'`)
+        }
+
+        if (geometry[dependency].length !== value.geometry.byteLength) {
+          throw new Error(`Incorrect demo geometry length '${dependency}' in '${filename}'`)
+        }
+      }
+
+      for (const reference of Object.values(value.animations ?? {})) {
+        if (!/^\.\.\/animations\/[a-f0-9]{64}\.animation\.json$/.test(reference)) {
+          throw new Error(`Unsupported demo animation reference '${reference}' in '${filename}'`)
+        }
+
+        const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(filename), reference))
+
+        if (!Object.hasOwn(documents, dependency)) {
+          throw new Error(`Missing demo animation '${dependency}' in '${filename}'`)
+        }
       }
 
       if (value.environment) {
