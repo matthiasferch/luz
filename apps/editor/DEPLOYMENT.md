@@ -26,7 +26,8 @@ editor development workflow still uses local Blender exports. A normal editor bu
 cleans `apps/editor/dist/`, so run `build:demo` again after that build.
 
 The [showcase guide](SHOWCASE.md) describes the assets and controls. The scene uses
-original geometry and bundled CC0 metal textures, with no external texture or environment requests.
+original geometry, bundled CC0 metal textures and a prefiltered CC0 studio environment,
+with no external texture or environment requests. The visible sky remains black.
 The existing editor stylesheet requests the optional Outfit font from Google Fonts;
 the UI falls back to sans-serif if it is unavailable. No application account is required.
 

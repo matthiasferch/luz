@@ -5,7 +5,7 @@ const test = require('node:test')
 const fs = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
-const { EntityLoader, ModelLoader } = require('@luz/graphics')
+const { EntityLoader, EnvironmentLoader, ImageLoader, ModelLoader } = require('@luz/graphics')
 const { createDemoAssets } = require('../tooling/demo-assets.cjs')
 const { readDemoTextures } = require('../tooling/demo-textures.cjs')
 const { validateDemoAssets } = require('../tooling/validate-demo.cjs')
@@ -77,6 +77,51 @@ test('the rigid body showcase loads with bundled assets and physics resets', asy
   scene.resetSimulation()
   assert.equal(ball.translation.y, initialHeight)
 })
+test('the bundled studio loads HDR lighting and roughness mips separately from the black sky', async () => {
+  const documents = createDemoAssets()
+  const textures = readDemoTextures()
+  const baseUrl = 'https://example.test/assets/scenes/rigid-body-playground.scene.json'
+  const imageLoader = new ImageLoader({
+    baseUrl,
+    decodeImage: async () => assert.fail('The studio environment should use prefiltered KTX cubemaps'),
+
+    readBinary: async (url) => {
+      const filename = new URL(url).pathname.slice('/assets/'.length)
+      const contents = textures[filename]
+
+      assert.ok(contents, `Unexpected environment request: ${url}`)
+
+      return contents.buffer.slice(contents.byteOffset, contents.byteOffset + contents.byteLength)
+    }
+  })
+  const environment = await new EnvironmentLoader(imageLoader).load(
+    documents['scenes/rigid-body-playground.scene.json'].environment
+  )
+
+  for (const source of [environment.radiance, environment.irradiance, environment.sky]) {
+    assert.equal(source.kind, 'ktx')
+    assert.equal(source.container.numberOfFaces, 6)
+    assert.equal(source.container.glInternalFormat, 0x881a)
+  }
+
+  assert.equal(environment.radiance.container.pixelWidth, 128)
+  assert.equal(environment.radiance.container.numberOfMipmapLevels, 8)
+  assert.equal(environment.irradiance.container.pixelWidth, 32)
+  assert.equal(environment.irradiance.container.numberOfMipmapLevels, 1)
+  assert.ok(
+    environment.radiance.container.levels[0].faces.some((face) => {
+      const values = new Uint16Array(face.buffer, face.byteOffset, face.byteLength / 2)
+
+      return values.some((value, index) => index % 4 !== 3 && value > 0x3c00 && value < 0x7c00)
+    }),
+    'The studio retains HDR highlights above one'
+  )
+  assert.equal(environment.sky.container.pixelWidth, 1)
+
+  for (const face of environment.sky.container.levels[0].faces) {
+    assert.deepEqual([...new Uint16Array(face.buffer, face.byteOffset, 4)], [0, 0, 0, 0x3c00])
+  }
+})
 test('demo validation rejects broken references, external assets and malformed scenes', () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()
@@ -116,6 +161,18 @@ test('demo validation rejects broken references, external assets and malformed s
 
   assert.throws(() => validateDemoAssets(createDemoAssets(), textures), /does not match the licensed source/)
 })
+test('demo validation rejects missing or external environment maps', () => {
+  const documents = createDemoAssets()
+  const textures = readDemoTextures()
+
+  delete textures['environments/studio/radiance.ktx']
+
+  assert.throws(() => validateDemoAssets(documents, textures), /Missing approved demo environment/)
+
+  documents['scenes/rigid-body-playground.scene.json'].environment.sky = 'https://example.test/private.ktx'
+
+  assert.throws(() => validateDemoAssets(documents, readDemoTextures()), /Unsupported demo environment reference/)
+})
 test('preview serves only its build directory, supports HEAD and returns genuine missing-file responses', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'luz-demo-server-'))
   const server = createDemoServer(directory)
@@ -129,6 +186,8 @@ test('preview serves only its build directory, supports HEAD and returns genuine
     const texture = readDemoTextures()['textures/galvanizedMetal/baseColor.jpg']
 
     await fs.writeFile(path.join(directory, 'texture.jpg'), texture)
+
+    await fs.writeFile(path.join(directory, 'sky.ktx'), readDemoTextures()['environments/studio/sky.ktx'])
 
     await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve))
 
@@ -147,6 +206,11 @@ test('preview serves only its build directory, supports HEAD and returns genuine
     assert.equal(textureResponse.status, 200)
     assert.equal(textureResponse.headers.get('content-type'), 'image/jpeg')
     assert.deepEqual(Buffer.from(await textureResponse.arrayBuffer()), texture)
+
+    const environmentResponse = await fetch(origin + '/sky.ktx', { method: 'HEAD' })
+
+    assert.equal(environmentResponse.status, 200)
+    assert.equal(environmentResponse.headers.get('content-type'), 'image/ktx')
 
     for (const route of ['/missing.js', '/__luz/scenes', '/local-assets/private.png', '/%2e%2e%5cpackage.json']) {
       const missing = await fetch(origin + route)

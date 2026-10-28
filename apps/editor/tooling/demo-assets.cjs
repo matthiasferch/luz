@@ -158,6 +158,12 @@ const createRotation = (angle) => [Math.sin(angle / 2), 0, 0, Math.cos(angle / 2
 
 const createStage = () => ({
   gravity: [0, -9.81, 0],
+  environment: {
+    sky: '../environments/studio/sky.ktx',
+    radiance: '../environments/studio/radiance.ktx',
+    irradiance: '../environments/studio/irradiance.ktx',
+    rotation: 0
+  },
   entities: {
     Camera: {
       translation: [0, 7, 15],

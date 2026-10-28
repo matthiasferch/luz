@@ -1,0 +1,27 @@
+Studio Small 08 by Sergej Majboroda / Poly Haven
+License: Creative Commons CC0 1.0 Universal (CC0-1.0)
+
+Asset: https://polyhaven.com/a/studio_small_08
+License statement: https://polyhaven.com/license
+License: https://creativecommons.org/publicdomain/zero/1.0/
+Source: https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/studio_small_08_1k.hdr
+Retrieved: 2026-10-27
+Source SHA-256: f6a989f89432eb4eee3191364a9c1ceed195c4ec3544173a3c04fd96cb91d0ba
+
+source.hdr is the unmodified 1K HDRI. It is retained for reproducibility and is
+not included in the public demo build.
+
+radiance.ktx and irradiance.ktx are derived from that HDRI using the luz Blender
+exporter's environment compiler, with 256 samples, 128-pixel radiance cube faces
+and 32-pixel irradiance cube faces. Both preserve linear HDR values in RGBA16F.
+Radiance contains eight roughness-prefiltered mip levels. No exposure adjustment
+is baked into either map.
+
+sky.ktx is an original 1-pixel black cubemap, also dedicated to CC0, which keeps
+the visible backdrop black independently of the lighting and reflections.
+
+Regenerate from the repository root with Blender 5.2:
+blender --background --factory-startup --python integrations/blender/tools/prepare_demo_environment.py
+Review and update the resulting SHA-256 digests in apps/editor/tooling/demo-textures.cjs.
+
+These environment assets are CC0, separate from the MIT-licensed luz code.

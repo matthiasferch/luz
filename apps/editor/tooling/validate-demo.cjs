@@ -47,8 +47,24 @@ const validateDemoAssets = (documents, textures = {}) => {
         return
       }
 
-      if (value.environment || value.geometry || value.animations || value.entity) {
+      if (value.geometry || value.animations || value.entity) {
         throw new Error(`Demo assets must use procedural geometry: ${filename}`)
+      }
+
+      if (value.environment) {
+        for (const name of ['sky', 'radiance', 'irradiance']) {
+          const reference = value.environment[name]
+
+          if (!/^\.\.\/environments\/studio\/(sky|radiance|irradiance)\.ktx$/.test(reference)) {
+            throw new Error(`Unsupported demo environment reference '${reference}' in '${filename}'`)
+          }
+
+          const dependency = path.posix.normalize(path.posix.join(path.posix.dirname(filename), reference))
+
+          if (!Object.hasOwn(textures, dependency)) {
+            throw new Error(`Missing approved demo environment '${dependency}' in '${filename}'`)
+          }
+        }
       }
 
       if (value.surface?.path && !Object.hasOwn(textures, value.surface.path)) {

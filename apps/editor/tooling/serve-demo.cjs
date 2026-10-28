@@ -10,6 +10,7 @@ const createDemoServer = (directory = path.resolve(__dirname, '../dist/demo')) =
     '.js': 'text/javascript; charset=utf-8',
     '.json': 'application/json; charset=utf-8',
     '.jpg': 'image/jpeg',
+    '.ktx': 'image/ktx',
     '.md': 'text/plain; charset=utf-8',
     '.txt': 'text/plain; charset=utf-8'
   }

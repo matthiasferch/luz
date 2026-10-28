@@ -39,10 +39,9 @@ const buildDemo = async () => {
       await fs.writeFile(target, contents)
     }
 
-    await fs.copyFile(
-      path.resolve(__dirname, '../demo-assets/textures/galvanizedMetal/LICENSE.txt'),
-      path.join(assetDirectory, 'textures/galvanizedMetal/LICENSE.txt')
-    )
+    for (const filename of ['textures/galvanizedMetal/LICENSE.txt', 'environments/studio/LICENSE.txt']) {
+      await fs.copyFile(path.resolve(__dirname, '../demo-assets', filename), path.join(assetDirectory, filename))
+    }
 
     const configuration = createWebpackConfiguration({ demoAssetsDirectory: assetDirectory }, { mode: 'production' })
     const compiler = webpack(configuration)

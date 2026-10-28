@@ -8,6 +8,13 @@ OpenGL normal, metallic and roughness maps are bundled locally; see
 `textures/galvanizedMetal/LICENSE.txt` in the built demo for source filenames and license details.
 No BlendKit or Poliigon assets are included.
 
+Lighting and reflections use [Studio Small 08](https://polyhaven.com/a/studio_small_08)
+by Sergej Majboroda / Poly Haven, also [CC0](https://polyhaven.com/license). Its HDR light
+is stored in prefiltered radiance and diffuse irradiance cubemaps, totaling about 1.05 MiB.
+A separate black sky cubemap preserves the simple backdrop. The Environment panel adjusts
+the lighting rotation and diffuse/specular strengths. Source and conversion details are in
+`environments/studio/LICENSE.txt` in the built demo.
+
 The source recipe is `apps/editor/tooling/demo-assets.cjs`. The demo build generates
 its JSON assets afresh and copies only the approved, checksum-verified textures from
 `apps/editor/demo-assets/`. Builds and runtime loading do not download external assets.
