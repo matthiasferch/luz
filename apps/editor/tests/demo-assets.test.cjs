@@ -7,13 +7,14 @@ const os = require('node:os')
 const path = require('node:path')
 const { EntityLoader, EnvironmentLoader, ImageLoader, ModelLoader, isModel } = require('@luz/graphics')
 const { AnimationController } = require('../src/runtime/animation-controller.ts')
+const { SimulationController } = require('../src/runtime/simulation-controller.ts')
 const { createDemoAssets } = require('../tooling/demo-assets.cjs')
 const { readCharacterGeometry } = require('../tooling/demo-character.cjs')
 const { readDemoTextures } = require('../tooling/demo-textures.cjs')
 const { validateDemoAssets } = require('../tooling/validate-demo.cjs')
 const { createDemoServer } = require('../tooling/serve-demo.cjs')
 
-test('the rigid body showcase loads with bundled assets and physics resets', async () => {
+test('the rigid body showcase starts physics on load and preserves manual reset', async () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()
   const readJson = async (url) => {
@@ -65,7 +66,10 @@ test('the rigid body showcase loads with bundled assets and physics resets', asy
   }
 
   const scene = await loader.loadScene('https://example.test/assets/scenes/rigid-body-playground.scene.json')
+  const simulation = new SimulationController({ timeScale: 1, gravity: null })
 
+  simulation.applyImportedState(scene)
+  assert.equal(simulation.isRunning, true)
   scene.selectCamera()
   scene.update(0)
 
@@ -73,13 +77,20 @@ test('the rigid body showcase loads with bundled assets and physics resets', asy
   const initialHeight = ball.translation.y
 
   for (let frame = 0; frame < 120; frame++) {
-    scene.update(1 / 60)
+    scene.update(simulation.timeScale / 60, simulation.isRunning)
   }
 
   assert.ok(ball.translation.y < initialHeight - 1, 'Ball falls when simulation runs')
   assert.ok(ball.translation.y > 0.5, 'Ball remains above the floor')
-  scene.resetSimulation()
+  simulation.reset(scene)
+  scene.update(1 / 60, simulation.isRunning)
+  assert.equal(simulation.isRunning, false)
   assert.equal(ball.translation.y, initialHeight)
+
+  const reloadedScene = await loader.loadScene('https://example.test/assets/scenes/rigid-body-playground.scene.json')
+
+  simulation.applyImportedState(reloadedScene)
+  assert.equal(simulation.isRunning, true, 'Loading another scene starts physics even after a reset')
 })
 test('the character showcase loads shared clips and keeps both meshes synchronized through playback', async () => {
   const documents = createDemoAssets()
@@ -149,7 +160,17 @@ test('the character showcase loads shared clips and keeps both meshes synchroniz
 
   scene.update(0.5, false)
   assert.deepEqual([...models[0].boneMatrices], pausedPose)
+  controller.seek(groups[0].key, 0)
+  scene.update(0.5, true)
+
+  for (const model of models) {
+    assert.equal(model.animations.Walking.time, 0, 'Reset rewinds and pauses animation even while physics runs')
+    assert.equal(model.animations.Walking.weight, 1, 'Reset preserves the selected animation')
+  }
+
   controller.control(groups[0].key, 'resume')
+  scene.update(0.25, true)
+  assert.equal(models[0].animations.Walking.time, 0.25)
 
   for (const clip of groups[0].clips) {
     controller.setMix(groups[0].key, { [clip.name]: 1 }, 0.2, true)

@@ -3,6 +3,7 @@ import { NInput, NSelect, NSlider } from 'naive-ui'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import AnimationPanel from '../src/editor/components/AnimationPanel.vue'
+import AnimationControls from '../src/editor/components/AnimationControls.vue'
 import SettingSlider from '../src/editor/components/SettingSlider.vue'
 import { createEditorStore, editorStoreKey } from '../src/editor/editor-store'
 import type { AnimationGroup } from '../src/editor/editor-api'
@@ -77,6 +78,39 @@ const createFixture = (isTransformTimeline = false) => {
   }
 }
 
+describe('Animation overlay', () => {
+  it('resumes paused and finished clips, starts stopped groups, and leaves playing groups alone', async () => {
+    const fixture = createFixture()
+    const { store, groups, controlAnimation, setAnimationMix } = fixture
+    const wrapper = mount(AnimationControls, { global: { provide: { [editorStoreKey as symbol]: store } } })
+
+    groups[0].isPaused = true
+    groups[0].clips[0].isPlaying = false
+    store.animationGroups.value = structuredClone(groups)
+
+    await nextTick()
+
+    await wrapper.get('button[aria-label="Play animations"]').trigger('click')
+    expect(controlAnimation.mock.calls).toEqual([['First', 'resume']])
+    expect(groups[0].clips[0].time).toBe(0.5)
+    expect(setAnimationMix).not.toHaveBeenCalled()
+
+    groups[0].clips[0].playback = 'once'
+    groups[0].clips[0].time = 2
+    groups[0].clips[0].isPlaying = false
+    groups[1].clips[0].weight = 0
+    groups[1].clips[0].isPlaying = false
+    store.animationGroups.value = structuredClone(groups)
+
+    await nextTick()
+
+    await wrapper.get('button[aria-label="Play animations"]').trigger('click')
+    expect(controlAnimation).toHaveBeenLastCalledWith('First', 'resume')
+    expect(setAnimationMix).toHaveBeenCalledExactlyOnceWith('Second', { Walking: 1 }, 0, true)
+    wrapper.unmount()
+    fixture.dispose()
+  })
+})
 describe('Animations panel', () => {
   it('updates mixed progress between telemetry snapshots and cancels frame updates on unmount', async () => {
     const callbacks = new Map<number, FrameRequestCallback>()

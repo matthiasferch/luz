@@ -25,17 +25,18 @@ its scenes afresh and loads the selected, checksum-verified character assets and
 `apps/editor/demo-assets/`. Builds and runtime loading do not download external assets.
 
 The **rigid body playground** loads at first startup. It contains
-a stack of cubes and three falling balls. When the Simulation panel is hidden, use the
-Start, Pause and Reset buttons at the bottom of the scene. Open the panel through View
-for the full simulation settings. Reset restores
-the initial arrangement. While running, WASD applies force to the first ball and TFGH to
+a stack of cubes and three falling balls. Physics starts automatically whenever a scene loads.
+Open View → Simulation to pause, restart or reset physics and adjust its settings. Reset restores
+the initial arrangement and pauses physics. While running, WASD applies force to the first ball and TFGH to
 the first cube. Expand lights in the Entities panel to toggle them, or Settings to explore
 shadows and rendering effects.
 
 Use Scene → Load scene to switch to **Skeletal Animation**. Walking plays automatically on a loop;
-open View → Animations to play walking, running, jumping, strafing and turning clips,
+use the bottom Play, Pause and Reset buttons to control all scene animations when the Animations panel is hidden.
+Reset rewinds the selected animations and pauses them; Play resumes playback.
+Open View → Animations to play walking, running, jumping, strafing and turning clips,
 adjust speed, pause playback or blend animations. Both skinned meshes share the same
-controls. Character animation runs independently of the physics simulation buttons.
+controls. Animation controls do not pause or reset physics. Scenes without animations hide these buttons.
 The editor remembers the last selected scene.
 
 On phones, narrow screens and devices with a coarse primary pointer, panels start hidden.

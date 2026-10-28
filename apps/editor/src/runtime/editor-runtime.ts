@@ -643,7 +643,6 @@ export class Editor implements EditorApi {
     }
 
     this.modelManager.releaseScene(previousScene)
-    this.simulation.setRunning(false)
 
     this.elapsedTime = 0
 

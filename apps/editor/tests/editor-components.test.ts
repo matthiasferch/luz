@@ -13,6 +13,7 @@ import SimulationPanel from '../src/editor/components/SimulationPanel.vue'
 import SettingCheckbox from '../src/editor/components/SettingCheckbox.vue'
 import SettingSlider from '../src/editor/components/SettingSlider.vue'
 import { createEditorStore, editorStoreKey } from '../src/editor/editor-store'
+import type { AnimationGroup } from '../src/editor/editor-api'
 import type { SceneDescriptor } from '../src/editor/scene-catalog'
 import { makeRuntime } from './editor-fixture'
 
@@ -99,7 +100,7 @@ describe('Vue editor interface', () => {
     expect(wrapper.text()).toContain('Loading scene')
     expect(wrapper.text()).toContain('Preparing renderer')
     expect(wrapper.find('.editor-toolbar').exists()).toBe(false)
-    expect(wrapper.find('.simulation-controls').exists()).toBe(false)
+    expect(wrapper.find('.animation-controls').exists()).toBe(false)
     store.setLoadingProgress({ stage: 'Loading models', completed: 12, total: 28 })
 
     await nextTick()
@@ -110,7 +111,7 @@ describe('Vue editor interface', () => {
     expect(wrapper.text()).toContain('Scene initialization failed')
     expect(wrapper.text()).toContain('WebGL unavailable')
     expect(wrapper.find('.editor-toolbar').exists()).toBe(false)
-    expect(wrapper.find('.simulation-controls').exists()).toBe(false)
+    expect(wrapper.find('.animation-controls').exists()).toBe(false)
     wrapper.unmount()
   })
   it('shows only Scene and View in the toolbar', async () => {
@@ -122,7 +123,7 @@ describe('Vue editor interface', () => {
     const labels = wrapper.findAll('.toolbar-item').map((button) => button.text())
 
     expect(wrapper.findAll('.floating-panel')).toHaveLength(4)
-    expect(wrapper.find('.simulation-controls').exists()).toBe(false)
+    expect(wrapper.find('.animation-controls').exists()).toBe(false)
     expect(wrapper.get('.floating-panel[aria-label="Entities"]').classes()).not.toContain('auto-height')
     expect(wrapper.findAll('.floating-panel.auto-height')).toHaveLength(3)
     expect(
@@ -190,48 +191,93 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.scene-reload-status').exists()).toBe(false)
     wrapper.unmount()
   })
-  it('offers simulation controls while mobile panels are hidden and switches back when the panel opens', async () => {
+  it('controls all animations independently of physics while the Animations panel is hidden', async () => {
     vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(390)
     localStorage.removeItem('luz.editor.layout.mobile')
 
     const store = createEditorStore()
     const setSimulationRunning = vi.fn((isRunning: boolean) => isRunning)
     const resetSimulation = vi.fn(() => ({ isRunning: false, timeScale: 1, gravity: -9.81 }))
+    const groups: AnimationGroup[] = ['Character', 'Platform'].map((key) => ({
+      key,
+      label: key,
+      isPaused: false,
+      speed: 1,
+      clips: [{ name: 'Walking', duration: 2, playback: 'loop', weight: 1, time: 0.5, isPlaying: true }]
+    }))
+    const controlAnimation = vi.fn((key: string, action: 'pause' | 'resume' | 'stop') => {
+      const group = groups.find((group) => group.key === key)!
 
-    store.attach(makeRuntime({ setSimulationRunning, resetSimulation }))
+      group.isPaused = action === 'pause'
+
+      for (const clip of group.clips) {
+        clip.isPlaying = action === 'resume'
+      }
+    })
+    const seekAnimation = vi.fn((key: string, progress: number) => {
+      const group = groups.find((group) => group.key === key)!
+
+      group.isPaused = true
+
+      for (const clip of group.clips) {
+        clip.time = clip.duration * progress
+        clip.isPlaying = false
+      }
+    })
+    const state = makeRuntime().captureEditorState()
+
+    state.isSimulationRunning = true
+
+    store.attach(
+      makeRuntime({
+        captureEditorState: () => state,
+
+        collectAnimationGroups: () => structuredClone(groups),
+        controlAnimation,
+        seekAnimation,
+        setSimulationRunning,
+        resetSimulation
+      })
+    )
 
     const wrapper = mount(App, provideStore(store))
 
     expect(wrapper.findAll('.floating-panel')).toHaveLength(0)
 
-    const startButton = wrapper.get('button[aria-label="Start simulation"]')
-    const pauseButton = wrapper.get('button[aria-label="Pause simulation"]')
+    const playButton = wrapper.get('button[aria-label="Play animations"]')
+    const pauseButton = wrapper.get('button[aria-label="Pause animations"]')
 
-    expect(startButton.attributes('disabled')).toBeUndefined()
-    expect(pauseButton.attributes('disabled')).toBeDefined()
-
-    await startButton.trigger('click')
-    expect(setSimulationRunning).toHaveBeenLastCalledWith(true)
-    expect(startButton.attributes('disabled')).toBeDefined()
+    expect(playButton.attributes('disabled')).toBeDefined()
     expect(pauseButton.attributes('disabled')).toBeUndefined()
+    expect(wrapper.findAll('.animation-control[title]')).toHaveLength(0)
 
-    await startButton.trigger('click')
-    expect(setSimulationRunning).toHaveBeenCalledOnce()
+    await playButton.trigger('click')
+    expect(controlAnimation).not.toHaveBeenCalled()
 
     await pauseButton.trigger('click')
-    expect(setSimulationRunning).toHaveBeenLastCalledWith(false)
-    expect(store.isSimulationRunning.value).toBe(false)
-    expect(resetSimulation).not.toHaveBeenCalled()
-
-    await startButton.trigger('click')
-
-    await wrapper.get('button[aria-label="Reset simulation"]').trigger('click')
-    expect(resetSimulation).toHaveBeenCalledOnce()
-    expect(store.isSimulationRunning.value).toBe(false)
-    expect(startButton.attributes('disabled')).toBeUndefined()
+    expect(controlAnimation.mock.calls).toEqual([
+      ['Character', 'pause'],
+      ['Platform', 'pause']
+    ])
+    expect(playButton.attributes('disabled')).toBeUndefined()
     expect(pauseButton.attributes('disabled')).toBeDefined()
 
-    await startButton.trigger('click')
+    await playButton.trigger('click')
+    expect(controlAnimation.mock.calls.slice(-2)).toEqual([
+      ['Character', 'resume'],
+      ['Platform', 'resume']
+    ])
+
+    await wrapper.get('button[aria-label="Reset animations"]').trigger('click')
+    expect(seekAnimation.mock.calls).toEqual([
+      ['Character', 0],
+      ['Platform', 0]
+    ])
+    expect(groups.every((group) => group.clips[0].weight === 1 && group.clips[0].time === 0)).toBe(true)
+    expect(playButton.attributes('disabled')).toBeUndefined()
+    expect(pauseButton.attributes('disabled')).toBeDefined()
+
+    await playButton.trigger('click')
 
     await wrapper.findAll('.toolbar-item')[1].trigger('click')
 
@@ -242,19 +288,33 @@ describe('Vue editor interface', () => {
     await nextTick()
     expect(wrapper.findAll('.floating-panel')).toHaveLength(1)
     expect(wrapper.find('.floating-panel[aria-label="Simulation"]').exists()).toBe(true)
-    expect(wrapper.find('.simulation-controls').exists()).toBe(false)
+    expect(wrapper.find('.animation-controls').exists()).toBe(true)
     expect(wrapper.get('.simulation-actions button').text()).toBe('Stop')
 
-    await wrapper.get('button[aria-label="Hide Simulation"]').trigger('click')
-    expect(wrapper.get('button[aria-label="Pause simulation"]').attributes('disabled')).toBeUndefined()
+    const animationsToggle = wrapper.findAllComponents(NCheckbox).find((checkbox) => checkbox.text() === 'Animations')!
+
+    animationsToggle.vm.$emit('update:checked', true)
+
+    await nextTick()
+    expect(wrapper.find('.animation-controls').exists()).toBe(false)
+
+    await wrapper.get('button[aria-label="Hide Animations"]').trigger('click')
+    expect(wrapper.get('button[aria-label="Pause animations"]').attributes('disabled')).toBeUndefined()
     expect(store.isSimulationRunning.value).toBe(true)
+    expect(setSimulationRunning).not.toHaveBeenCalled()
+    expect(resetSimulation).not.toHaveBeenCalled()
 
     await wrapper.find('.reset-layout').trigger('click')
 
     await nextTick()
     expect(wrapper.findAll('.floating-panel')).toHaveLength(0)
     expect(wrapper.find('.editor-toolbar').exists()).toBe(true)
-    expect(wrapper.find('.simulation-controls').exists()).toBe(true)
+    expect(wrapper.find('.animation-controls').exists()).toBe(true)
+
+    store.animationGroups.value = []
+
+    await nextTick()
+    expect(wrapper.find('.animation-controls').exists()).toBe(false)
     wrapper.unmount()
   })
   it('selects a valid scene explicitly and prevents loading malformed scenes', async () => {

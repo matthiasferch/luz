@@ -40,6 +40,8 @@ export class SimulationController {
   }
 
   applyImportedState(scene: Scene): void {
+    this.isRunningValue = true
+
     scene.gravity.copyTo(this.importedGravity)
 
     if (this.settings.gravity !== null) {
