@@ -251,32 +251,56 @@ const createDemoAssets = () => {
     'models/ellipsoid.model.json': createModel(sphere, createMaterial([0.5, 0.14, 0.55], 0.3, 0.15))
   }
   const scene = createStage()
+
+  scene.entities.Platform = {
+    translation: [-3, 0.6, -0.6],
+    scale: [1.3, 0.15, 1],
+    components: {
+      model: '../models/floor.model.json',
+      body: {
+        type: 'body',
+        motionType: 'kinematic',
+        friction: 0.8,
+        volume: { type: 'cuboid', extents: [1.3, 0.15, 1] }
+      },
+      'Platform Motion': {
+        type: 'animation',
+        schemaVersion: 2,
+        playback: 'loop',
+        isAutoplayEnabled: true,
+        duration: 8,
+        tracks: {
+          translation: Array.from({ length: 33 }, (_value, index) => ({
+            time: index / 4,
+            value: [Number((Math.sin((index / 16) * Math.PI) * 0.8).toFixed(6)), 0, 0]
+          }))
+        }
+      }
+    }
+  }
+
   const bodies = [
     {
       name: 'Cuboid',
       model: 'cube',
-      translation: [-2.7, 0.65, -0.6],
+      translation: [-3, 1.35, -0.6],
       scale: [0.6, 0.6, 0.6],
+      friction: 0.8,
       volume: { type: 'cuboid', extents: [0.6, 0.6, 0.6] }
     },
     {
       name: 'Block',
       model: 'cube',
-      translation: [-1.3, 0.65, -0.6],
-      scale: [0.6, 0.6, 0.6],
-      volume: { type: 'cuboid', extents: [0.6, 0.6, 0.6] }
-    },
-    {
-      name: 'Plank',
-      model: 'cube',
-      translation: [-2, 1.75, -0.6],
-      scale: [1.65, 0.25, 0.65],
-      volume: { type: 'cuboid', extents: [1.65, 0.25, 0.65] }
+      translation: [-3, 2.45, -0.6],
+      rotation: [0, Math.sin(Math.PI / 24), 0, Math.cos(Math.PI / 24)],
+      scale: [0.5, 0.5, 0.5],
+      friction: 0.8,
+      volume: { type: 'cuboid', extents: [0.5, 0.5, 0.5] }
     },
     {
       name: 'Sphere',
       model: 'ball',
-      translation: [-2.2, 4.5, 0.3],
+      translation: [-0.2, 4.5, 1.7],
       scale: [0.7, 0.7, 0.7],
       volume: { type: 'sphere', radius: 0.7 }
     },
@@ -320,7 +344,7 @@ const createDemoAssets = () => {
     }
   ]
 
-  for (const { name, model, translation, rotation, scale, volume } of bodies) {
+  for (const { name, model, translation, rotation, scale, volume, friction = 0.5 } of bodies) {
     scene.entities[name] = {
       translation,
       ...(rotation ? { rotation } : {}),
@@ -331,7 +355,7 @@ const createDemoAssets = () => {
           type: 'body',
           motionType: 'dynamic',
           mass: volume.type === 'sphere' ? 2 : 1,
-          friction: 0.5,
+          friction,
           restitution: volume.type === 'sphere' ? 0.45 : 0.15,
           isContinuousCollisionEnabled: true,
           volume
