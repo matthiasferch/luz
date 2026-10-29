@@ -215,7 +215,7 @@ void main() {
     vec4 lightProjection = light.textureMatrix * vec4(worldPosition, 1.0);
     float visibility = light.isPoint
       ? areShadowsEnabled
-        ? calculatePointShadow(shadowTexture, worldPosition - light.translation, 1.0)
+        ? calculatePointShadow(shadowTexture, worldPosition - light.translation, 1.0, vec3(0.0))
         : 1.0
       : lightProjection.w > 0.0
         ? calculateVolumetricShadow(lightProjection.xyz / lightProjection.w)

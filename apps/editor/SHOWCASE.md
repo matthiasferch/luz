@@ -25,7 +25,9 @@ its scenes afresh and loads the selected, checksum-verified character assets and
 `apps/editor/demo-assets/`. Builds and runtime loading do not download external assets.
 
 Use Scene → Load scene to switch to the **rigid body playground**. It contains
-a stack of cubes and three falling balls. Physics starts automatically whenever a scene loads.
+metal blocks supporting a plank, two orange spheres, two teal cylinders and two purple ellipsoids.
+Different proportions and starting orientations demonstrate stacking, rolling and tumbling with all four
+supported collision shapes. Physics starts automatically whenever a scene loads.
 Open View → Simulation to pause, restart or reset physics and adjust its settings. Reset restores
 the initial arrangement and pauses physics. While running, WASD applies force to the first ball and TFGH to
 the first cube. Expand lights in the Entities panel to toggle them, or Settings to explore

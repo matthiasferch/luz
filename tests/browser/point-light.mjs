@@ -219,6 +219,118 @@ try {
     messages.push(
       `PASS ${pass}: six faces, twelve edges, corners, real shadow depth, atlas clearing, range, rotation/scale, mixed light types, shadows toggle`
     )
+
+    const pixels = new Float32Array(32 * 32 * 4)
+
+    light.range = 10
+
+    lightTransform.translation.set([4, 4, 3])
+
+    for (const directionValues of directions) {
+      const direction = new Vector3(directionValues).normalize()
+      const cameraMatrix = Matrix4.createLookAtTransform(
+        lightTransform.translation,
+        Vector3.add(lightTransform.translation, direction),
+        Math.abs(direction.y) > 0.99 ? Vector3.createForward() : Vector3.createUp()
+      )
+      const vertices = []
+
+      camera.updateFromMatrix(cameraMatrix)
+
+      for (const [x, y] of [
+        [-2, -2],
+        [2, -2],
+        [2, 2],
+        [-2, 2]
+      ]) {
+        const position = cameraMatrix.transform(new Vector4([x, y, -2 + 0.8 * x + 0.4 * y, 1]))
+        const normal = cameraMatrix.transform(new Vector4([-0.8, -0.4, 1, 0]))
+
+        vertices.push(position.x, position.y, position.z, normal.x, normal.y, normal.z, 0, 0)
+      }
+
+      const model = await Model.deserialize({
+        type: 'model',
+        meshes: { Surface: { topology: 'triangles', vertices, indices: [0, 1, 2, 0, 2, 3] } }
+      })
+      const primitive = backend.primitives.create(model.meshes.Surface, backend.defaultMaterial)
+      const renderModel = { source: model, materials: {}, primitives: { Surface: primitive } }
+      const receiver = new Entity()
+      const renderer = new FrameRenderer(backend, () => renderModel)
+
+      receiver.components.Surface = model
+
+      receiver.refreshWorldTransform()
+
+      const drawReceiver = (areShadowsEnabled) => {
+        lightTransform.update(0)
+        light.update(lightTransform, 0)
+        renderer.clear()
+        renderer.renderFrame(
+          { shadowMapping: shadowPipeline, lighting: lightingPipeline },
+          { camera, time: 0, target: { width: 64, height: 64, frameBuffer: lightingBuffer } },
+          [{ light, entities: [receiver] }],
+          [{ transform, model: renderModel }],
+          [],
+          {
+            clear: { shadowMapping: { depth: 1 }, lighting: { color: new Vector4([0, 0, 0, 0]) } },
+            overrideTargets: { shadowMapping: { width: 386, height: 259, frameBuffer: shadowBuffer } },
+            additionalUniforms: { lighting: { shadowTexture, areShadowsEnabled, isEmissionSuppressed: true } }
+          }
+        )
+        gl.readPixels(16, 16, 32, 32, gl.RGBA, gl.FLOAT, pixels)
+        assertCondition(gl.getError() === gl.NO_ERROR && pixels.every(Number.isFinite), `${pass} valid receiver output`)
+
+        return Float32Array.from(pixels)
+      }
+
+      for (const clipPlanes of [
+        [0.1, 10],
+        [1, 100]
+      ]) {
+        light.clipPlanes.set(clipPlanes)
+
+        const reference = drawReceiver(false)
+        const maximumBrightness = Math.max(...reference)
+
+        for (const softness of [0, 0.2, 1]) {
+          light.softness = softness
+
+          const shadowed = drawReceiver(true)
+          const maximumError = Math.max(...shadowed.map((value, index) => Math.abs(value - reference[index])))
+
+          assertCondition(maximumBrightness > 0.1, `${pass} receiver is visible`)
+          assertCondition(
+            maximumError < maximumBrightness * 0.001 + 0.00001,
+            `${pass} point receiver self-shadows at ${directionValues}, clip=${clipPlanes}, softness=${softness}: ${maximumError}`
+          )
+        }
+      }
+
+      receiver.scale.set([0.98, 0.98, 0.98])
+      receiver.translation.set([...lightTransform.translation].map((value) => value * 0.02))
+      receiver.refreshWorldTransform()
+
+      const contactReference = drawReceiver(false)
+      const contactShadow = drawReceiver(true)
+      const centerOffset = (16 * 32 + 16) * 4
+
+      assertCondition(
+        contactShadow
+          .slice(centerOffset, centerOffset + 3)
+          .every((value, index) => value < contactReference[centerOffset + index] * 0.01 + 0.00001),
+        `${pass} nearby occluders still shadow the receiver at ${directionValues}`
+      )
+      backend.primitives.destroy(primitive)
+    }
+
+    messages.push(
+      `PASS ${pass}: sloped receivers stay lit across point-shadow faces, seams, clip planes and filter widths`
+    )
+    light.clipPlanes.set([0.1, 10])
+    lightTransform.translation.reset()
+
+    light.softness = 0.2
   }
 
   results.dataset.status = 'passed'

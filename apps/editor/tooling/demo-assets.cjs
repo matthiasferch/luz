@@ -154,6 +154,54 @@ const createSphere = () => {
   }
 }
 
+const createCylinder = () => {
+  const vertices = []
+  const indices = []
+  const segmentCount = 32
+
+  for (let segment = 0; segment <= segmentCount; segment++) {
+    const u = segment / segmentCount
+    const angle = u * Math.PI * 2
+    const x = Math.cos(angle)
+    const z = Math.sin(angle)
+
+    vertices.push(x, -1, z, x, 0, z, u, 0, x, 1, z, x, 0, z, u, 1)
+
+    if (segment < segmentCount) {
+      const offset = segment * 2
+
+      indices.push(offset, offset + 1, offset + 2, offset + 1, offset + 3, offset + 2)
+    }
+  }
+
+  for (const y of [-1, 1]) {
+    const center = vertices.length / 8
+
+    vertices.push(0, y, 0, 0, y, 0, 0.5, 0.5)
+
+    for (let segment = 0; segment <= segmentCount; segment++) {
+      const angle = (segment / segmentCount) * Math.PI * 2
+      const x = Math.cos(angle)
+      const z = Math.sin(angle)
+
+      vertices.push(x, y, z, 0, y, 0, x * 0.5 + 0.5, z * 0.5 + 0.5)
+
+      if (segment < segmentCount) {
+        const offset = center + segment + 1
+
+        indices.push(center, y > 0 ? offset + 1 : offset, y > 0 ? offset : offset + 1)
+      }
+    }
+  }
+
+  return {
+    topology: 'triangles',
+    vertices: vertices.map((value) => Number(value.toFixed(6))),
+    indices,
+    material: 'surface'
+  }
+}
+
 const createModel = (mesh, material) => ({ type: 'model', materials: { surface: material }, meshes: { shape: mesh } })
 
 const createRotation = (angle) => [Math.sin(angle / 2), 0, 0, Math.cos(angle / 2)]
@@ -198,45 +246,95 @@ const createDemoAssets = () => {
     ...readCharacterDocuments(),
     'models/floor.model.json': createModel(box, createMaterial([0.15, 0.19, 0.24], 0.65)),
     'models/cube.model.json': createModel(box, createMetalMaterial()),
-    'models/ball.model.json': createModel(sphere, createMaterial([0.95, 0.3, 0.08], 0.25))
+    'models/ball.model.json': createModel(sphere, createMaterial([0.95, 0.3, 0.08], 0.25)),
+    'models/cylinder.model.json': createModel(createCylinder(), createMaterial([0.06, 0.55, 0.48], 0.3, 0.2)),
+    'models/ellipsoid.model.json': createModel(sphere, createMaterial([0.5, 0.14, 0.55], 0.3, 0.15))
   }
   const scene = createStage()
-
-  for (let index = 0; index < 6; index++) {
-    const translation = [((index % 3) - 1) * 1.8, 0.65 + Math.floor(index / 3) * 1.35, 0]
-
-    scene.entities[index === 0 ? 'Cuboid' : `Cube ${index + 1}`] = {
-      translation,
+  const bodies = [
+    {
+      name: 'Cuboid',
+      model: 'cube',
+      translation: [-2.7, 0.65, -0.6],
       scale: [0.6, 0.6, 0.6],
-      components: {
-        model: '../models/cube.model.json',
-        body: {
-          type: 'body',
-          motionType: 'dynamic',
-          mass: 1,
-          friction: 0.5,
-          restitution: 0.15,
-          isContinuousCollisionEnabled: true,
-          volume: { type: 'cuboid', extents: [0.6, 0.6, 0.6] }
-        }
-      }
-    }
-  }
-
-  for (let index = 0; index < 3; index++) {
-    scene.entities[index === 0 ? 'Sphere' : `Ball ${index + 1}`] = {
-      translation: [(index - 1) * 1.65, 4.5 + index * 0.8, 0.3],
+      volume: { type: 'cuboid', extents: [0.6, 0.6, 0.6] }
+    },
+    {
+      name: 'Block',
+      model: 'cube',
+      translation: [-1.3, 0.65, -0.6],
+      scale: [0.6, 0.6, 0.6],
+      volume: { type: 'cuboid', extents: [0.6, 0.6, 0.6] }
+    },
+    {
+      name: 'Plank',
+      model: 'cube',
+      translation: [-2, 1.75, -0.6],
+      scale: [1.65, 0.25, 0.65],
+      volume: { type: 'cuboid', extents: [1.65, 0.25, 0.65] }
+    },
+    {
+      name: 'Sphere',
+      model: 'ball',
+      translation: [-2.2, 4.5, 0.3],
       scale: [0.7, 0.7, 0.7],
+      volume: { type: 'sphere', radius: 0.7 }
+    },
+    {
+      name: 'Small ball',
+      model: 'ball',
+      translation: [0.2, 2, 2],
+      scale: [0.55, 0.55, 0.55],
+      volume: { type: 'sphere', radius: 0.55 }
+    },
+    {
+      name: 'Upright cylinder',
+      model: 'cylinder',
+      translation: [1, 1.2, -0.5],
+      scale: [0.55, 1, 0.55],
+      volume: { type: 'cylinder', radius: 0.55, height: 2, axisIndex: 1 }
+    },
+    {
+      name: 'Sideways cylinder',
+      model: 'cylinder',
+      translation: [0.2, 3.4, 0.1],
+      rotation: createRotation(Math.PI / 2),
+      scale: [0.5, 0.85, 0.5],
+      volume: { type: 'cylinder', radius: 0.5, height: 1.7, axisIndex: 1 }
+    },
+    {
+      name: 'Tall ellipsoid',
+      model: 'ellipsoid',
+      translation: [3.4, 1.7, -0.6],
+      rotation: createRotation(0.25),
+      scale: [0.55, 1.05, 0.7],
+      volume: { type: 'ellipsoid', radius: [0.55, 1.05, 0.7] }
+    },
+    {
+      name: 'Wide ellipsoid',
+      model: 'ellipsoid',
+      translation: [2.5, 3.9, 0.25],
+      rotation: createRotation(-0.3),
+      scale: [1, 0.45, 0.6],
+      volume: { type: 'ellipsoid', radius: [1, 0.45, 0.6] }
+    }
+  ]
+
+  for (const { name, model, translation, rotation, scale, volume } of bodies) {
+    scene.entities[name] = {
+      translation,
+      ...(rotation ? { rotation } : {}),
+      scale,
       components: {
-        model: '../models/ball.model.json',
+        model: `../models/${model}.model.json`,
         body: {
           type: 'body',
           motionType: 'dynamic',
-          mass: 2,
-          friction: 0.4,
-          restitution: 0.45,
+          mass: volume.type === 'sphere' ? 2 : 1,
+          friction: 0.5,
+          restitution: volume.type === 'sphere' ? 0.45 : 0.15,
           isContinuousCollisionEnabled: true,
-          volume: { type: 'sphere', radius: 0.7 }
+          volume
         }
       }
     }

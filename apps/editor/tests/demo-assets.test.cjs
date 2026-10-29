@@ -5,6 +5,7 @@ const test = require('node:test')
 const fs = require('node:fs/promises')
 const os = require('node:os')
 const path = require('node:path')
+const { Vector3 } = require('@luz/math')
 const { EntityLoader, EnvironmentLoader, ImageLoader, ModelLoader, isModel } = require('@luz/graphics')
 const { AnimationController } = require('../src/runtime/animation-controller.ts')
 const { SimulationController } = require('../src/runtime/simulation-controller.ts')
@@ -62,6 +63,20 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
       }
 
       assert.ok(mesh.indices.every((index) => index >= 0 && index < mesh.vertices.length / 8))
+
+      for (let offset = 0; offset < mesh.indices.length; offset += 3) {
+        const triangle = mesh.indices
+          .slice(offset, offset + 3)
+          .map((index) => mesh.vertices.slice(index * 8, index * 8 + 6))
+        const edgeA = Vector3.subtract(new Vector3(triangle[1].slice(0, 3)), new Vector3(triangle[0].slice(0, 3)))
+        const edgeB = Vector3.subtract(new Vector3(triangle[2].slice(0, 3)), new Vector3(triangle[0].slice(0, 3)))
+        const normal = new Vector3(triangle[0].slice(3))
+
+        assert.ok(
+          Vector3.calculateDotProduct(Vector3.calculateCrossProduct(edgeA, edgeB), normal) > 0,
+          'Triangle winding agrees with outward normals'
+        )
+      }
     }
   }
 
@@ -75,9 +90,25 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
 
   const ball = scene.entities.Sphere
   const initialHeight = ball.translation.y
+  const dynamicEntities = Object.entries(scene.entities).filter(
+    ([, entity]) => entity.components.body?.motionType === 'dynamic'
+  )
+  const initialPositions = new Map(dynamicEntities.map(([name, entity]) => [name, [...entity.translation]]))
 
-  for (let frame = 0; frame < 120; frame++) {
+  assert.deepEqual([...new Set(dynamicEntities.map(([, entity]) => entity.components.body.volume.type))].sort(), [
+    'cuboid',
+    'cylinder',
+    'ellipsoid',
+    'sphere'
+  ])
+
+  for (let frame = 0; frame < 600; frame++) {
     scene.update(simulation.timeScale / 60, simulation.isRunning)
+
+    for (const [name, entity] of dynamicEntities) {
+      assert.ok([...entity.translation, ...entity.rotation].every(Number.isFinite), `${name} stays finite`)
+      assert.ok(entity.translation.y > 0.15, `${name} stays above the floor`)
+    }
   }
 
   assert.ok(ball.translation.y < initialHeight - 1, 'Ball falls when simulation runs')
@@ -86,6 +117,10 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
   scene.update(1 / 60, simulation.isRunning)
   assert.equal(simulation.isRunning, false)
   assert.equal(ball.translation.y, initialHeight)
+
+  for (const [name, entity] of dynamicEntities) {
+    assert.deepEqual([...entity.translation], initialPositions.get(name), `${name} resets to its starting position`)
+  }
 
   const reloadedScene = await loader.loadScene('https://example.test/assets/scenes/rigid-body-playground.scene.json')
 

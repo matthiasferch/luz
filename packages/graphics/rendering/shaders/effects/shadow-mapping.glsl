@@ -68,7 +68,7 @@ float linearizeShadowDepth(float depth) {
   return 2.0 * nearPlane * farPlane / (farPlane + nearPlane - normalizedDeviceDepth * (farPlane - nearPlane));
 }
 
-vec2 calculatePointShadowCoordinates(vec3 lightToPosition, vec2 atlasSize, out float depth) {
+vec2 calculatePointShadowCoordinates(vec3 lightToPosition, vec2 atlasSize, out vec3 sampleDirection) {
   vec3 magnitude = abs(lightToPosition);
   vec2 coordinates;
   float face;
@@ -88,20 +88,50 @@ vec2 calculatePointShadowCoordinates(vec3 lightToPosition, vec2 atlasSize, out f
     faceDistance = magnitude.z;
   }
 
-  float nearDistance = light.clipPlanes.x;
-  float farDistance = light.clipPlanes.y;
   float faceSize = floor(min(atlasSize.x / 3.0, atlasSize.y / 2.0));
   vec2 faceOrigin = vec2(mod(face, 3.0), floor(face / 3.0)) * faceSize;
 
-  depth =
-    farDistance / (farDistance - nearDistance) -
-    farDistance * nearDistance / ((farDistance - nearDistance) * max(faceDistance, 0.000001));
   coordinates = (coordinates / max(faceDistance, 0.000001) * 0.5 + 0.5) * faceSize;
+  coordinates = clamp(floor(coordinates), vec2(0.0), vec2(faceSize - 1.0)) + 0.5;
 
-  return (faceOrigin + clamp(coordinates, vec2(0.5), vec2(faceSize - 0.5))) / atlasSize;
+  vec2 faceCoordinates = coordinates * (2.0 / faceSize) - 1.0;
+
+  if (face < 2.0) {
+    sampleDirection = vec3(
+      face == 0.0
+        ? 1.0
+        : -1.0,
+      -faceCoordinates.y,
+      face == 0.0
+        ? -faceCoordinates.x
+        : faceCoordinates.x
+    );
+  } else if (face < 4.0) {
+    sampleDirection = vec3(
+      faceCoordinates.x,
+      face == 2.0
+        ? 1.0
+        : -1.0,
+      face == 2.0
+        ? faceCoordinates.y
+        : -faceCoordinates.y
+    );
+  } else {
+    sampleDirection = vec3(
+      face == 4.0
+        ? faceCoordinates.x
+        : -faceCoordinates.x,
+      -faceCoordinates.y,
+      face == 4.0
+        ? 1.0
+        : -1.0
+    );
+  }
+
+  return (faceOrigin + coordinates) / atlasSize;
 }
 
-float calculatePointShadow(sampler2D shadowMap, vec3 lightToPosition, float normalLightDot) {
+float calculatePointShadow(sampler2D shadowMap, vec3 lightToPosition, float normalLightDot, vec3 receiverNormal) {
   vec2 atlasSize = vec2(textureSize(shadowMap, 0));
   float faceSize = floor(min(atlasSize.x / 3.0, atlasSize.y / 2.0));
   float distanceToLight = length(lightToPosition);
@@ -115,16 +145,28 @@ float calculatePointShadow(sampler2D shadowMap, vec3 lightToPosition, float norm
   vec3 bitangent = cross(direction, tangent);
   float radius = 2.0 * distanceToLight / faceSize * max(1.0, 10.0 * faceSize / 1024.0 * max(light.softness, 0.0));
   float bias = 0.00035 + 0.0025 * (1.0 - normalLightDot);
+  float nearDistance = light.clipPlanes.x;
+  float farDistance = light.clipPlanes.y;
+  float receiverDistance = dot(receiverNormal, lightToPosition);
+  float minimumDenominator = max(length(receiverNormal) * 0.000001, 0.00000000000000000001);
   float visibility = 0.0;
 
   for (int sampleIndex = 0; sampleIndex < 16; ++sampleIndex) {
     vec2 offset = SHADOW_POISSON[sampleIndex] * radius;
-    float depth;
-    vec2 coordinates = calculatePointShadowCoordinates(
-      lightToPosition + tangent * offset.x + bitangent * offset.y,
-      atlasSize,
-      depth
-    );
+    vec3 samplePosition = lightToPosition + tangent * offset.x + bitangent * offset.y;
+    vec3 sampleDirection;
+    vec2 coordinates = calculatePointShadowCoordinates(samplePosition, atlasSize, sampleDirection);
+    float faceDistance = max(max(abs(samplePosition.x), abs(samplePosition.y)), abs(samplePosition.z));
+    float denominator = dot(receiverNormal, sampleDirection);
+
+    // Intersect the actual depth texel's ray with the receiver plane, including across cube faces.
+    if (abs(denominator) > minimumDenominator) {
+      faceDistance = receiverDistance / denominator;
+    }
+
+    float depth =
+      farDistance / (farDistance - nearDistance) -
+      farDistance * nearDistance / ((farDistance - nearDistance) * max(faceDistance, 0.000001));
 
     visibility += depth < 0.0 || depth > 1.0 ? 1.0 : step(depth - bias, texture(shadowMap, coordinates).r);
   }
@@ -142,7 +184,9 @@ float calculateShadow(
   float normalLightDot = max(dot(normalize(surfaceNormal), normalize(surfaceToLight)), 0.0);
 
   if (light.isPoint) {
-    return calculatePointShadow(shadowMap, worldPosition - light.translation, normalLightDot);
+    vec3 receiverNormal = cross(dFdx(worldPosition), dFdy(worldPosition));
+
+    return calculatePointShadow(shadowMap, worldPosition - light.translation, normalLightDot, receiverNormal);
   }
 
   vec3 projectedCoordinates = lightProjection.xyz / max(lightProjection.w, 0.000001);
