@@ -25,9 +25,8 @@ its scenes afresh and loads the selected, checksum-verified character assets and
 `apps/editor/demo-assets/`. Builds and runtime loading do not download external assets.
 
 Use Scene → Load scene to switch to the **rigid body playground**. It contains
-two metal boxes stacked on a moving platform, two orange spheres, two teal cylinders and two purple ellipsoids.
-Different proportions and starting orientations demonstrate stacking, rolling and tumbling with all four
-supported collision shapes. The platform starts its eight-second sideways loop as soon as the scene loads;
+two metal boxes stacked on a moving platform and two orange spheres.
+The platform starts its four-second sideways loop as soon as the scene loads;
 its kinematic body carries the dynamic boxes through friction and contact. Physics starts automatically
 whenever a scene loads. Use the bottom animation buttons or View → Animations to pause and resume the platform.
 Open View → Simulation to pause, restart or reset physics and adjust its settings. Reset restores

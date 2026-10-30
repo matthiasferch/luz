@@ -104,10 +104,9 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
   assert.equal(animationGroup.clips.length, 1)
   assert.equal(animationGroup.clips[0].isPlaying, true, 'Platform animation starts on load')
   assert.equal(platformMotion.playbackMode, 'loop')
+  assert.equal(platformMotion.duration, 4)
   assert.deepEqual([...new Set(dynamicEntities.map(([, entity]) => entity.components.body.volume.type))].sort(), [
     'cuboid',
-    'cylinder',
-    'ellipsoid',
     'sphere'
   ])
 
@@ -126,15 +125,15 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
       assert.ok(Math.abs(box.translation.y - initialPositions.get(name)[1]) < 0.08, `${name} stays stacked`)
     }
 
-    if ((frame + 1) % 120 === 0) {
-      const expectedOffset = Math.sin(((frame + 1) / 240) * Math.PI) * 0.8
+    if ((frame + 1) % 60 === 0) {
+      const expectedOffset = Math.sin(((frame + 1) / 120) * Math.PI) * 0.8
 
       assert.ok(Math.abs(platform.translation.x - initialPlatformPosition[0] - expectedOffset) < 0.0001)
     }
   }
 
   assert.equal(platformMotion.state, 'playing', 'Platform keeps playing beyond the first loop')
-  assert.ok(Math.abs(platformMotion.time - 2) < 0.0001, 'Platform wraps its eight-second animation')
+  assert.ok(Math.abs(platformMotion.time - 2) < 0.0001, 'Platform wraps its four-second animation')
   assert.ok(ball.translation.y < initialHeight - 1, 'Ball falls when simulation runs')
   assert.ok(ball.translation.y > 0.5, 'Ball remains above the floor')
   animationController.control(animationGroup.key, 'pause')
