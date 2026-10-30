@@ -26,7 +26,8 @@ its scenes afresh and loads the selected, checksum-verified character assets and
 
 Use Scene → Load scene to switch to the **rigid body playground**. It contains
 two metal boxes stacked on a moving platform and two orange spheres.
-The platform starts its four-second sideways loop as soon as the scene loads;
+The platform travels nearly the full floor width in four seconds each way, easing into each reversal.
+It stays fully over the floor and starts its eight-second loop as soon as the scene loads;
 its kinematic body carries the dynamic boxes through friction and contact. Physics starts automatically
 whenever a scene loads. Use the bottom animation buttons or View → Animations to pause and resume the platform.
 Open View → Simulation to pause, restart or reset physics and adjust its settings. Reset restores

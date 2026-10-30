@@ -99,12 +99,17 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
     ([, entity]) => entity.components.body?.motionType === 'dynamic'
   )
   const initialPositions = new Map(dynamicEntities.map(([name, entity]) => [name, [...entity.translation]]))
+  const floorExtent = scene.entities.Floor.components.body.volume.extents.x
+  const platformExtent = platform.components.body.volume.extents.x
+
+  let minimumPlatformPosition = platform.translation.x
+  let maximumPlatformPosition = platform.translation.x
 
   assert.equal(platform.components.body.motionType, 'kinematic')
   assert.equal(animationGroup.clips.length, 1)
   assert.equal(animationGroup.clips[0].isPlaying, true, 'Platform animation starts on load')
   assert.equal(platformMotion.playbackMode, 'loop')
-  assert.equal(platformMotion.duration, 4)
+  assert.equal(platformMotion.duration, 8)
   assert.deepEqual([...new Set(dynamicEntities.map(([, entity]) => entity.components.body.volume.type))].sort(), [
     'cuboid',
     'sphere'
@@ -112,6 +117,11 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
 
   for (let frame = 0; frame < 600; frame++) {
     scene.update(simulation.timeScale / 60, simulation.isRunning)
+
+    minimumPlatformPosition = Math.min(minimumPlatformPosition, platform.translation.x)
+    maximumPlatformPosition = Math.max(maximumPlatformPosition, platform.translation.x)
+
+    assert.ok(Math.abs(platform.translation.x) + platformExtent < floorExtent, 'Platform stays fully over the floor')
 
     for (const [name, entity] of dynamicEntities) {
       assert.ok([...entity.translation, ...entity.rotation].every(Number.isFinite), `${name} stays finite`)
@@ -125,15 +135,17 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
       assert.ok(Math.abs(box.translation.y - initialPositions.get(name)[1]) < 0.08, `${name} stays stacked`)
     }
 
-    if ((frame + 1) % 60 === 0) {
-      const expectedOffset = Math.sin(((frame + 1) / 120) * Math.PI) * 0.8
+    if ((frame + 1) % 120 === 0) {
+      const expectedPosition = [0, 5.5, 0, -5.5][((frame + 1) / 120 - 1) % 4]
 
-      assert.ok(Math.abs(platform.translation.x - initialPlatformPosition[0] - expectedOffset) < 0.0001)
+      assert.ok(Math.abs(platform.translation.x - expectedPosition) < 0.0001)
     }
   }
 
   assert.equal(platformMotion.state, 'playing', 'Platform keeps playing beyond the first loop')
-  assert.ok(Math.abs(platformMotion.time - 2) < 0.0001, 'Platform wraps its four-second animation')
+  assert.ok(Math.abs(platformMotion.time - 2) < 0.0001, 'Platform wraps its eight-second animation')
+  assert.ok(minimumPlatformPosition - platformExtent < -floorExtent + 0.21, 'Platform reaches the left edge')
+  assert.ok(maximumPlatformPosition + platformExtent > floorExtent - 0.21, 'Platform reaches the right edge')
   assert.ok(ball.translation.y < initialHeight - 1, 'Ball falls when simulation runs')
   assert.ok(ball.translation.y > 0.5, 'Ball remains above the floor')
   animationController.control(animationGroup.key, 'pause')
