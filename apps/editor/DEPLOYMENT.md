@@ -14,8 +14,8 @@ npm run preview:demo
 ```
 
 Open `http://127.0.0.1:4173/`. The output is `apps/editor/dist/demo/`, containing the
-editor, HTML entry point, JSON worker, schemas, notices and two showcase scenes.
-Skeletal Animation loads at first startup; Scene → Load scene also offers the rigid body playground.
+editor, HTML entry point, JSON worker, schemas, notices and three showcase scenes.
+Skeletal Animation loads at first startup; Scene → Load scene also offers Light Chamber and the rigid body playground.
 Later visits restore the last selected scene.
 It can be served directly by a static host. No development server or backend is required.
 The preview binds only to localhost and serves missing files as 404 responses.
@@ -71,7 +71,7 @@ environment secret before expiration; the already deployed site remains live if 
 expires, but new releases cannot deploy until credentials are updated.
 
 The deploy job runs `npm run deploy:demo` using the pinned Wrangler dependency, then
-checks HTTPS and both showcase scenes, plus 404 responses for missing files and the removed
+checks HTTPS and all three showcase scenes, plus 404 responses for missing files and the removed
 materials scene. Verify startup and simulation controls in a WebGL2-capable browser after release.
 
 For an authorized manual deployment, build first and authenticate with Wrangler or

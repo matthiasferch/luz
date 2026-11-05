@@ -1,4 +1,5 @@
 const { readCharacterDocuments } = require('./demo-character.cjs')
+const { createLightChamberAssets } = require('./light-chamber.cjs')
 
 const createMaterial = (color, roughness, metallic = 0) => ({
   graph: {
@@ -285,6 +286,8 @@ const createDemoAssets = () => {
 
   documents['scenes/rigid-body-playground.scene.json'] = scene
   documents['scenes/sala-character.scene.json'] = createCharacterScene()
+
+  Object.assign(documents, createLightChamberAssets({ box, createMaterial, createMetalMaterial }))
 
   return documents
 }

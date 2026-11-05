@@ -31,7 +31,7 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
   assert.deepEqual(documents, createDemoAssets())
   assert.deepEqual(
     Object.keys(documents).filter((filename) => filename.endsWith('.scene.json')),
-    ['scenes/rigid-body-playground.scene.json', 'scenes/sala-character.scene.json']
+    ['scenes/rigid-body-playground.scene.json', 'scenes/sala-character.scene.json', 'scenes/light-chamber.scene.json']
   )
 
   const material = documents['models/cube.model.json'].materials.surface
@@ -263,6 +263,86 @@ test('the character showcase loads shared clips and keeps both meshes synchroniz
 
   controller.control(groups[0].key, 'stop')
   assert.ok(controller.collectGroups()[0].clips.every(({ isPlaying }) => !isPlaying))
+})
+test('the light chamber loads independently and loops its spotlight through a visible sweep', async () => {
+  const documents = createDemoAssets()
+  const readJson = async (url) => {
+    const filename = new URL(url).pathname.slice('/assets/'.length)
+
+    assert.ok(filename.includes('chamber'), `The chamber does not load another scene's models: ${filename}`)
+
+    return structuredClone(documents[filename])
+  }
+  const scene = await new EntityLoader(new ModelLoader(readJson), readJson).loadScene(
+    'https://example.test/assets/scenes/light-chamber.scene.json'
+  )
+  const controller = new AnimationController(scene)
+  const [group] = controller.collectGroups()
+  const spotlight = scene.entities['Sweeping spotlight'].components.light
+  const skylight = scene.entities.Skylight.components.light
+  const animation = scene.entities['Sweeping spotlight'].animationMixer.animations['Spotlight sweep']
+
+  scene.selectCamera()
+  scene.update(0, false)
+
+  const initialDirection = [...spotlight.direction]
+
+  assert.equal(group.clips.length, 1)
+  assert.equal(group.clips[0].isPlaying, true)
+  assert.equal(animation.playbackMode, 'loop')
+
+  for (const light of [skylight, spotlight]) {
+    assert.ok(light.direction.y > 0.3, 'Light points down into the gallery')
+    assert.ok(light.volumetricIntensity > 0 && light.volumetricDensity > 0, 'Light contributes visible scattering')
+  }
+
+  scene.update(animation.duration / 4, false)
+
+  const firstDirection = [...spotlight.direction]
+
+  scene.update(animation.duration / 2, false)
+
+  const oppositeDirection = [...spotlight.direction]
+
+  assert.ok(
+    Math.hypot(...firstDirection.map((value, index) => value - oppositeDirection[index])) > 0.4,
+    'The spotlight changes direction rather than just rolling around its beam'
+  )
+  scene.update(animation.duration / 4, false)
+  assert.ok(Math.hypot(...initialDirection.map((value, index) => value - spotlight.direction[index])) < 0.00001)
+  assert.equal(animation.state, 'playing')
+  controller.control(group.key, 'pause')
+
+  const pausedDirection = [...spotlight.direction]
+
+  scene.update(1, false)
+  assert.deepEqual([...spotlight.direction], pausedDirection)
+  controller.control(group.key, 'resume')
+  scene.update(1, false)
+  assert.notDeepEqual([...spotlight.direction], pausedDirection)
+
+  const camera = scene.entities.Camera.components.camera
+
+  camera.aspect = 390 / 844
+
+  scene.update(0, false)
+
+  const sculpturePosition = scene.entities['Orbit sculpture'].translation
+
+  for (const x of [-1.08, 1.08]) {
+    for (const y of [-1.08, 1.08]) {
+      for (const z of [-1.08, 1.08]) {
+        const position = camera.viewMatrix.transformVector3(
+          new Vector3([sculpturePosition.x + x, sculpturePosition.y + y, sculpturePosition.z + z])
+        )
+        const halfHeight = -position.z * Math.tan((camera.fieldOfView * Math.PI) / 360)
+
+        assert.ok(position.z < 0, 'Sculpture is in front of the camera')
+        assert.ok(Math.abs(position.x) < halfHeight * camera.aspect, 'Sculpture fits a portrait viewport horizontally')
+        assert.ok(Math.abs(position.y) < halfHeight, 'Sculpture fits a portrait viewport vertically')
+      }
+    }
+  }
 })
 test('the bundled studio loads HDR lighting and roughness mips separately from the black sky', async () => {
   const documents = createDemoAssets()

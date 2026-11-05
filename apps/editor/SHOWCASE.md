@@ -1,6 +1,6 @@
 # luz showcase assets
 
-The rigid body playground, stage meshes and material setup are original assets created for luz, distributed
+The rigid body playground, Light Chamber, stage meshes and material setup are original assets created for luz, distributed
 under the project's MIT license (see `../LICENSE` in the built demo).
 The boxes use the **Metal 038** textures from [ambientCG](https://ambientcg.com/view?id=Metal038),
 released under [CC0 1.0](https://docs.ambientcg.com/license/). The unmodified 1K base-color,
@@ -23,6 +23,18 @@ in the built demo for provenance and preparation details.
 The source recipe is `apps/editor/tooling/demo-assets.cjs`. The demo build generates
 its scenes afresh and loads the selected, checksum-verified character assets and textures from
 `apps/editor/demo-assets/`. Builds and runtime loading do not download external assets.
+
+**Light Chamber** is a concrete gallery with a slatted skylight, a metal orbit sculpture,
+stepped plinth and bench. Warm volumetric shafts cross the room while a cool spotlight
+sweeps on a sixteen-second autoplay loop. The bottom animation controls pause and resume
+that spotlight. Toggle Settings → Volumetric lighting to compare the shafts with the surface
+lighting and shadows alone. The authored view keeps the sculpture visible on portrait screens.
+
+Its recipe is `apps/editor/tooling/light-chamber.cjs`. Concrete uses an original procedural
+material, and the sculpture reuses the bundled CC0 galvanized-metal textures. The scene uses
+the black cubemap for diffuse environment lighting and the studio cubemap for metal reflections,
+so the room's illumination comes from its three lights. Static blocks are combined by material
+and architectural group, keeping the scene to ten model placements without additional texture downloads.
 
 Use Scene → Load scene to switch to the **rigid body playground**. It contains
 two metal boxes stacked on a moving platform and two orange spheres.

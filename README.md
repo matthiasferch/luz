@@ -46,7 +46,8 @@ npm --workspace @luz/editor run serve
 Try the [live showcase](https://demo.luzjs.dev/) in a WebGL2-capable browser.
 
 To run the self-contained showcase locally, run `npm run build:demo` followed by `npm run preview:demo`,
-then open `http://127.0.0.1:4173/`. It opens the original rigid body playground in the full editor.
+then open `http://127.0.0.1:4173/`. It opens Skeletal Animation in the full editor;
+Scene → Load scene also offers Light Chamber and the rigid body playground.
 See the [showcase guide](apps/editor/SHOWCASE.md) for controls and the
 [deployment guide](apps/editor/DEPLOYMENT.md) for publishing from `main`.
 
