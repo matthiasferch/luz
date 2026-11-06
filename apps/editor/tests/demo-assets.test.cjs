@@ -9,8 +9,7 @@ const { Vector3 } = require('@luz/math')
 const { EntityLoader, EnvironmentLoader, ImageLoader, ModelLoader, isModel } = require('@luz/graphics')
 const { AnimationController } = require('../src/runtime/animation-controller.ts')
 const { SimulationController } = require('../src/runtime/simulation-controller.ts')
-const { createDemoAssets } = require('../tooling/demo-assets.cjs')
-const { readCharacterGeometry } = require('../tooling/demo-character.cjs')
+const { createDemoAssets, readDemoGeometry } = require('../tooling/demo-assets.cjs')
 const { readDemoTextures } = require('../tooling/demo-textures.cjs')
 const { validateDemoAssets } = require('../tooling/validate-demo.cjs')
 const { createDemoServer } = require('../tooling/serve-demo.cjs')
@@ -25,16 +24,25 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
 
     return structuredClone(documents[filename])
   }
-  const loader = new EntityLoader(new ModelLoader(readJson), readJson)
+  const geometry = readDemoGeometry()
+  const readBinary = async (url) => {
+    const filename = new URL(url).pathname.slice('/assets/'.length)
+    const contents = geometry[filename]
 
-  validateDemoAssets(documents, textures, readCharacterGeometry())
+    assert.ok(contents, `Unexpected geometry request: ${url}`)
+
+    return contents.buffer.slice(contents.byteOffset, contents.byteOffset + contents.byteLength)
+  }
+  const loader = new EntityLoader(new ModelLoader(readJson, readBinary), readJson)
+
+  validateDemoAssets(documents, textures, readDemoGeometry())
   assert.deepEqual(documents, createDemoAssets())
   assert.deepEqual(
     Object.keys(documents).filter((filename) => filename.endsWith('.scene.json')),
     ['scenes/rigid-body-playground.scene.json', 'scenes/sala-character.scene.json', 'scenes/light-chamber.scene.json']
   )
 
-  const material = documents['models/cube.model.json'].materials.surface
+  const material = documents['models/playground-cuboid.model.json'].materials.surface
 
   assert.equal(material.graph.nodes.baseColor.surface.colorSpace, 'sRGB')
   assert.equal(material.graph.nodes.normalTexture.surface.colorSpace, 'linear')
@@ -94,24 +102,24 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
   const initialPlatformPosition = [...platform.translation]
   const animationController = new AnimationController(scene)
   const [animationGroup] = animationController.collectGroups()
-  const platformMotion = platform.animationMixer.animations['Platform Motion']
+  const platformMotion = platform.animationMixer.animations.Timeline
   const dynamicEntities = Object.entries(scene.entities).filter(
-    ([, entity]) => entity.components.body?.motionType === 'dynamic'
+    ([, entity]) => entity.components.Body?.motionType === 'dynamic'
   )
   const initialPositions = new Map(dynamicEntities.map(([name, entity]) => [name, [...entity.translation]]))
-  const floor = scene.entities.Floor.components.body.volume
+  const floor = scene.entities.Floor.components.Body.volume
   const floorExtent = floor.extents.x
-  const platformExtent = platform.components.body.volume.extents.x
+  const platformExtent = platform.components.Body.volume.extents.x
 
   let minimumPlatformPosition = platform.translation.x
   let maximumPlatformPosition = platform.translation.x
 
-  assert.equal(platform.components.body.motionType, 'kinematic')
+  assert.equal(platform.components.Body.motionType, 'kinematic')
   assert.equal(animationGroup.clips.length, 1)
   assert.equal(animationGroup.clips[0].isPlaying, true, 'Platform animation starts on load')
   assert.equal(platformMotion.playbackMode, 'loop')
   assert.equal(platformMotion.duration, 8)
-  assert.deepEqual([...new Set(dynamicEntities.map(([, entity]) => entity.components.body.volume.type))].sort(), [
+  assert.deepEqual([...new Set(dynamicEntities.map(([, entity]) => entity.components.Body.volume.type))].sort(), [
     'cuboid',
     'sphere'
   ])
@@ -179,9 +187,53 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
   simulation.applyImportedState(reloadedScene)
   assert.equal(simulation.isRunning, true, 'Loading another scene starts physics even after a reset')
 })
+test('the playground preserves beveled normals and unstretched Blender texture coordinates', () => {
+  const documents = createDemoAssets()
+  const geometry = readDemoGeometry()
+
+  for (const name of ['platform', 'cuboid', 'block']) {
+    const model = documents[`models/playground-${name}.model.json`]
+    const contents = geometry[`models/${model.geometry.uri}`]
+    const descriptor = model.meshes.shape.vertices
+    const vertices = Array.from({ length: descriptor.count }, (_value, index) =>
+      Array.from({ length: 8 }, (_component, component) =>
+        contents.readFloatLE(descriptor.byteOffset + index * descriptor.byteStride + component * 4)
+      )
+    )
+
+    assert.ok(vertices.length > 24, `${name} includes the bevel geometry`)
+    assert.ok(
+      vertices.some((vertex) => vertex.slice(3, 6).filter((value) => Math.abs(value) > 0.01).length > 1),
+      `${name} retains interpolated bevel normals`
+    )
+
+    for (const vertex of vertices) {
+      assert.ok(Math.abs(Math.hypot(...vertex.slice(3, 6)) - 1) < 0.00001)
+    }
+
+    const topVertices = vertices.filter((vertex) => Math.abs(vertex[4] - 1) < 0.000001)
+    const origin = topVertices[0]
+
+    assert.ok(topVertices.length >= 4, `${name} retains its flat top`)
+
+    for (const vertex of topVertices) {
+      const distance = Math.hypot(vertex[0] - origin[0], vertex[2] - origin[2])
+      const textureDistance = Math.hypot(vertex[6] - origin[6], vertex[7] - origin[7])
+
+      assert.ok(Math.abs(distance - textureDistance) < 0.00001, `${name} uses one texture tile per meter`)
+    }
+  }
+
+  geometry['models/playground-platform.geometry'][16] ^= 1
+
+  assert.throws(
+    () => validateDemoAssets(documents, readDemoTextures(), geometry),
+    /does not match the approved manifest/
+  )
+})
 test('the character showcase loads shared clips and keeps both meshes synchronized through playback', async () => {
   const documents = createDemoAssets()
-  const geometry = readCharacterGeometry()
+  const geometry = readDemoGeometry()
   const requests = new Map()
   const readJson = async (url) => {
     const filename = new URL(url).pathname.slice('/assets/'.length)
@@ -401,7 +453,7 @@ test('the bundled studio loads HDR lighting and roughness mips separately from t
 test('demo validation rejects broken references, external assets and malformed scenes', () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()
-  const geometry = readCharacterGeometry()
+  const geometry = readDemoGeometry()
 
   delete documents['models/floor.model.json']
 
@@ -416,13 +468,13 @@ test('demo validation rejects broken references, external assets and malformed s
 
   const malformedDocuments = createDemoAssets()
 
-  malformedDocuments['scenes/rigid-body-playground.scene.json'].entities.Camera.components.camera.fieldOfView = -1
+  malformedDocuments['scenes/rigid-body-playground.scene.json'].entities.Camera.components.Camera.fieldOfView = -1
 
   assert.throws(() => validateDemoAssets(malformedDocuments, textures, geometry), /Invalid demo asset/)
 
   const textureDocuments = createDemoAssets()
 
-  textureDocuments['models/ball.model.json'].materials.surface.graph.nodes.texture = {
+  textureDocuments['models/playground-sphere.model.json'].materials.surface.graph.nodes.texture = {
     type: 'imageTexture',
     surface: { path: 'poliigon/private.png' }
   }
@@ -441,7 +493,7 @@ test('demo validation rejects broken references, external assets and malformed s
 test('demo validation rejects missing or external environment maps', () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()
-  const geometry = readCharacterGeometry()
+  const geometry = readDemoGeometry()
 
   delete textures['environments/studio/radiance.ktx']
 
@@ -457,7 +509,7 @@ test('demo validation rejects missing or external environment maps', () => {
 test('demo validation rejects missing, external and altered character dependencies', () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()
-  const geometry = readCharacterGeometry()
+  const geometry = readDemoGeometry()
   const model = documents['models/character-surface.model.json']
   const idleReference = model.animations.Idle
   const idlePath = path.posix.normalize(path.posix.join('models', idleReference))
@@ -487,7 +539,7 @@ test('demo validation rejects missing, external and altered character dependenci
   model.geometry.byteLength -= 1
   geometry['models/character-surface.geometry'][0] ^= 1
 
-  assert.throws(() => validateDemoAssets(documents, textures, geometry), /does not match the character manifest/)
+  assert.throws(() => validateDemoAssets(documents, textures, geometry), /does not match the approved manifest/)
 })
 test('preview serves only its build directory, supports HEAD and returns genuine missing-file responses', async () => {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'luz-demo-server-'))

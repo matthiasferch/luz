@@ -27,6 +27,13 @@ Production source maps are disabled. The normal
 editor development workflow still uses local Blender exports. A normal editor build
 cleans `apps/editor/dist/`, so run `build:demo` again after that build.
 
+The playground uses the reviewed Blender export in `demo-assets/playground/`, including
+its beveled meshes, split normals, UVs and platform animation. Its manifest pins each
+scene, model and geometry file. When publishing an updated local playground, refresh
+this snapshot and its SHA-256 manifest after reviewing the export. Keep the bundled
+CC0 metal material and studio environment references; never copy private texture
+libraries into the public snapshot. Local exports are not published automatically.
+
 The [showcase guide](SHOWCASE.md) describes the assets and controls. The scenes use
 original stage geometry, bundled CC0 metal textures and a prefiltered CC0 studio environment,
 with no external texture or environment requests. The visible sky remains black.

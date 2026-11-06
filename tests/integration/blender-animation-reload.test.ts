@@ -37,10 +37,11 @@ if (manifestPath) {
           const mixer = entity.animationMixer
 
           if (mixer) {
-            mixer.setMix(Object.fromEntries(Object.keys(mixer.animations).map((name) => [name, 1])), {
-              transitionDuration: 0,
-              isRestartEnabled: true
-            })
+            expect(mixer.hasActiveAnimations).to.equal(true)
+
+            for (const entry of Object.values(mixer.animations)) {
+              expect(entry.state).to.equal('playing')
+            }
           }
         }
       }

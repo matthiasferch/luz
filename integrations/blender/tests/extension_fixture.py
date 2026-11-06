@@ -92,6 +92,8 @@ def assert_exports(output):
     for path in (scene_path, entity_path):
         assert json.loads(path.read_text(encoding='utf-8'))
     assert list((output / 'models').glob('*.geometry'))
+    assert Path(bpy.path.abspath(bpy.context.scene.luz_export.filepath)) == scene_path
+    assert bpy.ops.export_scene.luz_again() == {'FINISHED'}
 
 
 def run_blender_fixture(arguments):
@@ -119,7 +121,7 @@ def run_blender_fixture(arguments):
         assert 'exporter' not in available_modules
         metadata = addon_utils.module_bl_info(available_modules[module_name])
         assert metadata['name'] == 'luz Scene and Entity Exporter'
-        assert metadata['version'] == (0, 9, 1)
+        assert metadata['version'] == (0, 10, 0)
         expected_path = PACKAGE_PATH if is_source_link else package_path.resolve()
         assert addon_utils.enable(module_name, default_set=True) is not None
         module = assert_registered(module_name, expected_path)

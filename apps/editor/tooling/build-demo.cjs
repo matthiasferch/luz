@@ -3,15 +3,14 @@ const path = require('node:path')
 const os = require('node:os')
 const webpack = require('webpack')
 const createWebpackConfiguration = require('../webpack.config')
-const { createDemoAssets } = require('./demo-assets.cjs')
+const { createDemoAssets, readDemoGeometry } = require('./demo-assets.cjs')
 const { readDemoTextures } = require('./demo-textures.cjs')
-const { readCharacterGeometry } = require('./demo-character.cjs')
 const { MAXIMUM_FILE_BYTES, validateDemoAssets } = require('./validate-demo.cjs')
 
 const buildDemo = async () => {
   const documents = createDemoAssets()
   const textures = readDemoTextures()
-  const geometry = readCharacterGeometry()
+  const geometry = readDemoGeometry()
 
   validateDemoAssets(documents, textures, geometry)
 
@@ -44,7 +43,8 @@ const buildDemo = async () => {
     for (const filename of [
       'textures/galvanizedMetal/LICENSE.txt',
       'environments/studio/LICENSE.txt',
-      'character/NOTICE.txt'
+      'character/NOTICE.txt',
+      'playground/NOTICE.txt'
     ]) {
       const target = path.join(assetDirectory, filename)
 

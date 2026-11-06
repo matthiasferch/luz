@@ -74,6 +74,18 @@ jobs:
           tar --extract --file "$archive"
           echo "BLENDER_PATH=$RUNNER_TEMP/blender-${BLENDER_VERSION}-linux-x64/blender" >> "$GITHUB_ENV"
 
+      - name: Verify exported mesh normals
+        run: |
+          "$BLENDER_PATH" --background --factory-startup --offline-mode --python-exit-code 1 \
+            --python integrations/blender/tests/mesh_normals_fixture.py
+
+      - name: Verify Blender export publication and assets
+        run: |
+          for fixture in export_pipeline_fixture showcase_export_fixture; do
+            "$BLENDER_PATH" --background --factory-startup --offline-mode --python-exit-code 1 \
+              --python "integrations/blender/tests/${fixture}.py"
+          done
+
       - run: npm run test:fixture:skeletal
       - name: Compare exported poses against Blender
         working-directory: tests

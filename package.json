@@ -13,6 +13,7 @@
     "build": "npm run build:engine && npm --workspace @luz/editor run build",
     "build:demo": "npm --workspace @luz/editor run build:demo",
     "preview:demo": "npm --workspace @luz/editor run preview:demo",
+    "preview:local": "npm --workspace @luz/editor run preview:local",
     "deploy:demo": "wrangler deploy --config apps/editor/wrangler.json",
     "watch": "webpack --watch",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run validate:textures && npm run validate:shaders && npm test && npm run build && npm run build:demo && npm run test:distribution",

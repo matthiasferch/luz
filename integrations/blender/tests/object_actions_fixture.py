@@ -92,10 +92,19 @@ def run(output):
     assert components['Vertical']['tracks']['translation'][0]['value'] != [0, 0, 0]
     assert components['Hold']['tracks']
     assert components['Body']['motionType'] == 'kinematic'
+    child_clip = document['entities']['StaticParent']['children']['Child']['components']['Scale']
+    assert child_clip['isAutoplayEnabled'] is True
+    assert child_clip['playback'] == 'once'
     for component in components.values():
         if isinstance(component, dict) and component['type'] == 'animation':
             assert component['schemaVersion'] == 2 and component['isAutoplayEnabled'] is False
             assert component['playback'] == 'once' and 'isLooping' not in component
+    entity_components = json.loads(entity_path.read_text())['components']
+    assert all(
+        component['isAutoplayEnabled'] is False
+        for component in entity_components.values()
+        if isinstance(component, dict) and component.get('type') == 'animation'
+    )
 
     basis = Matrix(exporter.transformation_matrix).to_4x4()
     expected = []

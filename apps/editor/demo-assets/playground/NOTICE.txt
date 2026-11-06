@@ -1,0 +1,10 @@
+Rigid body playground
+
+Original geometry and animation authored for luz, under the repository's MIT license.
+This snapshot preserves the latest saved Blender export's scene composition, beveled
+geometry, split normals, UVs, collision shapes and eight-second platform animation.
+
+For public distribution, the local metal material is replaced by the bundled
+ambientCG Metal 038 CC0 material. The environment uses the bundled Poly Haven
+Studio Small 08 CC0 cubemaps with a black sky. See the corresponding texture and
+environment LICENSE.txt files. No Poliigon or BlendKit content is included.

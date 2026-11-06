@@ -1,4 +1,5 @@
-const { readCharacterDocuments } = require('./demo-character.cjs')
+const { readCharacterDocuments, readCharacterGeometry } = require('./demo-character.cjs')
+const { readPlaygroundDocuments, readPlaygroundGeometry } = require('./demo-playground.cjs')
 const { createLightChamberAssets } = require('./light-chamber.cjs')
 
 const createMaterial = (color, roughness, metallic = 0) => ({
@@ -113,48 +114,6 @@ const createBox = () => {
   return { topology: 'triangles', vertices, indices, material: 'surface' }
 }
 
-const createSphere = () => {
-  const vertices = []
-  const indices = []
-  const longitudeCount = 32
-  const latitudeCount = 16
-
-  for (let latitude = 0; latitude <= latitudeCount; latitude++) {
-    const v = latitude / latitudeCount
-    const angle = v * Math.PI
-
-    for (let longitude = 0; longitude <= longitudeCount; longitude++) {
-      const u = longitude / longitudeCount
-      const azimuth = u * Math.PI * 2
-      const normal = [Math.sin(angle) * Math.cos(azimuth), Math.cos(angle), Math.sin(angle) * Math.sin(azimuth)]
-
-      vertices.push(...normal, ...normal, u, v)
-    }
-  }
-
-  for (let latitude = 0; latitude < latitudeCount; latitude++) {
-    for (let longitude = 0; longitude < longitudeCount; longitude++) {
-      const offset = latitude * (longitudeCount + 1) + longitude
-      const nextRow = offset + longitudeCount + 1
-
-      if (latitude > 0) {
-        indices.push(offset, offset + 1, nextRow)
-      }
-
-      if (latitude < latitudeCount - 1) {
-        indices.push(offset + 1, nextRow + 1, nextRow)
-      }
-    }
-  }
-
-  return {
-    topology: 'triangles',
-    vertices: vertices.map((value) => Number(value.toFixed(6))),
-    indices,
-    material: 'surface'
-  }
-}
-
 const createModel = (mesh, material) => ({ type: 'model', materials: { surface: material }, meshes: { shape: mesh } })
 
 const createRotation = (angle) => [Math.sin(angle / 2), 0, 0, Math.cos(angle / 2)]
@@ -194,97 +153,12 @@ const createStage = () => ({
 
 const createDemoAssets = () => {
   const box = createBox()
-  const sphere = createSphere()
   const documents = {
+    ...readPlaygroundDocuments(),
     ...readCharacterDocuments(),
-    'models/floor.model.json': createModel(box, createMaterial([0.15, 0.19, 0.24], 0.65)),
-    'models/cube.model.json': createModel(box, createMetalMaterial()),
-    'models/ball.model.json': createModel(sphere, createMaterial([0.95, 0.3, 0.08], 0.25))
-  }
-  const scene = createStage()
-
-  scene.entities.Platform = {
-    translation: [-5.5, 0.6, -0.6],
-    scale: [1.3, 0.15, 1],
-    components: {
-      model: '../models/floor.model.json',
-      body: {
-        type: 'body',
-        motionType: 'kinematic',
-        friction: 0.8,
-        volume: { type: 'cuboid', extents: [1.3, 0.15, 1] }
-      },
-      'Platform Motion': {
-        type: 'animation',
-        schemaVersion: 2,
-        playback: 'loop',
-        isAutoplayEnabled: true,
-        duration: 8,
-        tracks: {
-          translation: Array.from({ length: 129 }, (_value, index) => ({
-            time: index / 16,
-            value: [Number(((1 - Math.cos((index / 64) * Math.PI)) * 5.5).toFixed(6)), 0, 0]
-          }))
-        }
-      }
-    }
+    'models/floor.model.json': createModel(box, createMaterial([0.15, 0.19, 0.24], 0.65))
   }
 
-  const bodies = [
-    {
-      name: 'Cuboid',
-      model: 'cube',
-      translation: [-5.5, 1.35, -0.6],
-      scale: [0.6, 0.6, 0.6],
-      friction: 0.8,
-      volume: { type: 'cuboid', extents: [0.6, 0.6, 0.6] }
-    },
-    {
-      name: 'Block',
-      model: 'cube',
-      translation: [-5.5, 2.45, -0.6],
-      rotation: [0, Math.sin(Math.PI / 24), 0, Math.cos(Math.PI / 24)],
-      scale: [0.5, 0.5, 0.5],
-      friction: 0.8,
-      volume: { type: 'cuboid', extents: [0.5, 0.5, 0.5] }
-    },
-    {
-      name: 'Sphere',
-      model: 'ball',
-      translation: [-0.2, 4.5, 1.7],
-      scale: [0.7, 0.7, 0.7],
-      volume: { type: 'sphere', radius: 0.7 }
-    },
-    {
-      name: 'Small ball',
-      model: 'ball',
-      translation: [0.2, 2, 2],
-      scale: [0.55, 0.55, 0.55],
-      volume: { type: 'sphere', radius: 0.55 }
-    }
-  ]
-
-  for (const { name, model, translation, rotation, scale, volume, friction = 0.5 } of bodies) {
-    scene.entities[name] = {
-      translation,
-      ...(rotation ? { rotation } : {}),
-      scale,
-      components: {
-        model: `../models/${model}.model.json`,
-        body: {
-          type: 'body',
-          motionType: 'dynamic',
-          mass: volume.type === 'sphere' ? 2 : 1,
-          friction,
-          restitution: volume.type === 'sphere' ? 0.45 : 0.15,
-          isContinuousCollisionEnabled: true,
-          volume
-        }
-      }
-    }
-  }
-
-  documents['scenes/rigid-body-playground.scene.json'] = scene
   documents['scenes/sala-character.scene.json'] = createCharacterScene()
 
   Object.assign(documents, createLightChamberAssets({ box, createMaterial, createMetalMaterial }))
@@ -316,4 +190,6 @@ const createCharacterScene = () => {
   return scene
 }
 
-module.exports = { createDemoAssets }
+const readDemoGeometry = () => ({ ...readCharacterGeometry(), ...readPlaygroundGeometry() })
+
+module.exports = { createDemoAssets, readDemoGeometry }

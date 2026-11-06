@@ -53,6 +53,10 @@ See the [showcase guide](apps/editor/SHOWCASE.md) for controls and the
 
 For your own scenes, export into `apps/editor/public/assets/scenes/`
 with dependencies under `apps/editor/public/assets/`. These local assets are excluded from the showcase build.
+Stop the showcase preview, then run `npm run preview:local` to view these exports at
+`http://127.0.0.1:4173/`. This serves the exported files directly; reload the scene
+after exporting from Blender. No demo rebuild is needed. The local and showcase
+previews share port 4173, so run one at a time.
 
 ## Development checks
 

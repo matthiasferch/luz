@@ -212,6 +212,9 @@ if (manifestPath) {
       entityScene.entities.Platform = await loader.loadEntity(pathToFileURL(manifest.entity).href)
 
       entityScene.captureSimulationState()
+      expect(scene.findEntity('StaticParent/Child')!.animationMixer!.hasActiveAnimations).to.equal(true)
+      expect(scene.entities.Platform.animationMixer!.hasActiveAnimations).to.equal(false)
+      expect(entityScene.entities.Platform.animationMixer!.hasActiveAnimations).to.equal(false)
 
       for (const animation of manifest.expected) {
         for (const [kind, target] of [

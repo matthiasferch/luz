@@ -12,6 +12,7 @@
     "build": "rimraf ./dist && webpack",
     "build:demo": "node tooling/build-demo.cjs",
     "preview:demo": "node tooling/serve-demo.cjs",
+    "preview:local": "webpack serve --host 127.0.0.1 --port 4173",
     "watch": "webpack --watch",
     "serve": "webpack serve --open"
   },

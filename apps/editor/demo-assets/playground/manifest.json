@@ -1,0 +1,15 @@
+{
+  "models/playground-block.model.json": "e737119915746f70a42c1a5e6ae41688063365668820ce9b0e126f295e7642bd",
+  "models/playground-block.geometry": "a4fd72e95df78c846c3cfb2ba8e73c71388f94ba0c240cdd9a2aebc129fc146b",
+  "models/playground-cuboid.model.json": "7975b67ef1b40880c9091c33a818950fdfe04494077a9d8e1f4522c40012dcf3",
+  "models/playground-cuboid.geometry": "839d9b748207caf89c48bc5e8bd9203cf16cc3dc076cf72832da159f41e8791a",
+  "models/playground-floor.model.json": "09dc86476bab94b85fced722ff141bff4b29c05271b036f4785c7c2b083f3291",
+  "models/playground-floor.geometry": "b0abcb7d4ddb577a462eabf1afd1eb4511769d25ba2201d1cfb5966ca88c394a",
+  "models/playground-platform.model.json": "5446a42ac5267d64b08fada714c5f98b1dde7c4c6338b1dca574f17f9cb7891c",
+  "models/playground-platform.geometry": "005732c61eb8838b258e3a6ba572774e798eb99087a4f70e41c2ce9ebf1e3c30",
+  "models/playground-small-ball.model.json": "3d77337cb7e4a19ae2a639128e5a439d540f39637a0e422c634f4c103708a916",
+  "models/playground-small-ball.geometry": "ab643b47bb3eb9e3164a14aef060ad23038476f93ed4efed816cf0e9edaed2a6",
+  "models/playground-sphere.model.json": "6db718b74e3d25b692812f93ddc4f69ad25439db83e31295f4f23cf60ffa9865",
+  "models/playground-sphere.geometry": "3994ac4ee62146de5b5b9e430143153e77c4682daa57505eb0c6f82811bd2354",
+  "scenes/rigid-body-playground.scene.json": "ea10f43674021db731b442e01bf134a435dd96d9df33fa563dd5cecaee52e384"
+}

@@ -732,12 +732,14 @@ def main():
 
         scene_path = os.path.join(asset_dir, 'scenes', 'fixture.scene.json')
         environment_export = exporter.export_world_environment(world, scene_path)
-        assert environment_export['sky'] == '../environments/Fixture_World/sky.ktx'
-        assert environment_export['radiance'] == '../environments/Fixture_World/radiance.ktx'
-        assert environment_export['irradiance'] == '../environments/Fixture_World/irradiance.ktx'
+        environment_dir = os.path.dirname(
+            os.path.normpath(os.path.join(os.path.dirname(scene_path), environment_export['sky']))
+        )
+        assert os.path.basename(os.path.dirname(environment_dir)) == 'Fixture_World'
+        assert len(os.path.basename(environment_dir)) == 64
+        for name in ('sky', 'radiance', 'irradiance'):
+            assert environment_export[name].endswith('/' + name + '.ktx')
         assert abs(environment_export['rotation'] + 0.25) < 1e-6
-
-        environment_dir = os.path.join(asset_dir, 'environments', 'Fixture_World')
 
         def read_ktx_header(filename):
             with open(os.path.join(environment_dir, filename), 'rb') as ktx_file:

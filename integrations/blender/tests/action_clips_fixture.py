@@ -145,6 +145,18 @@ def run(output):
     assert all(set(model['animations']) == {'Timeline', 'Wave'} for model in models_in(output))
     idle.name = 'Idle'
     export()
+    armature['luz_initial_animation'] = 'Wave'
+    wave['luz_loop_animation'] = True
+    idle['luz_loop_animation'] = False
+    export()
+    for model in models_in(output):
+        for name, reference in model['animations'].items():
+            clip = json.loads((output / 'models' / reference).read_text())
+            assert clip['isAutoplayEnabled'] == (name == 'Wave')
+            assert clip['playback'] == ('loop' if name == 'Wave' else 'once')
+    armature['luz_initial_animation'] = 'Missing'
+    failure(export, 'Startup action')
+    armature['luz_initial_animation'] = 'Wave'
     published = {file: file.read_bytes() for file in output.rglob('*') if file.is_file()}
     original_sample = exporter.SkeletalExport.sample
 

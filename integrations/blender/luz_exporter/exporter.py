@@ -2,20 +2,24 @@ import hashlib
 import json
 import math
 import os
+import shutil
 import struct
 import tempfile
 import time
 from contextlib import contextmanager
+from contextvars import ContextVar
+from pathlib import Path
 
 import bmesh
 import bpy
 import mathutils
-from bpy.props import BoolProperty, EnumProperty, FloatProperty, StringProperty
-from bpy.types import Operator
+from bpy.props import BoolProperty, EnumProperty, FloatProperty, PointerProperty, StringProperty
+from bpy.types import Operator, Panel, PropertyGroup
 
 FLOAT32_MAX = 3.4028234663852886e38
 HALF_FLOAT_MAX = 65504.0
-ENVIRONMENT_COMPILER_VERSION = 1
+ENVIRONMENT_COMPILER_VERSION = 2
+export_destination = ContextVar('luz_export_destination', default=None)
 MODEL_SCHEMA_PATH = '../../schemas/model.schema.json'
 SCENE_SCHEMA_PATH = '../../schemas/scene.schema.json'
 FILE_RETRY_DELAYS = (0.01, 0.02, 0.04, 0.08, 0.16)
@@ -91,6 +95,7 @@ def write_text_atomic(filepath, content):
 
 
 def write_export_status(scene_filepath, stage, completed=None, total=None):
+    scene_filepath = export_destination.get() or scene_filepath
     status = {
         'status': 'exporting',
         'scene': os.path.basename(scene_filepath),
@@ -113,6 +118,103 @@ def get_base_path(filepath):
     if blend_path:
         return os.path.dirname(blend_path)
     return os.path.dirname(filepath)
+
+
+def get_asset_root(filepath):
+    directory = Path(filepath).resolve().parent
+    return directory.parent if directory.name.lower() in ('scenes', 'entities') else directory
+
+
+@contextmanager
+def stage_export(filepath):
+    destination = Path(filepath).resolve()
+    root = get_asset_root(destination)
+    root.mkdir(parents=True, exist_ok=True)
+    token = export_destination.set(str(destination))
+    try:
+        with tempfile.TemporaryDirectory(prefix='.luz-', dir=root) as directory:
+            staging = Path(directory).resolve()
+            if staging.parent != root or not staging.name.startswith('.luz-'):
+                raise RuntimeError('Invalid export staging directory')
+            prepared = staging / 'new'
+            output = prepared / destination.relative_to(root)
+            output.parent.mkdir(parents=True)
+            yield str(output)
+            files = sorted(path for path in prepared.rglob('*') if path.is_file() and path != output) + [output]
+            published = []
+            try:
+                for source in files:
+                    relative = source.relative_to(prepared)
+                    target = root / relative
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    backup = staging / 'old' / relative
+                    if target.exists():
+                        backup.parent.mkdir(parents=True, exist_ok=True)
+                        shutil.copyfile(target, backup)
+                    retry_file_operation(os.replace, source, target)
+                    published.append((target, backup))
+            except OSError:
+                for target, backup in reversed(published):
+                    if backup.exists():
+                        retry_file_operation(os.replace, backup, target)
+                    else:
+                        target.unlink(missing_ok=True)
+                raise
+    finally:
+        export_destination.reset(token)
+
+
+class TextureCollector:
+    def __init__(self, source_directory, output_directory):
+        self.source_directory = Path(source_directory).resolve()
+        self.output_directory = Path(output_directory).resolve()
+        self.paths = {}
+
+    def collect(self, filepath, image):
+        identity = (filepath, image.as_pointer() if image else None)
+        if identity in self.paths:
+            return self.paths[identity]
+        source = Path(bpy.path.abspath(filepath, library=image.library if image else None)).resolve()
+        packed = image.packed_file if image else None
+        if packed:
+            contents = bytes(packed.data)
+        else:
+            if not source.is_file():
+                parts = filepath.replace('\\', '/').split('/')
+                for index, part in enumerate(parts):
+                    if part.lower() not in ('poliigon', 'blendkit', 'textures'):
+                        continue
+                    candidate = self.source_directory.joinpath(part.lower(), *parts[index + 1 :]).resolve()
+                    if candidate.is_relative_to(self.source_directory) and candidate.is_file():
+                        source = candidate
+                        break
+            if not source.is_file():
+                raise RuntimeError(
+                    f"Texture '{filepath}' is missing; locate it in Blender or pack it into the .blend file"
+                )
+            contents = source.read_bytes()
+        digest = hashlib.sha256(contents).hexdigest()
+        target = self.output_directory / 'textures' / 'imported' / (digest + source.suffix.lower())
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(contents)
+        if target.suffix.lower() not in {'.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'}:
+            with tempfile.NamedTemporaryFile(dir=self.output_directory, suffix='.png', delete=False) as temporary:
+                temporary_path = temporary.name
+            try:
+                converted = transcode_data_texture(image, str(target), temporary_path) if image else None
+                if converted is None:
+                    raise RuntimeError(f"Texture '{filepath}' must be converted to a browser-compatible image")
+                target.unlink()
+                target = target.with_suffix('.luz.png')
+                shutil.copyfile(converted, target)
+            finally:
+                remove_auxiliary_file(temporary_path)
+        notice = source.parent / 'LICENSE.txt'
+        if notice.is_file():
+            shutil.copyfile(notice, target.with_suffix('.LICENSE.txt'))
+        relative = target.relative_to(self.output_directory).as_posix()
+        self.paths[identity] = relative
+        return relative
 
 
 def round5(value):
@@ -222,15 +324,19 @@ def build_animation_tracks(samples, sample_rate, tolerances=None):
     return {'duration': duration, 'tracks': tracks}
 
 
-def transcode_data_texture(image, source_path):
-    if str(getattr(image, 'source', '')) != 'FILE' or getattr(image, 'packed_file', None):
+def transcode_data_texture(image, source_path, destination=None):
+    if str(getattr(image, 'source', '')) != 'FILE':
         return None
     if image_color_space(image, 'sRGB') != 'linear':
         print(f'[luz Export] Cannot automatically transcode color-managed texture: {source_path}')
         return None
 
-    output_path = os.path.splitext(source_path)[0] + '.luz.png'
-    if os.path.isfile(output_path) and os.path.getmtime(output_path) >= os.path.getmtime(source_path):
+    output_path = destination or os.path.splitext(source_path)[0] + '.luz.png'
+    if (
+        destination is None
+        and os.path.isfile(output_path)
+        and os.path.getmtime(output_path) >= os.path.getmtime(source_path)
+    ):
         return output_path
 
     scene = bpy.context.scene
@@ -576,9 +682,10 @@ class MaterialGraphBuilder:
         'Subsurface Scale',
     }
 
-    def __init__(self, material, base_path, available_attributes=None, active_uv_map=None):
+    def __init__(self, material, base_path, available_attributes=None, active_uv_map=None, textures=None):
         self.material = material
         self.base_path = base_path
+        self.textures = textures
         self.available_attributes = available_attributes
         self.active_uv_map = active_uv_map
         self.nodes = {}
@@ -686,7 +793,11 @@ class MaterialGraphBuilder:
     def image_surface(self, node):
         if not node.image:
             self.error(node, node.outputs[0] if node.outputs else node, 'image texture has no image')
-        path = normalize_texture_path(node.image.filepath, self.base_path, node.image)
+        path = (
+            self.textures.collect(node.image.filepath, node.image)
+            if self.textures
+            else normalize_texture_path(node.image.filepath, self.base_path, node.image)
+        )
         if path is None:
             self.error(node, node.outputs[0] if node.outputs else node, 'image is unavailable to the web export')
         tiling = {
@@ -1518,7 +1629,11 @@ class MaterialGraphBuilder:
             else None
         )
         if ao_image:
-            ao_path = normalize_texture_path(ao_image.filepath, self.base_path, ao_image)
+            ao_path = (
+                self.textures.collect(ao_image.filepath, ao_image)
+                if self.textures
+                else normalize_texture_path(ao_image.filepath, self.base_path, ao_image)
+            )
             if ao_path:
                 node_id = f'n{len(self.node_ids)}'
                 self.node_ids[('ambientOcclusion',)] = node_id
@@ -1580,9 +1695,9 @@ class MaterialGraphBuilder:
         }
 
 
-def extract_material(material, base_path, available_attributes=None, active_uv_map=None):
+def extract_material(material, base_path, available_attributes=None, active_uv_map=None, textures=None):
     graph, has_alpha, has_transmission, has_transparent_closure = MaterialGraphBuilder(
-        material, base_path, available_attributes, active_uv_map
+        material, base_path, available_attributes, active_uv_map, textures
     ).build()
     material_data = {'graph': graph}
     alpha_mode = determine_alpha_mode(material, has_alpha, has_transparent_closure)
@@ -1923,7 +2038,8 @@ def build_meshes_from_object(obj, depsgraph, apply_modifiers, skeleton=None):
     mesh = mesh_obj.to_mesh()
 
     try:
-        triangulate_mesh(mesh)
+        # Tessellation preserves the authored corner normals instead of recalculating them on a triangulated mesh.
+        mesh.calc_loop_triangles()
 
         meshes = {}
         vertices_by_key = {}
@@ -1943,7 +2059,8 @@ def build_meshes_from_object(obj, depsgraph, apply_modifiers, skeleton=None):
             key = mat_name or f'{obj.name}_mat{polygon.material_index}'
             return key, mat_name
 
-        for polygon in mesh.polygons:
+        for triangle in mesh.loop_triangles:
+            polygon = mesh.polygons[triangle.polygon_index]
             key, mat_name = mesh_key(polygon)
             vertices = vertices_by_key.setdefault(key, [])
             indices = indices_by_key.setdefault(key, [])
@@ -1951,15 +2068,13 @@ def build_meshes_from_object(obj, depsgraph, apply_modifiers, skeleton=None):
             if mat_name and key not in material_by_key:
                 material_by_key[key] = mat_name
 
-            for i, vert_index in enumerate(polygon.vertices):
-                vertex = mesh.vertices[vert_index]
+            for loop_index in triangle.loops:
+                vertex = mesh.vertices[mesh.loops[loop_index].vertex_index]
 
                 position = transform_vector(transformation_matrix, vertex.co)
-                normal_vec = vertex.normal if polygon.use_smooth else polygon.normal
-                normal = transform_vector(transformation_matrix, normal_vec)
+                normal = transform_vector(transformation_matrix, mesh.corner_normals[loop_index].vector)
 
                 if mesh.uv_layers.active is not None:
-                    loop_index = polygon.loop_indices[i]
                     texture_coordinates = mesh.uv_layers.active.data[loop_index].uv
                 else:
                     texture_coordinates = (0.0, 0.0)
@@ -2024,7 +2139,7 @@ def mesh_attribute_info_from_object(obj, depsgraph, apply_modifiers):
         mesh_obj.to_mesh_clear()
 
 
-def build_model_from_object(obj, depsgraph, apply_modifiers, base_path, skeleton=None):
+def build_model_from_object(obj, depsgraph, apply_modifiers, base_path, skeleton=None, textures=None):
     materials = {}
     meshes = {}
     available_attributes, active_uv_map = mesh_attribute_info_from_object(obj, depsgraph, apply_modifiers)
@@ -2033,7 +2148,7 @@ def build_model_from_object(obj, depsgraph, apply_modifiers, base_path, skeleton
         mat = material_slot.material
         if not mat or mat.name in materials:
             continue
-        materials[mat.name] = extract_material(mat, base_path, available_attributes, active_uv_map)
+        materials[mat.name] = extract_material(mat, base_path, available_attributes, active_uv_map, textures)
 
     meshes.update(build_meshes_from_object(obj, depsgraph, apply_modifiers, skeleton))
 
@@ -2203,8 +2318,21 @@ def environment_world_source(world):
 
     color_socket = socket_named(background.inputs, 'Color')
     environment, environment_output = linked_node(color_socket)
+    is_sky_visible = True
+    is_diffuse_enabled = True
     if environment is None:
         return None
+    if environment.type == 'MIX_RGB' and environment.blend_type == 'MIX':
+        factor, factor_output = linked_node(environment.inputs[0])
+        if factor and factor.type == 'LIGHT_PATH' and factor_output.name in ('Is Camera Ray', 'Is Glossy Ray'):
+            image_index = 1 if factor_output.name == 'Is Camera Ray' else 2
+            black_socket = environment.inputs[3 - image_index]
+            if not black_socket.is_linked and all(abs(value) < 1e-6 for value in black_socket.default_value[:3]):
+                is_sky_visible = False
+                is_diffuse_enabled = factor_output.name == 'Is Camera Ray'
+                environment, environment_output = linked_node(environment.inputs[image_index])
+    if environment is None:
+        raise RuntimeError(f"World '{world.name}': no environment texture is linked")
     if environment.type != 'TEX_ENVIRONMENT':
         raise RuntimeError(
             f"World '{world.name}', node '{environment.name}', socket '{environment_output.name}': "
@@ -2217,8 +2345,9 @@ def environment_world_source(world):
     if environment.image is None:
         raise RuntimeError(f"World '{world.name}', node '{environment.name}': no environment image is selected")
 
-    source_path = os.path.abspath(bpy.path.abspath(environment.image.filepath))
-    if not source_path or not os.path.isfile(source_path):
+    source_path = os.path.abspath(bpy.path.abspath(environment.image.filepath, library=environment.image.library))
+    packed = environment.image.packed_file
+    if not packed and not os.path.isfile(source_path):
         raise RuntimeError(f"World '{world.name}', node '{environment.name}': environment image is unavailable")
     if os.path.splitext(source_path)[1].lower() not in {'.exr', '.hdr'}:
         raise RuntimeError(
@@ -2265,6 +2394,13 @@ def environment_world_source(world):
         'sourcePath': source_path,
         'strength': strength,
         'rotation': rotation,
+        'digest': hashlib.sha256(bytes(packed.data) if packed else Path(source_path).read_bytes()).hexdigest(),
+        'isSkyVisible': {'auto': is_sky_visible, 'environment': True, 'black': False}[
+            world.get('luz_background_mode', 'auto')
+        ],
+        'isDiffuseLightingEnabled': {'auto': is_diffuse_enabled, 'enabled': True, 'disabled': False}[
+            world.get('luz_diffuse_mode', 'auto')
+        ],
     }
 
 
@@ -2430,12 +2566,9 @@ def compile_environment(world, source, output_dir):
     radiance_size = environment_size(world, 'luz_environment_radiance_size', 256, 16, 1024)
     irradiance_size = environment_size(world, 'luz_environment_irradiance_size', 64, 8, 256)
     sample_count = max(8, min(256, int(world.get('luz_environment_samples', 64))))
-    source_stat = os.stat(source['sourcePath'])
     settings = {
         'version': ENVIRONMENT_COMPILER_VERSION,
-        'source': os.path.normcase(source['sourcePath']),
-        'sourceSize': source_stat.st_size,
-        'sourceModified': source_stat.st_mtime_ns,
+        'source': source['digest'],
         'strength': source['strength'],
         'skySize': sky_size,
         'radianceSize': radiance_size,
@@ -2443,6 +2576,7 @@ def compile_environment(world, source, output_dir):
         'samples': sample_count,
     }
     fingerprint = hashlib.sha256(json.dumps(settings, sort_keys=True, allow_nan=False).encode('utf-8')).hexdigest()
+    output_dir = os.path.join(output_dir, fingerprint)
     cache_path = os.path.join(output_dir, 'environment-cache.json')
     outputs = {
         'sky': os.path.join(output_dir, 'sky.ktx'),
@@ -2479,6 +2613,10 @@ def compile_environment(world, source, output_dir):
     write_environment_ktx(outputs['sky'], [sky])
     write_environment_ktx(outputs['radiance'], radiance)
     write_environment_ktx(outputs['irradiance'], [irradiance])
+    write_environment_ktx(os.path.join(output_dir, 'black.ktx'), [numpy.zeros((6, 1, 1, 3), dtype=numpy.float32)])
+    notice = Path(source['sourcePath']).parent / 'LICENSE.txt'
+    if notice.is_file():
+        shutil.copyfile(notice, Path(output_dir) / 'LICENSE.txt')
 
     cache_data = {'fingerprint': fingerprint, 'settings': settings}
     with open(cache_path + '.tmp', 'w', encoding='utf-8') as cache_file:
@@ -2493,7 +2631,7 @@ def export_world_environment(world, scene_filepath):
     if source is None:
         return None
 
-    scene_dir = os.path.dirname(scene_filepath)
+    scene_dir = os.path.dirname(export_destination.get() or scene_filepath)
     environment_root = (
         os.path.join(os.path.dirname(scene_dir), 'environments')
         if os.path.basename(scene_dir).lower() == 'scenes'
@@ -2511,9 +2649,15 @@ def export_world_environment(world, scene_filepath):
         return value if value.startswith('.') else './' + value
 
     return {
-        'sky': relative(outputs['sky']),
+        'sky': relative(
+            outputs['sky'] if source['isSkyVisible'] else os.path.join(os.path.dirname(outputs['sky']), 'black.ktx')
+        ),
         'radiance': relative(outputs['radiance']),
-        'irradiance': relative(outputs['irradiance']),
+        'irradiance': relative(
+            outputs['irradiance']
+            if source['isDiffuseLightingEnabled']
+            else os.path.join(os.path.dirname(outputs['sky']), 'black.ktx')
+        ),
         'rotation': source['rotation'],
     }
 
@@ -2649,9 +2793,13 @@ def build_body_from_object(obj, depsgraph, apply_modifiers, transform):
         'motionType': 'dynamic' if mass > 0 else 'static',
         'mass': round5(mass),
         'volume': volume,
+        'isContinuousCollisionEnabled': bool(obj.get('luz_continuous_collision', False)),
     }
     if rb:
         body_component['friction'] = round5(float(rb.friction))
+        body_component['restitution'] = round5(float(rb.restitution))
+        if rb.kinematic:
+            body_component['motionType'] = 'kinematic'
 
     return body_component
 
@@ -2692,13 +2840,13 @@ def light_component_from_object(obj):
         return value
 
     color = [round5(c) for c in light.color]
-    intensity = round5(getattr(light, 'energy', 1.0))
+    intensity = round5(getattr(light, 'energy', 1.0) * numeric_light_property('luz_power_scale', 1.0))
 
     light_range = round5(numeric_light_property('luz_range', getattr(light, 'cutoff_distance', 40.0)))
     if light_range <= 0.0:
         raise RuntimeError(f"Light '{obj.name}' range must be greater than zero")
 
-    softness = round5(getattr(light, 'spot_blend', 1.0))
+    softness = round5(numeric_light_property('luz_shadow_softness', getattr(light, 'spot_blend', 1.0)))
 
     clip_start = round5(numeric_light_property('luz_clip_start', 0.1))
     clip_end = round5(numeric_light_property('luz_clip_end', light_range))
@@ -3089,6 +3237,7 @@ class EntityHierarchyExporter:
         )
         self.models_dir = os.path.join(asset_root, 'models')
         self.entities_dir = os.path.join(asset_root, 'entities')
+        self.textures = TextureCollector(self.base_path, asset_root)
         self.models = {}
         self.collections = {}
         self.collection_stack = []
@@ -3109,6 +3258,8 @@ class EntityHierarchyExporter:
         return obj.evaluated_get(self.depsgraph).matrix_world.copy()
 
     def visible(self, obj, collection_source=False):
+        if obj.get('luz_preview_only', False):
+            return False
         if not self.only_visible:
             return True
         # Unlinked collection sources have no view-layer visibility of their own.
@@ -3127,12 +3278,16 @@ class EntityHierarchyExporter:
             )
             if skeleton:
                 with skeleton.undeformed(self.context) as depsgraph:
-                    data = build_model_from_object(obj, depsgraph, self.apply_modifiers, self.base_path, skeleton)
+                    data = build_model_from_object(
+                        obj, depsgraph, self.apply_modifiers, self.base_path, skeleton, self.textures
+                    )
                 data['armatures'] = {skeleton.armature.name: skeleton.skeleton()}
                 self.skeletons.append((skeleton, data))
                 self.depsgraph = self.context.evaluated_depsgraph_get()
             else:
-                data = build_model_from_object(obj, self.depsgraph, self.apply_modifiers, self.base_path)
+                data = build_model_from_object(
+                    obj, self.depsgraph, self.apply_modifiers, self.base_path, textures=self.textures
+                )
             self.pending_models.append((path, data))
             self.models[identity] = path
         return document_reference(self.models[identity], document)
@@ -3274,6 +3429,18 @@ class EntityHierarchyExporter:
                 scene = self.context.scene
                 self.bake_actions(scene.render.fps / scene.render.fps_base)
                 self.bake_object_actions(scene.render.fps / scene.render.fps_base)
+            for obj, _, _, node, _ in self.animation_nodes:
+                clips = {
+                    name: component
+                    for name, component in node['components'].items()
+                    if isinstance(component, dict) and component.get('type') == 'animation'
+                }
+                if clips:
+                    self.configure_playback(obj, clips, len(clips) == 1)
+            for skeleton, data in self.skeletons:
+                self.configure_playback(
+                    skeleton.armature, data.get('animations', {}), self.animation_source == 'timeline'
+                )
         else:
             self.validate_instances(objects)
         for path, data in self.pending_models:
@@ -3283,6 +3450,24 @@ class EntityHierarchyExporter:
             write_model_file(path, data)
         for path, data in self.pending_documents:
             self.publish(path, data)
+
+    def configure_playback(self, obj, clips, autoplay):
+        initial = obj.get('luz_initial_animation', '')
+        if initial and initial not in clips:
+            raise RuntimeError(f"Startup action '{initial}' is not exported for '{obj.name}'")
+        for name, clip in clips.items():
+            action = bpy.data.actions.get(name) if self.animation_source == 'actions' else None
+            clip['isAutoplayEnabled'] = name == initial if initial else autoplay
+            if 'playback' in clip or 'luz_loop_animation' in obj or (action and 'luz_loop_animation' in action):
+                clip['playback'] = (
+                    'loop'
+                    if (
+                        action.get('luz_loop_animation', obj.get('luz_loop_animation', False))
+                        if action
+                        else obj.get('luz_loop_animation', False)
+                    )
+                    else 'once'
+                )
 
     def bake(self, objects):
         scene = self.context.scene
@@ -3608,7 +3793,13 @@ def _export_luz_scene(
     writer.finish(context.scene.objects)
     if bake_animation:
         context.scene.frame_set(context.scene.frame_start)
-    scene_data = {'$schema': SCENE_SCHEMA_PATH, 'entities': entities}
+    scene_data = {
+        '$schema': SCENE_SCHEMA_PATH,
+        'entities': entities,
+        'gravity': list(transform_vector(transformation_matrix, context.scene.gravity))
+        if context.scene.use_gravity
+        else [0, 0, 0],
+    }
     if writer.colliders:
         scene_data['colliders'] = writer.colliders
     write_export_status(writer.filepath, 'Exporting environment from Blender')
@@ -3617,10 +3808,6 @@ def _export_luz_scene(
         scene_data['environment'] = environment
     write_export_status(writer.filepath, 'Finalizing Blender export')
     writer.publish(writer.filepath, scene_data)
-    removed_models = cleanup_obsolete_model_exports(os.path.dirname(writer.models_dir))
-    if removed_models:
-        print(f'[luz Export] Removed {len(removed_models)} obsolete model files')
-    print(f'luz scene exported to: {writer.filepath}')
 
 
 def _export_luz_entity(
@@ -3656,7 +3843,6 @@ def _export_luz_entity(
     entity['rotation'] = [0.0, 0.0, 0.0, 1.0]
     writer.finish(objects)
     writer.publish(writer.filepath, entity)
-    print(f'luz entity exported to: {writer.filepath}')
 
 
 @contextmanager
@@ -3690,10 +3876,10 @@ def export_luz_entity(
 ):
     path = ensure_extension(entity_filepath, '.entity.json')
     try:
-        with animation_export_state(context, bake_animation):
-            return _export_luz_entity(
+        with stage_export(path) as prepared, animation_export_state(context, bake_animation):
+            _export_luz_entity(
                 context,
-                path,
+                prepared,
                 only_visible,
                 apply_modifiers,
                 bake_animation,
@@ -3701,6 +3887,7 @@ def export_luz_entity(
                 animation_source,
                 in_place,
             )
+        print(f'luz entity exported to: {path}')
     finally:
         remove_auxiliary_file(export_status_path(path))
 
@@ -3718,10 +3905,10 @@ def export_luz_scene(
     scene_filepath = ensure_extension(scene_filepath, '.scene.json')
     write_export_status(scene_filepath, 'Preparing Blender export')
     try:
-        with animation_export_state(context, bake_animation):
-            return _export_luz_scene(
+        with stage_export(scene_filepath) as prepared, animation_export_state(context, bake_animation):
+            _export_luz_scene(
                 context,
-                scene_filepath,
+                prepared,
                 only_visible,
                 apply_modifiers,
                 bake_animation,
@@ -3729,6 +3916,22 @@ def export_luz_scene(
                 animation_source,
                 in_place,
             )
+        cleanup_obsolete_model_exports(str(get_asset_root(scene_filepath)))
+        tolerances = animation_tolerances or DEFAULT_ANIMATION_TOLERANCES
+        settings = {
+            'filepath': bpy.path.relpath(os.path.abspath(scene_filepath))
+            if bpy.data.filepath
+            else os.path.abspath(scene_filepath),
+            'only_visible': only_visible,
+            'apply_modifiers': apply_modifiers,
+            'bake_animation': bake_animation,
+            'animation_source': animation_source,
+            'in_place': in_place,
+            **{f'animation_{channel}_tolerance': value for channel, value in tolerances.items()},
+        }
+        for name, value in settings.items():
+            context.scene['luz_export_' + name] = value
+        print(f'luz scene exported to: {scene_filepath}')
     finally:
         remove_auxiliary_file(export_status_path(scene_filepath))
 
@@ -3736,6 +3939,282 @@ def export_luz_scene(
 # ---------------------------------------------------------------------------
 # Operator
 # ---------------------------------------------------------------------------
+
+
+EXPORT_OPTION_NAMES = (
+    'filepath',
+    'only_visible',
+    'apply_modifiers',
+    'bake_animation',
+    'animation_source',
+    'in_place',
+    'animation_translation_tolerance',
+    'animation_rotation_tolerance',
+    'animation_scale_tolerance',
+)
+
+
+def get_property(key, default):
+    def get(self):
+        owner = self.id_data
+        fallback = default(owner) if callable(default) else default
+        return owner.get(key, fallback)
+
+    return get
+
+
+def set_property(key):
+    def set(self, value):
+        self.id_data[key] = value
+
+    return set
+
+
+def get_enum_property(key, choices):
+    def get(self):
+        value = self.id_data.get(key, choices[0])
+        return choices.index(value) if value in choices else 0
+
+    return get
+
+
+def set_enum_property(key, choices):
+    def set(self, value):
+        self.id_data[key] = choices[value]
+
+    return set
+
+
+class LuzExportSettings(PropertyGroup):
+    filepath: StringProperty(
+        name='Destination',
+        subtype='FILE_PATH',
+        options={'PATH_SUPPORTS_BLEND_RELATIVE'},
+        get=get_property('luz_export_filepath', ''),
+        set=set_property('luz_export_filepath'),
+    )
+    only_visible: BoolProperty(
+        name='Only visible objects',
+        get=get_property('luz_export_only_visible', False),
+        set=set_property('luz_export_only_visible'),
+    )
+    apply_modifiers: BoolProperty(
+        name='Apply modifiers',
+        get=get_property('luz_export_apply_modifiers', True),
+        set=set_property('luz_export_apply_modifiers'),
+    )
+    bake_animation: BoolProperty(
+        name='Export animation',
+        get=get_property('luz_export_bake_animation', False),
+        set=set_property('luz_export_bake_animation'),
+    )
+    animation_source: EnumProperty(
+        name='Animation source',
+        items=[
+            ('timeline', 'Timeline', 'Bake the scene timeline'),
+            ('actions', 'Action clips', 'Export assigned and NLA actions as separate clips'),
+        ],
+        get=get_enum_property('luz_export_animation_source', ('timeline', 'actions')),
+        set=set_enum_property('luz_export_animation_source', ('timeline', 'actions')),
+    )
+    in_place: BoolProperty(
+        name='Animate in place', get=get_property('luz_export_in_place', False), set=set_property('luz_export_in_place')
+    )
+    animation_translation_tolerance: FloatProperty(
+        name='Translation tolerance',
+        min=0,
+        precision=6,
+        get=get_property('luz_export_animation_translation_tolerance', 1e-5),
+        set=set_property('luz_export_animation_translation_tolerance'),
+    )
+    animation_rotation_tolerance: FloatProperty(
+        name='Rotation tolerance',
+        min=0,
+        precision=6,
+        get=get_property('luz_export_animation_rotation_tolerance', 5e-5),
+        set=set_property('luz_export_animation_rotation_tolerance'),
+    )
+    animation_scale_tolerance: FloatProperty(
+        name='Scale tolerance',
+        min=0,
+        precision=6,
+        get=get_property('luz_export_animation_scale_tolerance', 1e-5),
+        set=set_property('luz_export_animation_scale_tolerance'),
+    )
+
+
+class LuzObjectSettings(PropertyGroup):
+    preview_only: BoolProperty(
+        name='Exclude from export', get=get_property('luz_preview_only', False), set=set_property('luz_preview_only')
+    )
+    continuous_collision: BoolProperty(
+        name='Continuous collision detection',
+        get=get_property('luz_continuous_collision', False),
+        set=set_property('luz_continuous_collision'),
+    )
+    initial_animation: StringProperty(
+        name='Startup animation',
+        get=get_property('luz_initial_animation', ''),
+        set=set_property('luz_initial_animation'),
+    )
+    loop_animation: BoolProperty(
+        name='Loop animations by default',
+        get=get_property('luz_loop_animation', False),
+        set=set_property('luz_loop_animation'),
+    )
+    power_scale: FloatProperty(
+        name='Power multiplier',
+        min=0,
+        precision=4,
+        get=get_property('luz_power_scale', lambda obj: float(obj.data.get('luz_power_scale', 1.0))),
+        set=set_property('luz_power_scale'),
+    )
+    shadow_softness: FloatProperty(
+        name='Shadow softness',
+        min=0,
+        get=get_property(
+            'luz_shadow_softness',
+            lambda obj: float(obj.data.get('luz_shadow_softness', getattr(obj.data, 'spot_blend', 1.0))),
+        ),
+        set=set_property('luz_shadow_softness'),
+    )
+
+
+class LuzActionSettings(PropertyGroup):
+    def get_playback(self):
+        if 'luz_loop_animation' not in self.id_data:
+            return 0
+        return 1 if self.id_data['luz_loop_animation'] else 2
+
+    def set_playback(self, value):
+        if value == 0:
+            if 'luz_loop_animation' in self.id_data:
+                del self.id_data['luz_loop_animation']
+        else:
+            self.id_data['luz_loop_animation'] = value == 1
+
+    playback: EnumProperty(
+        name='Action playback',
+        items=[
+            ('inherit', 'Object default', 'Use the object loop setting'),
+            ('loop', 'Loop', 'Repeat the action'),
+            ('once', 'Once', 'Play the action once'),
+        ],
+        get=get_playback,
+        set=set_playback,
+    )
+
+
+class LuzWorldSettings(PropertyGroup):
+    background_mode: EnumProperty(
+        name='Camera background',
+        items=[
+            ('auto', 'From World nodes', 'Read the supported World setup'),
+            ('environment', 'Environment', 'Show the environment behind geometry'),
+            ('black', 'Black', 'Use a black backdrop and retain environment reflections'),
+        ],
+        get=get_enum_property('luz_background_mode', ('auto', 'environment', 'black')),
+        set=set_enum_property('luz_background_mode', ('auto', 'environment', 'black')),
+    )
+    diffuse_mode: EnumProperty(
+        name='Diffuse environment lighting',
+        items=[
+            ('auto', 'From World nodes', 'Read the supported World setup'),
+            ('enabled', 'Enabled', 'Use the environment for diffuse lighting'),
+            ('disabled', 'Disabled', 'Use the environment only for reflections'),
+        ],
+        get=get_enum_property('luz_diffuse_mode', ('auto', 'enabled', 'disabled')),
+        set=set_enum_property('luz_diffuse_mode', ('auto', 'enabled', 'disabled')),
+    )
+
+
+class EXPORT_OT_luz_again(Operator):
+    """Export the active scene to its saved destination using its saved options"""
+
+    bl_idname = 'export_scene.luz_again'
+    bl_label = 'luz Export Again'
+    bl_options = {'REGISTER'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene is not None and bool(context.scene.luz_export.filepath)
+
+    def execute(self, context):
+        settings = context.scene.luz_export
+        return bpy.ops.export_scene.luz_model(
+            'EXEC_DEFAULT', **{name: getattr(settings, name) for name in EXPORT_OPTION_NAMES}
+        )
+
+
+class SCENE_PT_luz_export(Panel):
+    bl_label = 'luz Export'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'scene'
+
+    def draw(self, context):
+        settings = context.scene.luz_export
+        layout = self.layout
+        for name in ('filepath', 'only_visible', 'apply_modifiers', 'bake_animation'):
+            layout.prop(settings, name)
+        if settings.bake_animation:
+            for name in EXPORT_OPTION_NAMES[4:]:
+                layout.prop(settings, name)
+        layout.operator('export_scene.luz_model', text='Export As…')
+        layout.operator('export_scene.luz_again', text='Export Again')
+
+
+class OBJECT_PT_luz_export(Panel):
+    bl_label = 'luz Export'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'object'
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None
+
+    def draw(self, context):
+        obj = context.object
+        self.layout.prop(obj.luz, 'preview_only')
+        if obj.rigid_body:
+            self.layout.prop(obj.luz, 'continuous_collision')
+        self.layout.prop_search(obj.luz, 'initial_animation', bpy.data, 'actions')
+        self.layout.prop(obj.luz, 'loop_animation')
+        action = obj.animation_data.action if obj.animation_data else None
+        if action:
+            self.layout.prop(action.luz, 'playback', text=action.name)
+
+
+class DATA_PT_luz_light(Panel):
+    bl_label = 'luz Lighting'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'data'
+
+    @classmethod
+    def poll(cls, context):
+        return context.object is not None and context.object.type == 'LIGHT'
+
+    def draw(self, context):
+        self.layout.prop(context.object.luz, 'power_scale')
+        self.layout.prop(context.object.luz, 'shadow_softness')
+
+
+class WORLD_PT_luz_environment(Panel):
+    bl_label = 'luz Environment'
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = 'world'
+
+    @classmethod
+    def poll(cls, context):
+        return context.world is not None
+
+    def draw(self, context):
+        self.layout.prop(context.world.luz, 'background_mode')
+        self.layout.prop(context.world.luz, 'diffuse_mode')
+        self.layout.label(text='Image, strength and rotation come from World nodes.')
 
 
 class EXPORT_OT_luz_model(Operator):
@@ -3757,7 +4236,7 @@ class EXPORT_OT_luz_model(Operator):
             (
                 'actions',
                 'Action clips',
-                'Export referenced object and armature actions as separate, initially stopped animations',
+                'Export referenced actions as separate clips; a single object clip plays automatically',
             ),
         ],
         default='timeline',
@@ -3795,6 +4274,7 @@ class EXPORT_OT_luz_model(Operator):
         name='File Path',
         description='File path for exporting the luz scene',
         subtype='FILE_PATH',
+        options={'PATH_SUPPORTS_BLEND_RELATIVE'},
     )
 
     only_visible: BoolProperty(
@@ -3810,7 +4290,10 @@ class EXPORT_OT_luz_model(Operator):
     )
 
     def execute(self, context):
-        scene_path = ensure_extension(self.filepath, '.scene.json')
+        scene_path = ensure_extension(bpy.path.abspath(self.filepath), '.scene.json')
+        if not self.filepath:
+            self.report({'ERROR'}, 'Choose an export destination first')
+            return {'CANCELLED'}
         try:
             export_luz_scene(
                 context,
@@ -3829,9 +4312,13 @@ class EXPORT_OT_luz_model(Operator):
         except (RuntimeError, OSError) as error:
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
+        self.report({'INFO'}, f'luz scene exported to {scene_path}')
         return {'FINISHED'}
 
     def invoke(self, context, event):
+        for name in EXPORT_OPTION_NAMES:
+            if not self.properties.is_property_set(name):
+                setattr(self, name, getattr(context.scene.luz_export, name))
         # Suggest a name based on the blend file
         if not self.filepath:
             if bpy.data.filepath:
@@ -3869,7 +4356,7 @@ class EXPORT_OT_luz_entity(Operator):
     bl_label = 'luz Entity (.entity.json)'
     bl_options = {'PRESET'}
 
-    filepath: StringProperty(name='File Path', subtype='FILE_PATH')
+    filepath: StringProperty(name='File Path', subtype='FILE_PATH', options={'PATH_SUPPORTS_BLEND_RELATIVE'})
     only_visible: BoolProperty(name='Only visible objects', default=False)
     apply_modifiers: BoolProperty(name='Apply modifiers', default=True)
     bake_animation: BoolProperty(
@@ -3884,7 +4371,7 @@ class EXPORT_OT_luz_entity(Operator):
             (
                 'actions',
                 'Action clips',
-                'Export referenced object and armature actions as separate, initially stopped animations',
+                'Export referenced actions as separate clips; a single object clip plays automatically',
             ),
         ],
         default='timeline',
@@ -3922,7 +4409,7 @@ class EXPORT_OT_luz_entity(Operator):
         try:
             export_luz_entity(
                 context,
-                self.filepath,
+                bpy.path.abspath(self.filepath),
                 self.only_visible,
                 self.apply_modifiers,
                 self.bake_animation,
@@ -3973,8 +4460,17 @@ def menu_func_export(self, context):
 
 
 classes = (
+    LuzExportSettings,
+    LuzObjectSettings,
+    LuzActionSettings,
+    LuzWorldSettings,
     EXPORT_OT_luz_model,
     EXPORT_OT_luz_entity,
+    EXPORT_OT_luz_again,
+    SCENE_PT_luz_export,
+    OBJECT_PT_luz_export,
+    DATA_PT_luz_light,
+    WORLD_PT_luz_environment,
 )
 
 
@@ -3983,6 +4479,10 @@ def register():
 
     for cls in classes:
         register_class(cls)
+    bpy.types.Scene.luz_export = PointerProperty(type=LuzExportSettings)
+    bpy.types.Object.luz = PointerProperty(type=LuzObjectSettings)
+    bpy.types.Action.luz = PointerProperty(type=LuzActionSettings)
+    bpy.types.World.luz = PointerProperty(type=LuzWorldSettings)
     bpy.types.TOPBAR_MT_file_export.append(menu_func_export)
 
 
@@ -3990,5 +4490,9 @@ def unregister():
     from bpy.utils import unregister_class
 
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
+    del bpy.types.World.luz
+    del bpy.types.Action.luz
+    del bpy.types.Object.luz
+    del bpy.types.Scene.luz_export
     for cls in reversed(classes):
         unregister_class(cls)

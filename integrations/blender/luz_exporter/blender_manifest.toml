@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "luz_exporter"
-version = "0.9.1"
+version = "0.10.0"
 name = "luz Scene and Entity Exporter"
 tagline = "Export hierarchical scenes and reusable entity assets for luz"
 maintainer = "Matthias Ferch"

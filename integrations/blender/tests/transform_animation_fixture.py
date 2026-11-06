@@ -111,6 +111,9 @@ def main(output):
     assert 'samples' not in platform_animation and 'sampleRate' not in platform_animation
     assert platform_animation['playback'] == 'once' and 'isLooping' not in platform_animation
     assert platform_animation['duration'] == 1.25
+    assert platform_animation['isAutoplayEnabled'] is True
+    with open(entity_path, encoding='utf-8') as file:
+        assert json.load(file)['components']['Timeline']['isAutoplayEnabled'] is True
     assert 'translation' in platform_animation['tracks'] and 'rotation' in platform_animation['tracks']
     assert 'scale' not in platform_animation['tracks']
     assert 'Timeline' not in data['entities']['Dynamic']['components']

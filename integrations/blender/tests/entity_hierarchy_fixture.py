@@ -200,6 +200,22 @@ def main(output):
         placement.instance_collection = loaded.collections[0]
         placement.location.x = index * 10
 
+    haze = bpy.data.materials.new('Preview haze')
+    haze.use_nodes = True
+    haze.node_tree.nodes.clear()
+    volume = haze.node_tree.nodes.new('ShaderNodeVolumeScatter')
+    output_node = haze.node_tree.nodes.new('ShaderNodeOutputMaterial')
+    haze.node_tree.links.new(volume.outputs['Volume'], output_node.inputs['Volume'])
+    for name, owner, parent in [
+        ('PreviewRoot', collection, None),
+        ('PreviewChild', collection, root),
+        ('PreviewSource', inner, source_root),
+    ]:
+        preview = mesh(name, owner)
+        preview.parent = parent
+        preview['luz_preview_only'] = True
+        preview.data.materials.append(haze)
+
     bpy.context.view_layer.update()
     scene_path = os.path.join(output, 'scenes', 'fixture.scene.json')
     exporter.export_luz_scene(bpy.context, scene_path)
@@ -207,6 +223,7 @@ def main(output):
         data = json.load(file)
     assert data['entities']['InstanceA']['entity'] == data['entities']['InstanceB']['entity']
     flat = flatten(scene_path, data['entities'])
+    assert not any('Preview' in path for path in flat)
     basis = Matrix(exporter.transformation_matrix).to_4x4()
     expected = {}
     for path, obj in [
@@ -260,6 +277,7 @@ def main(output):
     assert asset['translation'] == [0, 0, 0] and asset['rotation'] == [0, 0, 0, 1]
     assert all(abs(a - b) < 1e-5 for a, b in zip(asset['scale'], [2, 4, 3]))
     normalized = flatten(entity_path, {'Assembly': asset})
+    assert not any('Preview' in path for path in normalized)
     inverse_placement = matrix(dict(data['entities']['Assembly'], scale=[1, 1, 1])).inverted()
     for path in normalized:
         close(normalized[path][0], inverse_placement @ flat[path][0], path)
@@ -274,8 +292,13 @@ def main(output):
         filtered_data = json.load(file)
     assert 'Part' in filtered_data['entities']['Assembly']['children']
     assert filtered_data['entities']['Assembly']['components'] == {}
+    assert not any('Preview' in path for path in flatten(filtered, filtered_data['entities']))
     root.hide_set(False)
 
+    preview = bpy.data.objects['PreviewRoot']
+    preview['luz_preview_only'] = False
+    failure(lambda: exporter.export_luz_scene(bpy.context, scene_path), 'unlinked shader closure')
+    preview['luz_preview_only'] = True
     child['is_rigid_body'] = True
     failure(lambda: exporter.export_luz_scene(bpy.context, scene_path), 'nested physics body')
     del child['is_rigid_body']

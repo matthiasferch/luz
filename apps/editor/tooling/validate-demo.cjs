@@ -4,6 +4,9 @@ const { createHash } = require('node:crypto')
 const Ajv = require('ajv')
 const { textureHashes } = require('./demo-textures.cjs')
 const { characterHashes } = require('./demo-character.cjs')
+const { playgroundHashes } = require('./demo-playground.cjs')
+
+const geometryHashes = { ...characterHashes, ...playgroundHashes }
 
 const MAXIMUM_FILE_BYTES = 25 * 1024 * 1024
 const schemaDirectory = path.resolve(__dirname, '../../../packages/formats/schemas')
@@ -29,7 +32,7 @@ const validateDemoAssets = (documents, textures = {}, geometry = {}) => {
   }
 
   for (const [filename, contents] of Object.entries(geometry)) {
-    if (!filename.endsWith('.geometry') || !Object.hasOwn(characterHashes, filename) || !Buffer.isBuffer(contents)) {
+    if (!filename.endsWith('.geometry') || !Object.hasOwn(geometryHashes, filename) || !Buffer.isBuffer(contents)) {
       throw new Error(`Unsupported demo geometry: ${filename}`)
     }
 
@@ -37,8 +40,8 @@ const validateDemoAssets = (documents, textures = {}, geometry = {}) => {
       throw new Error(`Demo asset exceeds 25 MiB: ${filename}`)
     }
 
-    if (createHash('sha256').update(contents).digest('hex') !== characterHashes[filename]) {
-      throw new Error(`Demo geometry does not match the character manifest: ${filename}`)
+    if (createHash('sha256').update(contents).digest('hex') !== geometryHashes[filename]) {
+      throw new Error(`Demo geometry does not match the approved manifest: ${filename}`)
     }
   }
 
