@@ -99,7 +99,8 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
     ([, entity]) => entity.components.body?.motionType === 'dynamic'
   )
   const initialPositions = new Map(dynamicEntities.map(([name, entity]) => [name, [...entity.translation]]))
-  const floorExtent = scene.entities.Floor.components.body.volume.extents.x
+  const floor = scene.entities.Floor.components.body.volume
+  const floorExtent = floor.extents.x
   const platformExtent = platform.components.body.volume.extents.x
 
   let minimumPlatformPosition = platform.translation.x
@@ -125,7 +126,14 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
 
     for (const [name, entity] of dynamicEntities) {
       assert.ok([...entity.translation, ...entity.rotation].every(Number.isFinite), `${name} stays finite`)
-      assert.ok(entity.translation.y > 0.15, `${name} stays above the floor`)
+
+      const isOverFloor =
+        Math.abs(entity.translation.x - floor.center.x) <= floor.extents.x &&
+        Math.abs(entity.translation.z - floor.center.z) <= floor.extents.z
+
+      if (isOverFloor) {
+        assert.ok(entity.translation.y > 0.15, `${name} stays above the floor while supported`)
+      }
     }
 
     for (const name of ['Cuboid', 'Block']) {
@@ -147,7 +155,8 @@ test('the rigid body showcase starts physics on load and preserves manual reset'
   assert.ok(minimumPlatformPosition - platformExtent < -floorExtent + 0.21, 'Platform reaches the left edge')
   assert.ok(maximumPlatformPosition + platformExtent > floorExtent - 0.21, 'Platform reaches the right edge')
   assert.ok(ball.translation.y < initialHeight - 1, 'Ball falls when simulation runs')
-  assert.ok(ball.translation.y > 0.5, 'Ball remains above the floor')
+  assert.ok(ball.translation.z > floor.center.z + floor.extents.z, 'Ball rolls beyond the finite floor')
+  assert.ok(ball.translation.y < 0, 'Ball falls after rolling off the edge')
   animationController.control(animationGroup.key, 'pause')
 
   const pausedPlatformPosition = [...platform.translation]
