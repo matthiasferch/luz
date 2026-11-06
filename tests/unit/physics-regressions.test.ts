@@ -582,7 +582,7 @@ describe('Physics: world lifecycle and queries', () => {
 
     contact.collisions[0].normal.set([-1, 0, 0])
 
-    for (let frame = 0; frame < 20; frame++) {
+    for (let frame = 0; frame < 90; frame++) {
       solver.finishStep([contact], [body], 1 / 60)
     }
 

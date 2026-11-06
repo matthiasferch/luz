@@ -168,18 +168,30 @@ export class PhysicsWorld {
         const hit = sweepVolume(body.volume, displacement, collider)
 
         if (hit && hit.fraction <= 1e-6) {
-          // Initial contacts constrain only motion into the surface. Sliding or
-          // separating from a touching shape must not freeze a continuous body.
           const contacts = Narrowphase.collisionDispatcher.detectCollisions(body.volume, collider)
           const incomingContact = contacts?.find(
             (contact) => Vector3.calculateDotProduct(contact.normal, displacement) > 1e-6
           )
 
-          if (!incomingContact) {
+          if (contacts?.length && !incomingContact) {
             continue
           }
 
-          hit.normal = incomingContact.normal.clone().scale(-1)
+          if (incomingContact) {
+            const incomingDistance = Vector3.calculateDotProduct(incomingContact.normal, displacement)
+            const centerDistance = Vector3.calculateDotProduct(
+              Vector3.subtract(incomingContact.point, body.volume.center),
+              incomingContact.normal
+            )
+
+            // Let the contact solver handle existing support while the center
+            // stays on its original side; faster motion still needs a sweep.
+            if (incomingDistance < centerDistance) {
+              continue
+            }
+
+            hit.normal = incomingContact.normal.clone().scale(-1)
+          }
         }
 
         if (hit && (!earliestHit || hit.fraction < earliestHit.fraction)) {
@@ -189,12 +201,10 @@ export class PhysicsWorld {
 
       body.applyPositionCorrection(Vector3.scale(displacement, earliestHit?.fraction ?? 1))
 
-      if (earliestHit) {
-        const incomingSpeed = Vector3.calculateDotProduct(body.linearVelocity, earliestHit.normal)
-
-        if (incomingSpeed < 0) {
-          body.linearVelocity.subtract(Vector3.scale(earliestHit.normal, incomingSpeed * (1 + body.restitution)))
-        }
+      if (earliestHit && !Narrowphase.collisionDispatcher.detectCollisions(body.volume, earliestHit.collider)?.length) {
+        // Sweeps stop just outside finite surfaces. Close that numerical gap
+        // so the contact solver supplies the impact, friction and tipping impulse.
+        body.applyPositionCorrection(Vector3.scale(earliestHit.normal, -1e-4))
       }
     }
   }

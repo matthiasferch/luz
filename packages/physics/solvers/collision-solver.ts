@@ -12,6 +12,7 @@ const wakeImpulseThreshold: number = 0.05
 const kinematicWakeVelocityThreshold: number = 0.01
 const staticFrictionMultiplier: number = 1.25
 const supportContactGracePeriod: number = 0.05
+const sleepDuration: number = 1
 
 const groundSlopeThreshold: number = 45
 
@@ -202,7 +203,7 @@ export class CollisionSolver {
       const isQuiet =
         !hasMovingKinematicSupport &&
         island.some((member) => groundedBodies.has(member)) &&
-        island.every((member) => member.linearVelocity.magnitude < 0.2 && member.angularVelocity.magnitude < 0.8)
+        island.every((member) => !member.shouldResetSleepFrames())
 
       for (const member of island) {
         const elapsed = isQuiet ? (this.quietTime.get(member) ?? 0) + deltaTime : 0
@@ -212,7 +213,7 @@ export class CollisionSolver {
         member.sleepFrames = Math.floor(elapsed / deltaTime)
       }
 
-      if (isQuiet && island.every((member) => (this.quietTime.get(member) ?? 0) >= 0.3)) {
+      if (isQuiet && island.every((member) => (this.quietTime.get(member) ?? 0) >= sleepDuration)) {
         island.forEach((member) => member.sleep())
       }
     }

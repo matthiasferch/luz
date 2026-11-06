@@ -9,6 +9,7 @@ const wakeForceThreshold: number = 1e-4
 const wakeTorqueThreshold: number = 1e-4
 const wakeLinearVelocityThreshold: number = 0.05
 const wakeAngularVelocityThreshold: number = 0.1
+const sleepLinearVelocityThreshold: number = 0.08
 const vectors = new Pool({
   createObject: () => new Vector3(),
 
@@ -230,12 +231,9 @@ export class Body extends Component {
   }
 
   wake() {
-    if (this.isSleeping) {
-      this.wakeRevision++
-    }
-
     this.isSleeping = false
-    this.sleepFrames = 0
+
+    this.resetSleepFrames()
   }
 
   sleep() {
@@ -257,13 +255,12 @@ export class Body extends Component {
     this.linearVelocity.reset()
     this.angularVelocity.reset()
     this.angularCorrection.reset()
-
-    this.isSleeping = false
-    this.sleepFrames = 0
+    this.wake()
   }
 
   resetSleepFrames() {
     this.sleepFrames = 0
+    this.wakeRevision++
   }
 
   advanceSleepFrame() {
@@ -282,7 +279,7 @@ export class Body extends Component {
   shouldResetSleepFrames() {
     return (
       this.torque.magnitude > wakeTorqueThreshold ||
-      this.linearVelocity.magnitude > wakeLinearVelocityThreshold ||
+      this.linearVelocity.magnitude > sleepLinearVelocityThreshold ||
       this.angularVelocity.magnitude > wakeAngularVelocityThreshold
     )
   }
