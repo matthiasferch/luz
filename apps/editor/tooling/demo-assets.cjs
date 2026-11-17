@@ -1,6 +1,5 @@
 const { readCharacterDocuments, readCharacterGeometry } = require('./demo-character.cjs')
 const { readPlaygroundDocuments, readPlaygroundGeometry } = require('./demo-playground.cjs')
-const { createLightChamberAssets } = require('./light-chamber.cjs')
 
 const createMaterial = (color, roughness, metallic = 0) => ({
   graph: {
@@ -22,39 +21,6 @@ const createMaterial = (color, roughness, metallic = 0) => ({
     )
   }
 })
-
-const createMetalMaterial = () => {
-  const material = createMaterial([1, 1, 1], 0.3, 1)
-  const createTexture = (name, colorSpace = 'linear') => ({
-    type: 'imageTexture',
-    surface: {
-      path: `textures/galvanizedMetal/${name}.jpg`,
-      format: 'color',
-      colorSpace,
-      tiling: 'repeat',
-      filtering: 'trilinear',
-      areMipmapsEnabled: true
-    }
-  })
-
-  material.graph.nodes = {
-    baseColor: createTexture('baseColor', 'sRGB'),
-    metallic: createTexture('metallic'),
-    roughness: createTexture('roughness'),
-    normalTexture: createTexture('normal'),
-    normal: {
-      type: 'normalMap',
-      inputs: { color: { node: 'normalTexture', output: 'Color' }, strength: { value: 1 } },
-      properties: { space: 'TANGENT' }
-    }
-  }
-  material.graph.outputs.baseColor = { node: 'baseColor', output: 'Color' }
-  material.graph.outputs.metallic = { node: 'metallic', output: 'Color' }
-  material.graph.outputs.roughness = { node: 'roughness', output: 'Color' }
-  material.graph.outputs.normal = { node: 'normal', output: 'Normal' }
-
-  return material
-}
 
 const createBox = () => {
   const vertices = []
@@ -160,8 +126,6 @@ const createDemoAssets = () => {
   }
 
   documents['scenes/sala-character.scene.json'] = createCharacterScene()
-
-  Object.assign(documents, createLightChamberAssets({ box, createMaterial, createMetalMaterial }))
 
   return documents
 }
