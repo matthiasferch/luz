@@ -10,9 +10,10 @@ const { createLicensePlugin } = require('../../tooling/dependency-licenses.cjs')
 module.exports = (environment = {}, argumentsObject = {}) => {
   const isServing = Boolean(environment.WEBPACK_SERVE)
   const isDemo = typeof environment.demoAssetsDirectory === 'string'
+  const isStudio = Boolean(environment.studio)
   const assetDirectory = isDemo ? environment.demoAssetsDirectory : path.resolve(__dirname, 'public/assets')
   const sceneDirectory = path.join(assetDirectory, 'scenes')
-  const sceneCatalog = scanSceneCatalog(sceneDirectory).map((scene) => ({
+  const sceneCatalog = (isStudio ? [] : scanSceneCatalog(sceneDirectory)).map((scene) => ({
     ...scene,
     label: environment.sceneLabels?.[scene.id] ?? scene.label
   }))
@@ -21,7 +22,7 @@ module.exports = (environment = {}, argumentsObject = {}) => {
   return {
     mode,
     context: __dirname,
-    entry: './src/main.ts',
+    entry: isStudio ? './src/studio/main.ts' : './src/main.ts',
     devtool: mode === 'production' ? false : 'inline-source-map',
     module: {
       rules: [
@@ -76,14 +77,27 @@ module.exports = (environment = {}, argumentsObject = {}) => {
         : [
             new CopyPlugin({
               patterns: [
-                {
-                  from: isDemo ? assetDirectory : 'public/assets/',
-                  to: 'assets/',
-                  noErrorOnMissing: !isDemo
-                },
+                ...(isStudio
+                  ? []
+                  : [
+                      {
+                        from: isDemo ? assetDirectory : 'public/assets/',
+                        to: 'assets/',
+                        noErrorOnMissing: !isDemo
+                      }
+                    ]),
                 {
                   from: 'index.html',
-                  to: 'index.html'
+                  to: 'index.html',
+                  ...(isStudio
+                    ? {
+                        transform: (contents) =>
+                          contents
+                            .toString()
+                            .replace('<title>luz</title>', '<title>luz studio</title>')
+                            .replace('src="editor.js"', 'src="/editor.js"')
+                      }
+                    : {})
                 },
                 {
                   from: '../../packages/formats/schemas/',
@@ -104,7 +118,7 @@ module.exports = (environment = {}, argumentsObject = {}) => {
     },
     output: {
       filename: 'editor.js',
-      path: path.resolve(__dirname, isDemo ? 'dist/demo' : 'dist'),
+      path: path.resolve(__dirname, isStudio ? 'dist/studio' : isDemo ? 'dist/demo' : 'dist'),
       clean: true
     },
     watchOptions: { ignored: ['**/node_modules/**'] },

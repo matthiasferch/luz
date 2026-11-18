@@ -75,18 +75,17 @@ export class SceneLoader {
 
   constructor(
     private readonly modelCache: ModelManager,
-    private readonly reportLoading: LoadingProgressReporter
+    private readonly reportLoading: LoadingProgressReporter,
+    private readonly readDocument = (url: string, signal?: AbortSignal) => loadJsonInWorker(url, 'no-cache', signal)
   ) {}
 
   async load(path: string): Promise<Scene> {
     const sceneUrl = new URL(path, document.baseURI)
-    const data = await loadJsonInWorker(sceneUrl.toString(), 'no-cache', this.requests.signal)
+    const data = await this.readDocument(sceneUrl.toString(), this.requests.signal)
 
     this.reportLoading({ stage: 'Loading entity assets' })
 
-    const entityLoader = new EntityLoader(this.modelCache.loader, (url) =>
-      loadJsonInWorker(url, 'no-cache', this.requests.signal)
-    )
+    const entityLoader = new EntityLoader(this.modelCache.loader, (url) => this.readDocument(url, this.requests.signal))
     const scene = await entityLoader.loadSceneData(data, sceneUrl.toString())
 
     await this.modelCache.prepareScene(scene, (completed, total) => {

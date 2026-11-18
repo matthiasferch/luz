@@ -7,11 +7,17 @@ Export Blender scenes and reusable entities for luz. Requires **Blender 5.0 or l
 These steps work on Windows, macOS, and Linux without a terminal. If you already
 have the extension ZIP, skip to step 2.
 
-1. Open `integrations/blender/luz_exporter` in your file manager. Select `blender_manifest.toml`, `__init__.py`, `exporter.py`, and `LICENSE`, then use your file manager or archive utility to compress them into a ZIP file. The four files must be at the top level of the ZIP, without an enclosing folder.
+1. Download the [luz Blender extension](https://studio.luzjs.dev/luz-exporter.zip). To build the same ZIP from this checkout, run `npm run build:studio`. The ZIP is written to `apps/editor/dist/studio/luz-exporter.zip`.
 2. In Blender, open **Edit > Preferences > Get Extensions**, open the menu, and choose **Install from Disk**.
 3. Select the ZIP file and enable **luz Scene and Entity Exporter**.
 
 Disable any older installation of the exporter before enabling the new one.
+
+## Hosted studio
+
+Choose **Scene Properties → luz Export → Open in luz**. Choose an export destination the first time, then save the Blender file to remember its destination and publishing identity. In the hosted studio, choose **Connect Blender** and leave the connection window open. **Export Again** updates the private preview. Reopen the studio from Blender to start a new connection after a browser refresh.
+
+Open **My scenes** to sign in as an invited publisher. Return to the preview, set the camera, rendering and playback, then choose **Publish**. Re-exporting stays private until you publish again. Use **My scenes** to copy a link or unpublish it.
 
 ## Basic usage
 

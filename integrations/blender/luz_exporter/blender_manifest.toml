@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "luz_exporter"
-version = "0.10.0"
+version = "0.11.0"
 name = "luz Scene and Entity Exporter"
 tagline = "Export hierarchical scenes and reusable entity assets for luz"
 maintainer = "Matthias Ferch"
@@ -11,6 +11,7 @@ license = ["SPDX:GPL-3.0-or-later"]
 
 [permissions]
 files = "Read source assets and write exported scenes and entity assets"
+network = "Connect local exports to the user's hosted studio tab through loopback"
 
 [build]
-paths = ["__init__.py", "exporter.py", "LICENSE"]
+paths = ["__init__.py", "exporter.py", "studio.py", "connection.js", "LICENSE"]

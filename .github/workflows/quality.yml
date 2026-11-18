@@ -36,6 +36,8 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:demo
+      - run: python integrations/blender/tests/studio_snapshot_test.py
+      - run: npm run build:studio
       - name: Store the validated demo
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v7

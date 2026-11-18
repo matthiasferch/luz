@@ -3932,6 +3932,16 @@ def export_luz_scene(
         for name, value in settings.items():
             context.scene['luz_export_' + name] = value
         print(f'luz scene exported to: {scene_filepath}')
+        if __package__:
+            from . import studio
+
+            studio.refresh_snapshot(scene_filepath)
+    except Exception as error:
+        if __package__:
+            from . import studio
+
+            studio.refresh_snapshot(scene_filepath, str(error))
+        raise
     finally:
         remove_auxiliary_file(export_status_path(scene_filepath))
 
@@ -4146,6 +4156,31 @@ class EXPORT_OT_luz_again(Operator):
         )
 
 
+class SCENE_OT_open_luz(Operator):
+    bl_idname = 'scene.open_luz'
+    bl_label = 'Open in luz'
+
+    def execute(self, context):
+        settings = context.scene.luz_export
+        if not settings.filepath:
+            return bpy.ops.export_scene.luz_model('INVOKE_DEFAULT', open_studio=True)
+        if not Path(bpy.path.abspath(settings.filepath)).is_file():
+            if 'FINISHED' not in bpy.ops.export_scene.luz_again():
+                return {'CANCELLED'}
+        from uuid import uuid4
+
+        from . import studio
+
+        project = context.scene.get('luz_studio_project') or str(uuid4())
+        context.scene['luz_studio_project'] = project
+        try:
+            studio.open_connection(bpy.path.abspath(settings.filepath), project)
+        except (OSError, RuntimeError, ValueError) as error:
+            self.report({'ERROR'}, str(error))
+            return {'CANCELLED'}
+        return {'FINISHED'}
+
+
 class SCENE_PT_luz_export(Panel):
     bl_label = 'luz Export'
     bl_space_type = 'PROPERTIES'
@@ -4162,6 +4197,7 @@ class SCENE_PT_luz_export(Panel):
                 layout.prop(settings, name)
         layout.operator('export_scene.luz_model', text='Export As…')
         layout.operator('export_scene.luz_again', text='Export Again')
+        layout.operator('scene.open_luz')
 
 
 class OBJECT_PT_luz_export(Panel):
@@ -4223,6 +4259,7 @@ class EXPORT_OT_luz_model(Operator):
     bl_idname = 'export_scene.luz_model'
     bl_label = 'luz Scene (.scene.json)'
     bl_options = {'PRESET'}
+    open_studio: BoolProperty(options={'HIDDEN', 'SKIP_SAVE'})
 
     bake_animation: BoolProperty(
         name='Export animation',
@@ -4313,6 +4350,8 @@ class EXPORT_OT_luz_model(Operator):
             self.report({'ERROR'}, str(error))
             return {'CANCELLED'}
         self.report({'INFO'}, f'luz scene exported to {scene_path}')
+        if self.open_studio:
+            return bpy.ops.scene.open_luz()
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -4467,6 +4506,7 @@ classes = (
     EXPORT_OT_luz_model,
     EXPORT_OT_luz_entity,
     EXPORT_OT_luz_again,
+    SCENE_OT_open_luz,
     SCENE_PT_luz_export,
     OBJECT_PT_luz_export,
     DATA_PT_luz_light,
@@ -4489,6 +4529,10 @@ def register():
 def unregister():
     from bpy.utils import unregister_class
 
+    if __package__:
+        from . import studio
+
+        studio.close_connection()
     bpy.types.TOPBAR_MT_file_export.remove(menu_func_export)
     del bpy.types.World.luz
     del bpy.types.Action.luz

@@ -1,0 +1,113 @@
+.studio {
+  position: fixed;
+  inset: 0;
+  color: #f0f0ed;
+  pointer-events: none;
+  font-family: Outfit, system-ui, sans-serif;
+}
+
+.studio header,
+.studio-card,
+.studio aside,
+.studio button,
+.studio a {
+  pointer-events: auto;
+}
+
+.studio header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px clamp(20px, 4vw, 64px);
+}
+
+.studio a {
+  color: inherit;
+  text-underline-offset: 4px;
+}
+
+.studio header a:first-child {
+  font-size: 22px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.studio-card,
+.studio aside,
+.studio-message {
+  background: #17191d;
+  border: 1px solid #373a40;
+  border-radius: 12px;
+  padding: 20px;
+  margin: 12px clamp(16px, 4vw, 64px);
+  max-width: 660px;
+}
+
+.studio-card h1 {
+  margin: 0 0 12px;
+  line-height: 1.15;
+}
+
+.studio-empty .studio-card {
+  margin: min(15vh, 112px) auto 12px;
+  width: min(660px, 90vw);
+  box-sizing: border-box;
+  max-height: 64vh;
+  overflow: auto;
+}
+
+.studio article,
+.studio-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  width: fit-content;
+}
+
+.studio article {
+  padding: 12px 0;
+}
+
+.studio-tools h1 {
+  font-size: 17px;
+  margin: 0;
+}
+
+.studio-card > a + button {
+  margin-left: 12px;
+}
+
+.studio button:not(.animation-control) {
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  background: #292c32;
+  border: 1px solid #51545c;
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+
+.studio aside {
+  max-width: min(360px, 85vw);
+  max-height: 52vh;
+  overflow: auto;
+}
+
+.studio-message {
+  width: fit-content;
+  margin-inline: auto;
+  max-width: 85vw;
+}
+
+.studio-fullscreen {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+}
+
+.studio-pending {
+  position: fixed;
+  inset: 0;
+  visibility: hidden;
+}

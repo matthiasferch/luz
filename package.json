@@ -17,10 +17,10 @@
     "deploy:demo": "wrangler deploy --config apps/editor/wrangler.json",
     "watch": "webpack --watch",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run validate:textures && npm run validate:shaders && npm test && npm run build && npm run build:demo && npm run test:distribution",
-    "format": "prettier --write \"*.{ts,mts,cts,js,cjs,mjs,json,md,yml,yaml}\" \".github/**/*.{yml,yaml}\" \"integrations/**/*.md\" \"packages/**/*.{ts,mts,cts,js,cjs,mjs,json,md,glsl}\" \"tests/**/*.{ts,mts,cts,js,cjs,mjs,html,json,md}\" \"tooling/**/*.{ts,mts,cts,js,cjs,mjs,json,md}\" \"apps/editor/*.{ts,mts,cts,js,cjs,mjs,css,html,json,md}\" \"apps/editor/src/**/*.{ts,mts,cts,js,cjs,mjs,vue,css,json,glsl}\" \"apps/editor/tests/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/tooling/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/types/**/*.{ts,mts,cts}\" && python -m ruff format integrations/blender",
-    "format:check": "prettier --check \"*.{ts,mts,cts,js,cjs,mjs,json,md,yml,yaml}\" \".github/**/*.{yml,yaml}\" \"integrations/**/*.md\" \"packages/**/*.{ts,mts,cts,js,cjs,mjs,json,md,glsl}\" \"tests/**/*.{ts,mts,cts,js,cjs,mjs,html,json,md}\" \"tooling/**/*.{ts,mts,cts,js,cjs,mjs,json,md}\" \"apps/editor/*.{ts,mts,cts,js,cjs,mjs,css,html,json,md}\" \"apps/editor/src/**/*.{ts,mts,cts,js,cjs,mjs,vue,css,json,glsl}\" \"apps/editor/tests/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/tooling/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/types/**/*.{ts,mts,cts}\" && python -m ruff format --check integrations/blender",
-    "lint": "eslint index.ts packages tests tooling \"*.{js,cjs,mjs}\" --ext .ts,.mts,.cts,.js,.cjs,.mjs --max-warnings 0 && npm --workspace @luz/editor run lint && npm run lint:python && npm run lint:styles && npm run lint:html && npm run lint:workflows && npm run lint:powershell",
-    "lint:fix": "eslint index.ts packages tests tooling \"*.{js,cjs,mjs}\" --ext .ts,.mts,.cts,.js,.cjs,.mjs --fix --max-warnings 0 && npm --workspace @luz/editor run lint -- --fix",
+    "format": "prettier --write \"*.{ts,mts,cts,js,cjs,mjs,json,md,yml,yaml}\" \".github/**/*.{yml,yaml}\" \"integrations/**/*.md\" \"integrations/blender/luz_exporter/connection.js\" \"packages/**/*.{ts,mts,cts,js,cjs,mjs,json,md,glsl}\" \"tests/**/*.{ts,mts,cts,js,cjs,mjs,html,json,md}\" \"tooling/**/*.{ts,mts,cts,js,cjs,mjs,json,md}\" \"apps/editor/*.{ts,mts,cts,js,cjs,mjs,css,html,json,md}\" \"apps/editor/src/**/*.{ts,mts,cts,js,cjs,mjs,vue,css,json,glsl}\" \"apps/editor/tests/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/tooling/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/types/**/*.{ts,mts,cts}\" && python -m ruff format integrations/blender",
+    "format:check": "prettier --check \"*.{ts,mts,cts,js,cjs,mjs,json,md,yml,yaml}\" \".github/**/*.{yml,yaml}\" \"integrations/**/*.md\" \"integrations/blender/luz_exporter/connection.js\" \"packages/**/*.{ts,mts,cts,js,cjs,mjs,json,md,glsl}\" \"tests/**/*.{ts,mts,cts,js,cjs,mjs,html,json,md}\" \"tooling/**/*.{ts,mts,cts,js,cjs,mjs,json,md}\" \"apps/editor/*.{ts,mts,cts,js,cjs,mjs,css,html,json,md}\" \"apps/editor/src/**/*.{ts,mts,cts,js,cjs,mjs,vue,css,json,glsl}\" \"apps/editor/tests/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/tooling/**/*.{ts,mts,cts,js,cjs,mjs,json}\" \"apps/editor/types/**/*.{ts,mts,cts}\" && python -m ruff format --check integrations/blender",
+    "lint": "eslint integrations/blender/luz_exporter/connection.js index.ts packages tests tooling \"*.{js,cjs,mjs}\" --ext .ts,.mts,.cts,.js,.cjs,.mjs --max-warnings 0 && npm --workspace @luz/editor run lint && npm run lint:python && npm run lint:styles && npm run lint:html && npm run lint:workflows && npm run lint:powershell",
+    "lint:fix": "eslint integrations/blender/luz_exporter/connection.js index.ts packages tests tooling \"*.{js,cjs,mjs}\" --ext .ts,.mts,.cts,.js,.cjs,.mjs --fix --max-warnings 0 && npm --workspace @luz/editor run lint -- --fix",
     "lint:python": "python -m ruff check integrations/blender && python -m compileall -q integrations/blender",
     "test": "npm --workspace @luz/tests test && npm --workspace @luz/editor test",
     "typecheck": "tsc --noEmit && tsc -p tests/tsconfig.json --noEmit && npm --workspace @luz/editor run typecheck",
@@ -37,7 +37,9 @@
     "lint:workflows": "node tooling/lint-workflows.cjs",
     "lint:powershell": "pwsh -NoProfile -File tooling/lint-powershell.ps1",
     "generate:textures": "node tooling/textures/generate-textures.cjs",
-    "validate:textures": "node tooling/textures/generate-textures.cjs --check"
+    "validate:textures": "node tooling/textures/generate-textures.cjs --check",
+    "build:studio": "npm --workspace @luz/editor run build:studio",
+    "deploy:studio": "wrangler d1 execute luz-studio --remote --config apps/editor/wrangler.studio.json --file apps/editor/tooling/studio-schema.sql && wrangler deploy --config apps/editor/wrangler.studio.json"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.71.1",

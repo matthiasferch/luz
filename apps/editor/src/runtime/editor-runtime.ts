@@ -46,6 +46,13 @@ import { RuntimeTelemetry } from './telemetry'
 
 export type { RenderingSettings } from '../settings'
 
+export interface SceneSource {
+  root: string
+  readJson(url: string, signal?: AbortSignal): Promise<unknown>
+  readBinary(url: string, signal?: AbortSignal): Promise<ArrayBuffer>
+  settings?: SceneSettings
+}
+
 const MAXIMUM_DELTA_TIME = 1 / 15
 
 export class Editor implements EditorApi {
@@ -57,7 +64,7 @@ export class Editor implements EditorApi {
   private animationController!: AnimationController
 
   private readonly simulation: SimulationController
-  private readonly settingsStore: SettingsStore
+  private readonly settingsStore?: SettingsStore
   private readonly settings: SceneSettings
   private readonly renderingSettings: RenderingSettings
 
@@ -106,10 +113,11 @@ export class Editor implements EditorApi {
   private constructor(
     canvas: HTMLCanvasElement,
     context: WebGL2RenderingContext,
-    settingsStore: SettingsStore,
+    settingsStore: SettingsStore | undefined,
     settings: SceneSettings,
     sceneUrl: string,
-    private readonly reportLoading: LoadingProgressReporter
+    private readonly reportLoading: LoadingProgressReporter,
+    source?: SceneSource
   ) {
     this.canvas = canvas
     this.settingsStore = settingsStore
@@ -119,14 +127,16 @@ export class Editor implements EditorApi {
     this.simulation = new SimulationController(settings.simulation)
     this.backend = new WebGL2RenderBackend(context)
     this.inputManager = new InputManager(this.canvas)
-    this.imageLoader = new ImageLoader({ baseUrl: document.baseURI, decodeImage })
+    this.imageLoader = new ImageLoader({ baseUrl: document.baseURI, decodeImage, readBinary: source?.readBinary })
     this.environmentLoader = new EnvironmentLoader(this.imageLoader)
     this.modelManager = new ModelManager(this.backend, {
-      resolveSurface: (path) => this.imageLoader.loadImage(resolveTextureUrl(path)),
+      resolveSurface: (path) =>
+        this.imageLoader.loadImage(source ? new URL(path, source.root).href : resolveTextureUrl(path)),
 
-      readJson: (url, signal) => loadJsonInWorker(url, 'no-cache', signal)
+      readJson: source?.readJson ?? ((url, signal) => loadJsonInWorker(url, 'no-cache', signal)),
+      readBinary: source?.readBinary
     })
-    this.sceneLoader = new SceneLoader(this.modelManager, this.reportLoading)
+    this.sceneLoader = new SceneLoader(this.modelManager, this.reportLoading, source?.readJson)
     this.debugOverlay = new DebugOverlay(document.getElementById('overlays'))
     this.debugRenderer = new DebugRenderer(this.backend)
     this.cameraController = new CameraController(this.inputManager)
@@ -165,7 +175,7 @@ export class Editor implements EditorApi {
     this.sceneRenderer?.destroy()
     this.modelManager.destroy()
     this.backend.destroy()
-    this.settingsStore.flush()
+    this.settingsStore?.flush()
   }
 
   private onWindowResize() {
@@ -183,7 +193,8 @@ export class Editor implements EditorApi {
   static async create(
     canvasSelector: string,
     sceneUrl: string,
-    reportLoading: LoadingProgressReporter = () => undefined
+    reportLoading: LoadingProgressReporter = () => undefined,
+    source?: SceneSource
   ): Promise<Editor> {
     reportLoading({ stage: 'Preparing settings' })
 
@@ -199,10 +210,10 @@ export class Editor implements EditorApi {
       throw new Error('WebGL2 is not supported in this environment')
     }
 
-    const settingsStore = new SettingsStore(sceneUrl)
-    const settings = await settingsStore.load()
+    const settingsStore = source ? undefined : new SettingsStore(sceneUrl)
+    const settings = settingsStore ? await settingsStore.load() : normalizeSceneSettings(source?.settings ?? {})
 
-    const editor = new Editor(canvas, context, settingsStore, settings, sceneUrl, reportLoading)
+    const editor = new Editor(canvas, context, settingsStore, settings, sceneUrl, reportLoading, source)
 
     try {
       await editor.initialize()
@@ -423,7 +434,7 @@ export class Editor implements EditorApi {
   }
 
   private persistSettings(): void {
-    this.settingsStore.save(this.settings)
+    this.settingsStore?.save(this.settings)
   }
 
   private collectSceneLights(): Array<{ key: string; label: string; light: Light }> {
