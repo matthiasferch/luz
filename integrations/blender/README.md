@@ -17,7 +17,7 @@ Disable any older installation of the exporter before enabling the new one.
 
 Choose **Scene Properties → luz Export → Open in luz**. Choose an export destination the first time, then save the Blender file to remember its destination and publishing identity. In the hosted studio, choose **Connect Blender** and leave the connection window open. **Export Again** updates the private preview. Reopen the studio from Blender to start a new connection after a browser refresh.
 
-Open **Scene → My scenes** to sign in as an invited publisher. Return to the preview, set the camera, rendering and playback, then choose **Scene → Publish scene** and confirm the upload. Re-exporting stays private until you publish again. Use **My scenes** to copy a link or unpublish it.
+Open **Scene → Load scene** to browse the demo scenes and your published scenes. Choose **Sign in to see your scenes** if prompted. Return to the preview, set the camera, rendering and playback, then choose **Scene → Publish scene** and confirm the upload. Re-exporting stays private until you publish again. Choose **Manage publications** in the scene picker to copy a link or unpublish a scene.
 
 ## Basic usage
 

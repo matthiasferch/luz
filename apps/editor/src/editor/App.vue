@@ -30,13 +30,14 @@ import AnimationControls from './components/AnimationControls.vue'
 import { createPanelLayout, type PanelId } from './panel-layout'
 import { useEditorStore } from './editor-store'
 import { loadSceneThumbnails, SCENE_THUMBNAIL_UPDATED_EVENT } from './scene-thumbnails'
+import UserScenes from '../studio/UserScenes.vue'
 
-const emit = defineEmits<{ publish: []; connect: [] }>()
+const emit = defineEmits<{ publish: []; connect: []; openPublication: [id: string]; toggleFullscreen: [] }>()
 
-defineProps<{ connectionLabel?: string }>()
+defineProps<{ connectionLabel?: string; isViewer?: boolean; isFullscreen?: boolean }>()
 
 const store = useEditorStore()
-const libraryUrl = __EDITOR_STUDIO__ ? '/scenes' : 'https://studio.luzjs.dev/scenes'
+const catalogHeading = __EDITOR_STUDIO__ ? 'Demo scenes' : 'Available scenes'
 
 const onSceneCommand = (command: 'publish' | 'connect') => {
   sceneMenuVisible.value = false
@@ -113,6 +114,18 @@ const onResetCamera = () => {
   viewMenuVisible.value = false
 
   store.resetCamera()
+}
+
+const onToggleFullscreen = () => {
+  viewMenuVisible.value = false
+
+  emit('toggleFullscreen')
+}
+
+const onSelectPublication = (id: string) => {
+  sceneDialogVisible.value = false
+
+  emit('openPublication', id)
 }
 
 const revokeThumbnailUrls = () => {
@@ -249,7 +262,14 @@ onBeforeUnmount(() => {
         <span class="brand"
           >luz <small>{{ version }}</small></span
         >
-        <NPopover v-model:show="sceneMenuVisible" trigger="click" placement="bottom-start" :show-arrow="false" raw>
+        <NPopover
+          v-if="!isViewer"
+          v-model:show="sceneMenuVisible"
+          trigger="click"
+          placement="bottom-start"
+          :show-arrow="false"
+          raw
+        >
           <template #trigger>
             <NButton class="toolbar-item" size="small" quaternary>Scene</NButton>
           </template>
@@ -257,9 +277,6 @@ onBeforeUnmount(() => {
             <NButton text @click="openSceneDialog">Load scene…</NButton>
             <NButton v-if="connectionLabel" text @click="onSceneCommand('connect')">{{ connectionLabel }}</NButton>
             <NButton text @click="onSceneCommand('publish')">Publish scene</NButton>
-            <NButton tag="a" :href="libraryUrl" target="_blank" rel="noopener" text @click="sceneMenuVisible = false"
-              >My scenes</NButton
-            >
           </div>
         </NPopover>
         <NPopover v-model:show="viewMenuVisible" trigger="click" placement="bottom-start" :show-arrow="false" raw>
@@ -267,17 +284,22 @@ onBeforeUnmount(() => {
             <NButton class="toolbar-item" size="small" quaternary>View</NButton>
           </template>
           <div class="toolbar-menu view-menu" data-editor-interactive>
-            <NCheckbox
-              v-for="item in panelMenuItems"
-              :key="item.id"
-              size="small"
-              :checked="layout.panels[item.id].isVisible"
-              @update:checked="onTogglePanel(item.id, $event)"
-              >{{ item.label }}</NCheckbox
+            <template v-if="!isViewer">
+              <NCheckbox
+                v-for="item in panelMenuItems"
+                :key="item.id"
+                size="small"
+                :checked="layout.panels[item.id].isVisible"
+                @update:checked="onTogglePanel(item.id, $event)"
+                >{{ item.label }}</NCheckbox
+              >
+              <NDivider />
+              <NButton class="reset-layout" text @click.stop="resetLayout">Reset layout</NButton>
+              <NButton class="view-command" text @click="onResetCamera">Reset camera</NButton>
+            </template>
+            <NButton class="view-command" text :aria-pressed="isFullscreen" @click="onToggleFullscreen"
+              >Toggle fullscreen</NButton
             >
-            <NDivider />
-            <NButton class="reset-layout" text @click.stop="resetLayout">Reset layout</NButton>
-            <NButton class="view-command" text @click="onResetCamera">Reset camera</NButton>
           </div>
         </NPopover>
       </div>
@@ -316,6 +338,7 @@ onBeforeUnmount(() => {
         </div>
       </NAlert>
 
+      <AnimationControls v-else-if="isViewer" />
       <template v-else>
         <AnimationControls v-if="!layout.panels.animations.isVisible" />
 
@@ -452,39 +475,47 @@ onBeforeUnmount(() => {
           <template #header-extra>
             <DialogCloseButton label="Close Load scene" @click="sceneDialogVisible = false" />
           </template>
-          <NSpin :show="sceneCatalogRefreshing">
-            <div v-if="store.scenes.value.length" class="scene-list" role="listbox" aria-label="Available scenes">
-              <button
-                v-for="scene in store.scenes.value"
-                :key="scene.id"
-                class="scene-row"
-                :class="{ selected: selectedSceneId === scene.id, invalid: !scene.isValid }"
-                :disabled="!scene.isValid"
-                :aria-selected="selectedSceneId === scene.id"
-                role="option"
-                type="button"
-                @click="selectScene(scene.id)"
-              >
-                <span class="scene-preview" aria-hidden="true">
-                  <img v-if="sceneThumbnailUrls[scene.id]" :src="sceneThumbnailUrls[scene.id]" alt="" />
-                  <span v-else class="scene-preview-placeholder">{{ scene.isValid ? 'No preview' : 'Invalid' }}</span>
-                </span>
-                <span class="scene-details">
-                  <span class="scene-row-heading">
-                    <strong>{{ scene.label }}</strong>
-                    <NTag v-if="store.activeSceneId.value === scene.id" size="small" :bordered="false">Current</NTag>
+          <div class="scene-catalog">
+            <NSpin :show="sceneCatalogRefreshing">
+              <h3 v-if="store.scenes.value.length" class="catalog-heading">{{ catalogHeading }}</h3>
+              <div v-if="store.scenes.value.length" class="scene-list" role="listbox" aria-label="Available scenes">
+                <button
+                  v-for="scene in store.scenes.value"
+                  :key="scene.id"
+                  class="scene-row"
+                  :class="{ selected: selectedSceneId === scene.id, invalid: !scene.isValid }"
+                  :disabled="!scene.isValid"
+                  :aria-selected="selectedSceneId === scene.id"
+                  role="option"
+                  type="button"
+                  @click="selectScene(scene.id)"
+                >
+                  <span class="scene-preview" aria-hidden="true">
+                    <img v-if="sceneThumbnailUrls[scene.id]" :src="sceneThumbnailUrls[scene.id]" alt="" />
+                    <span v-else class="scene-preview-placeholder">{{ scene.isValid ? 'No preview' : 'Invalid' }}</span>
                   </span>
-                  <span class="scene-path">{{ scene.id }}</span>
-                  <span v-if="scene.isValid" class="scene-metadata">
-                    {{ formatFileSize(scene.byteLength) }} · {{ formatCount(scene.entities, 'entity', 'entities') }} ·
-                    {{ formatCount(scene.models, 'model') }} · {{ formatCount(scene.lights, 'light') }}
+                  <span class="scene-details">
+                    <span class="scene-row-heading">
+                      <strong>{{ scene.label }}</strong>
+                      <NTag v-if="store.activeSceneId.value === scene.id" size="small" :bordered="false">Current</NTag>
+                    </span>
+                    <span class="scene-path">{{ scene.id }}</span>
+                    <span v-if="scene.isValid" class="scene-metadata">
+                      {{ formatFileSize(scene.byteLength) }} · {{ formatCount(scene.entities, 'entity', 'entities') }} ·
+                      {{ formatCount(scene.models, 'model') }} · {{ formatCount(scene.lights, 'light') }}
+                    </span>
+                    <span v-else class="scene-error">Invalid JSON: {{ scene.error }}</span>
                   </span>
-                  <span v-else class="scene-error">Invalid JSON: {{ scene.error }}</span>
-                </span>
-              </button>
-            </div>
-            <NEmpty v-else description="No scene files found" />
-          </NSpin>
+                </button>
+              </div>
+              <NEmpty v-else description="No scene files found" />
+            </NSpin>
+            <UserScenes
+              v-if="sceneDialogVisible"
+              :active-scene-id="store.activeSceneId.value"
+              @select="onSelectPublication"
+            />
+          </div>
         </NCard>
       </NModal>
     </main>
@@ -701,12 +732,20 @@ onBeforeUnmount(() => {
   background: rgb(18 20 25 / 98%);
 }
 
-.scene-list {
-  display: grid;
-  gap: 6px;
+.scene-catalog {
   max-height: min(520px, calc(100vh - 210px));
   overflow: auto;
   padding-right: 3px;
+}
+
+.scene-list {
+  display: grid;
+  gap: 6px;
+}
+
+.catalog-heading {
+  margin: 0 0 8px;
+  font-size: 14px;
 }
 
 .scene-row {

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, markRaw, onMounted, onBeforeUnmount, ref, shallowRef } from 'vue'
 import { NButton, NCard, NConfigProvider, NModal, darkTheme } from 'naive-ui'
-import { Maximize, Minimize } from '@lucide/vue'
 import { Editor, type SceneSource } from '../runtime/editor-runtime'
 import { useEditorStore } from '../editor/editor-store'
 import App from '../editor/App.vue'
@@ -15,7 +14,6 @@ import {
   type SceneDescriptor
 } from '../editor/scene-catalog'
 import { updateSceneThumbnail } from '../editor/scene-thumbnails'
-import AnimationControls from '../editor/components/AnimationControls.vue'
 import {
   capturePreset,
   createDraftSource,
@@ -110,8 +108,11 @@ const formatSize = (bytes: number) => (bytes / 1024 / 1024).toFixed(2) + ' MiB'
 
 const refreshRoute = () => location.reload()
 
-async function showScene(entry: string, source?: SceneSource, preset?: Preset) {
-  const generation = ++sceneGeneration
+async function showScene(generation: number, entry: string, source?: SceneSource, preset?: Preset) {
+  if (!isActive || generation !== sceneGeneration) {
+    return
+  }
+
   const canvas = document.createElement('canvas')
 
   canvas.id = 'preview-' + generation
@@ -185,12 +186,14 @@ function configureCatalog(sceneId: string | null) {
 }
 
 async function openCatalogScene(scene: SceneDescriptor) {
+  const generation = ++sceneGeneration
+
   try {
     if (editor && catalogScene) {
       await updateSceneThumbnail(editor, catalogScene, true).catch(() => undefined)
     }
 
-    const runtime = await showScene(scene.url)
+    const runtime = await showScene(generation, scene.url)
 
     if (!runtime) {
       return
@@ -239,6 +242,29 @@ async function openCatalogScene(scene: SceneDescriptor) {
   }
 }
 
+async function openPublication(id: string) {
+  const generation = ++sceneGeneration
+
+  message.value = 'Loading scene…'
+
+  try {
+    const scene = await getPublication(id)
+
+    if (await showScene(generation, scene.entry, scene.source, scene.preset)) {
+      if (isWorkspace) {
+        configureCatalog(id)
+      }
+
+      sharedUrl.value = ''
+      message.value = ''
+    }
+  } catch {
+    if (isActive && generation === sceneGeneration) {
+      message.value = 'Scene unavailable'
+    }
+  }
+}
+
 async function applySnapshots() {
   if (isRendering.value) {
     return
@@ -256,7 +282,7 @@ async function applySnapshots() {
         const preset = editor && draft.value?.project === snapshot.state.project ? capturePreset(editor) : undefined
         const source = createDraftSource(snapshot.state, snapshot.files, preset?.settings)
 
-        if (!(await showScene(snapshot.state.entry, source, preset))) {
+        if (!(await showScene(++sceneGeneration, snapshot.state.entry, source, preset))) {
           continue
         }
 
@@ -426,15 +452,7 @@ onMounted(async () => {
 
   try {
     if (isViewer) {
-      message.value = 'Loading scene…'
-
-      const scene = await getPublication(location.hash.slice('#/scene/'.length)).catch(() => {
-        throw new Error('Scene unavailable')
-      })
-
-      await showScene(scene.entry, scene.source, scene.preset)
-
-      message.value = ''
+      await openPublication(location.hash.slice('#/scene/'.length))
     } else if (isLibrary) {
       listings.value = await getListings()
       isLibraryReady.value = true
@@ -474,12 +492,16 @@ onBeforeUnmount(() => {
 <template>
   <NConfigProvider :theme="darkTheme">
     <App
-      v-if="isWorkspace"
+      v-if="isWorkspace || (isViewer && hasPreview)"
+      :is-viewer="isViewer"
+      :is-fullscreen="isFullscreen"
       :connection-label="
         bridgeOrigin && connectionState === 'idle' ? (draft ? 'Reconnect Blender' : 'Connect Blender') : undefined
       "
       @publish="dialog = 'publish'"
       @connect="dialog = 'connect'"
+      @open-publication="openPublication"
+      @toggle-fullscreen="onFullscreen"
     />
     <div class="studio">
       <header v-if="isLibrary"><a href="/">luz studio</a></header>
@@ -519,22 +541,6 @@ onBeforeUnmount(() => {
           Reconnect
         </button>
       </p>
-      <template v-if="hasPreview">
-        <AnimationControls v-if="isViewer" />
-        <button
-          class="studio-fullscreen"
-          :aria-label="isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
-          :aria-pressed="isFullscreen"
-          data-editor-interactive
-          @click="onFullscreen"
-        >
-          <Minimize v-if="isFullscreen" :size="18" aria-hidden="true" /><Maximize
-            v-else
-            :size="18"
-            aria-hidden="true"
-          />
-        </button>
-      </template>
     </div>
     <NModal :show="Boolean(dialog)" @update:show="onDialogVisibility">
       <NCard

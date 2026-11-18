@@ -315,7 +315,7 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
     wrapper.unmount()
   })
-  it('opens publication from the Scene menu and links to My scenes in another tab', async () => {
+  it('offers publishing in Scene and toggles fullscreen from View', async () => {
     const store = createEditorStore()
 
     store.attach(makeRuntime())
@@ -327,8 +327,7 @@ describe('Vue editor interface', () => {
 
       const menu = wrapper.get('.scene-menu')
 
-      expect(menu.get('a').text()).toBe('My scenes')
-      expect(menu.get('a').attributes()).toMatchObject({ href: '/scenes', target: '_blank' })
+      expect(menu.text()).not.toContain('My scenes')
 
       await menu
         .findAll('button')
@@ -336,11 +335,23 @@ describe('Vue editor interface', () => {
         .trigger('click')
       expect(wrapper.emitted('publish')).toHaveLength(1)
       expect(wrapper.findAllComponents(NPopover)[0].props('show')).toBe(false)
+
+      await wrapper.findAll('.toolbar-item')[1].trigger('click')
+
+      await wrapper
+        .get('.view-menu')
+        .findAll('button')
+        .find((button) => button.text() === 'Toggle fullscreen')!
+        .trigger('click')
+      expect(wrapper.emitted('toggleFullscreen')).toHaveLength(1)
+      expect(wrapper.findAllComponents(NPopover)[1].props('show')).toBe(false)
     } finally {
       wrapper.unmount()
     }
   })
   it('selects a valid scene explicitly and prevents loading malformed scenes', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json([]))
+
     const activate = vi.fn()
     const refresh = vi.fn(async () => availableScenes)
     const store = createEditorStore()
@@ -389,6 +400,8 @@ describe('Vue editor interface', () => {
     wrapper.unmount()
   })
   it('offers scene recovery when initialization fails', async () => {
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async () => Response.json([]))
+
     const store = createEditorStore()
 
     store.configureScenes(availableScenes, 'editor.scene.json', async () => availableScenes, vi.fn())

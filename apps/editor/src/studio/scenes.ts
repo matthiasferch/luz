@@ -40,11 +40,17 @@ export const maximumSceneSize = 250 * 1024 * 1024
 
 const blockSize = 8 * 1024 * 1024
 
+export class SignInRequired extends Error {
+  constructor() {
+    super('Sign in from Load scene, then return to this tab.')
+  }
+}
+
 export async function requestStudio(path: string, options?: RequestInit) {
   const response = await fetch(path, { ...options, cache: 'no-store', redirect: 'manual' })
 
   if (response.type === 'opaqueredirect' || response.status === 401 || response.status === 403) {
-    throw new Error('Open My scenes to sign in, then return to this tab.')
+    throw new SignInRequired()
   }
 
   if (!response.ok) {
