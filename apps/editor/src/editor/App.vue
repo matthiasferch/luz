@@ -296,6 +296,7 @@ onBeforeUnmount(() => {
               <NDivider />
               <NButton class="reset-layout" text @click.stop="resetLayout">Reset layout</NButton>
               <NButton class="view-command" text @click="onResetCamera">Reset camera</NButton>
+              <NDivider />
             </template>
             <NButton class="view-command" text :aria-pressed="isFullscreen" @click="onToggleFullscreen"
               >Toggle fullscreen</NButton
@@ -571,9 +572,8 @@ onBeforeUnmount(() => {
   display: grid;
   min-width: 166px;
   max-height: calc(100dvh - 64px);
-  gap: 9px;
   overflow-y: auto;
-  padding: 10px 12px;
+  padding: 5px 12px;
   border: 1px solid rgb(255 255 255 / 10%);
   border-radius: 9px;
   background: rgb(18 20 25 / 90%);
@@ -598,12 +598,18 @@ onBeforeUnmount(() => {
   width: 100%;
 }
 
+.toolbar-menu :deep(.n-checkbox),
+.toolbar-menu :deep(.n-button) {
+  align-items: center;
+  min-height: 28px;
+}
+
 .toolbar-menu :deep(.n-button__content) {
   font-size: var(--luz-checkbox-label-size);
 }
 
 .view-menu :deep(.n-divider) {
-  margin: 2px 0;
+  margin: 0;
 }
 
 .view-menu :deep(.n-checkbox) {
