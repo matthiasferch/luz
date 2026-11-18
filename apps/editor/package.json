@@ -15,7 +15,7 @@
     "preview:local": "webpack serve --host 127.0.0.1 --port 4173",
     "watch": "webpack --watch",
     "serve": "webpack serve --open",
-    "build:studio": "webpack --mode production --env studio && python -m zipfile -c dist/studio/luz-exporter.zip ../../integrations/blender/luz_exporter/blender_manifest.toml ../../integrations/blender/luz_exporter/__init__.py ../../integrations/blender/luz_exporter/exporter.py ../../integrations/blender/luz_exporter/studio.py ../../integrations/blender/luz_exporter/connection.js ../../integrations/blender/luz_exporter/LICENSE"
+    "build:studio": "node tooling/build-demo.cjs --studio && python -m zipfile -c dist/studio/luz-exporter.zip ../../integrations/blender/luz_exporter/blender_manifest.toml ../../integrations/blender/luz_exporter/__init__.py ../../integrations/blender/luz_exporter/exporter.py ../../integrations/blender/luz_exporter/studio.py ../../integrations/blender/luz_exporter/connection.js ../../integrations/blender/luz_exporter/LICENSE"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.71.1",

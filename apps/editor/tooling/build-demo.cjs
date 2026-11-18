@@ -56,6 +56,7 @@ const buildDemo = async () => {
     const configuration = createWebpackConfiguration(
       {
         demoAssetsDirectory: assetDirectory,
+        studio: process.argv.includes('--studio'),
         sceneLabels: {
           'sala-character.scene.json': 'Skeletal Animation'
         }

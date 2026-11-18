@@ -1,3 +1,6 @@
+import type { Editor } from '../editor'
+import { readSceneFingerprint, type SceneDescriptor } from './scene-catalog'
+
 export interface SceneThumbnail {
   sceneId: string
   fingerprint: string
@@ -90,4 +93,45 @@ export const storeSceneThumbnail = async (thumbnail: SceneThumbnail): Promise<vo
   } finally {
     database.close()
   }
+}
+
+const SCENE_THUMBNAIL_WIDTH = 320
+const SCENE_THUMBNAIL_HEIGHT = 240
+
+export const updateSceneThumbnail = async (
+  editor: Editor,
+  scene: SceneDescriptor,
+  isCaptureForced = false
+): Promise<void> => {
+  let fingerprint = `catalog:${scene.byteLength}`
+
+  try {
+    fingerprint = await readSceneFingerprint(scene.url)
+  } catch {
+    // A missing development fingerprint should not prevent thumbnail capture.
+  }
+
+  if (!isCaptureForced) {
+    const cachedThumbnail = await loadSceneThumbnail(scene.id)
+
+    if (
+      cachedThumbnail?.fingerprint === fingerprint &&
+      cachedThumbnail.width === SCENE_THUMBNAIL_WIDTH &&
+      cachedThumbnail.height === SCENE_THUMBNAIL_HEIGHT
+    ) {
+      return
+    }
+  }
+
+  const image = await editor.captureThumbnail(SCENE_THUMBNAIL_WIDTH, SCENE_THUMBNAIL_HEIGHT)
+
+  await storeSceneThumbnail({
+    sceneId: scene.id,
+    fingerprint,
+    capturedAt: Date.now(),
+    width: SCENE_THUMBNAIL_WIDTH,
+    height: SCENE_THUMBNAIL_HEIGHT,
+    image
+  })
+  window.dispatchEvent(new CustomEvent(SCENE_THUMBNAIL_UPDATED_EVENT, { detail: scene.id }))
 }

@@ -43,7 +43,7 @@ To run the editor:
 npm --workspace @luz/editor run serve
 ```
 
-Try the [live showcase](https://demo.luzjs.dev/) in a WebGL2-capable browser.
+Open [luz studio](https://studio.luzjs.dev/) in a WebGL2-capable browser to explore the two showcase scenes or preview your own Blender export. The demo address opens the same workspace.
 
 To run the self-contained showcase locally, run `npm run build:demo` followed by `npm run preview:demo`,
 then open `http://127.0.0.1:4173/`. It opens Skeletal Animation in the full editor;

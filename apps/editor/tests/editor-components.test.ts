@@ -315,6 +315,31 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
     wrapper.unmount()
   })
+  it('opens publication from the Scene menu and links to My scenes in another tab', async () => {
+    const store = createEditorStore()
+
+    store.attach(makeRuntime())
+
+    const wrapper = mount(App, provideStore(store))
+
+    try {
+      await wrapper.findAll('.toolbar-item')[0].trigger('click')
+
+      const menu = wrapper.get('.scene-menu')
+
+      expect(menu.get('a').text()).toBe('My scenes')
+      expect(menu.get('a').attributes()).toMatchObject({ href: '/scenes', target: '_blank' })
+
+      await menu
+        .findAll('button')
+        .find((button) => button.text() === 'Publish scene')!
+        .trigger('click')
+      expect(wrapper.emitted('publish')).toHaveLength(1)
+      expect(wrapper.findAllComponents(NPopover)[0].props('show')).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
+  })
   it('selects a valid scene explicitly and prevents loading malformed scenes', async () => {
     const activate = vi.fn()
     const refresh = vi.fn(async () => availableScenes)

@@ -5,6 +5,7 @@ declare module '*.vue' {
   export default component
 }
 
+declare const __EDITOR_STUDIO__: boolean
 declare const __EDITOR_VERSION__: string
 declare const __EDITOR_DEVELOPMENT__: boolean
 declare const __EDITOR_SCENES__: import('./editor/scene-catalog').SceneDescriptor[]

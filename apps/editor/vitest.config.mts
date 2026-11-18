@@ -21,6 +21,7 @@ export default defineConfig({
   ],
   assetsInclude: ['**/*.glsl'],
   define: {
+    __EDITOR_STUDIO__: JSON.stringify(true),
     __EDITOR_VERSION__: JSON.stringify('test'),
     __EDITOR_DEVELOPMENT__: JSON.stringify(false),
     __EDITOR_SCENES__: JSON.stringify([])

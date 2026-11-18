@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createEditorStore, editorStoreKey } from '../src/editor/editor-store'
 import StudioWorkspace from '../src/studio/StudioWorkspace.vue'
@@ -6,22 +6,37 @@ import StudioWorkspace from '../src/studio/StudioWorkspace.vue'
 const mountWorkspace = (url: string) => {
   history.replaceState(null, '', url)
 
-  return mount(StudioWorkspace, { global: { provide: { [editorStoreKey as symbol]: createEditorStore() } } })
+  return mount(StudioWorkspace, {
+    global: { provide: { [editorStoreKey as symbol]: createEditorStore() }, stubs: { teleport: true } }
+  })
 }
 
 afterEach(() => {
   history.replaceState(null, '', '/')
+  localStorage.clear()
   vi.useRealTimers()
 })
-it('shows installation instructions for a direct visit', () => {
+it('offers installation on a direct visit and remembers an explicit installation confirmation', async () => {
   const workspace = mountWorkspace('/')
 
   try {
-    expect(workspace.get('h1').text()).toBe('Preview a Blender scene')
+    expect(workspace.find('.editor-shell').exists()).toBe(true)
+    expect(workspace.find('[role="dialog"]').exists()).toBe(false)
     expect(workspace.get('a[download]').attributes('href')).toBe('/luz-exporter.zip')
-    expect(workspace.find('button').exists()).toBe(false)
+
+    await workspace.get('.extension-panel .studio-actions button').trigger('click')
+    expect(workspace.find('.extension-panel').exists()).toBe(false)
   } finally {
     workspace.unmount()
+  }
+
+  const reopened = mountWorkspace('/')
+
+  try {
+    await flushPromises()
+    expect(reopened.find('.extension-panel').exists()).toBe(false)
+  } finally {
+    reopened.unmount()
   }
 })
 it('offers the pairing action on a Blender launch and recovers from a blocked or unresponsive window', async () => {
@@ -36,21 +51,21 @@ it('offers the pairing action on a Blender launch and recovers from a blocked or
 
   try {
     expect(location.hash).toBe('')
-    expect(workspace.get('h1').text()).toBe('Connect your Blender scene')
+    expect(workspace.get('[role="dialog"]').text()).toContain('Connect your Blender scene')
     expect(workspace.find('a[download]').exists()).toBe(false)
     expect(openWindow).not.toHaveBeenCalled()
 
-    await workspace.get('button').trigger('click')
+    await workspace.get('.studio-actions button').trigger('click')
     expect(workspace.get('[role="status"]').text()).toContain('blocked')
 
-    await workspace.get('button').trigger('click')
+    await workspace.get('.studio-actions button').trigger('click')
     expect(openWindow).toHaveBeenCalledWith('http://127.0.0.1:54321/', '_blank', expect.any(String))
     expect(workspace.get('[role="status"]').text()).toBe('Connecting to Blender…')
 
     await vi.advanceTimersByTimeAsync(15000)
     expect(closeWindow).toHaveBeenCalled()
     expect(workspace.get('[role="status"]').text()).toContain('Open in luz')
-    expect(workspace.get('button').text()).toBe('Connect Blender')
+    expect(workspace.get('.studio-actions button').text()).toBe('Connect Blender')
   } finally {
     workspace.unmount()
   }

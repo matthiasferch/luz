@@ -13,7 +13,7 @@ module.exports = (environment = {}, argumentsObject = {}) => {
   const isStudio = Boolean(environment.studio)
   const assetDirectory = isDemo ? environment.demoAssetsDirectory : path.resolve(__dirname, 'public/assets')
   const sceneDirectory = path.join(assetDirectory, 'scenes')
-  const sceneCatalog = (isStudio ? [] : scanSceneCatalog(sceneDirectory)).map((scene) => ({
+  const sceneCatalog = scanSceneCatalog(sceneDirectory).map((scene) => ({
     ...scene,
     label: environment.sceneLabels?.[scene.id] ?? scene.label
   }))
@@ -22,7 +22,7 @@ module.exports = (environment = {}, argumentsObject = {}) => {
   return {
     mode,
     context: __dirname,
-    entry: isStudio ? './src/studio/main.ts' : './src/main.ts',
+    entry: './src/main.ts',
     devtool: mode === 'production' ? false : 'inline-source-map',
     module: {
       rules: [
@@ -70,6 +70,7 @@ module.exports = (environment = {}, argumentsObject = {}) => {
         __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
         __EDITOR_VERSION__: JSON.stringify(packageJson.version),
         __EDITOR_DEVELOPMENT__: JSON.stringify(isServing),
+        __EDITOR_STUDIO__: JSON.stringify(isStudio),
         __EDITOR_SCENES__: JSON.stringify(sceneCatalog)
       }),
       ...(isServing
@@ -77,15 +78,12 @@ module.exports = (environment = {}, argumentsObject = {}) => {
         : [
             new CopyPlugin({
               patterns: [
-                ...(isStudio
-                  ? []
-                  : [
-                      {
-                        from: isDemo ? assetDirectory : 'public/assets/',
-                        to: 'assets/',
-                        noErrorOnMissing: !isDemo
-                      }
-                    ]),
+                {
+                  ...(isDemo ? { context: assetDirectory, from: '**/*' } : { from: 'public/assets/' }),
+                  to: 'assets/',
+                  noErrorOnMissing: !isDemo
+                },
+                ...(isDemo && !isStudio ? [{ from: 'tooling/demo-redirects', to: '_redirects', toType: 'file' }] : []),
                 {
                   from: 'index.html',
                   to: 'index.html',

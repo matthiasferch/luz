@@ -14,6 +14,7 @@ module.exports = {
   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended', 'plugin:vue/essential', 'prettier'],
   globals: {
     __EDITOR_VERSION__: 'readonly',
+    __EDITOR_STUDIO__: 'readonly',
     __EDITOR_DEVELOPMENT__: 'readonly',
     __EDITOR_SCENES__: 'readonly'
   },

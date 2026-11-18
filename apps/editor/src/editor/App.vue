@@ -31,7 +31,22 @@ import { createPanelLayout, type PanelId } from './panel-layout'
 import { useEditorStore } from './editor-store'
 import { loadSceneThumbnails, SCENE_THUMBNAIL_UPDATED_EVENT } from './scene-thumbnails'
 
+const emit = defineEmits<{ publish: []; connect: [] }>()
+
+defineProps<{ connectionLabel?: string }>()
+
 const store = useEditorStore()
+const libraryUrl = __EDITOR_STUDIO__ ? '/scenes' : 'https://studio.luzjs.dev/scenes'
+
+const onSceneCommand = (command: 'publish' | 'connect') => {
+  sceneMenuVisible.value = false
+
+  if (command === 'publish') {
+    emit('publish')
+  } else {
+    emit('connect')
+  }
+}
 const layout = createPanelLayout()
 const viewMenuVisible = ref(false)
 const sceneMenuVisible = ref(false)
@@ -240,6 +255,11 @@ onBeforeUnmount(() => {
           </template>
           <div class="toolbar-menu scene-menu" data-editor-interactive>
             <NButton text @click="openSceneDialog">Load scene…</NButton>
+            <NButton v-if="connectionLabel" text @click="onSceneCommand('connect')">{{ connectionLabel }}</NButton>
+            <NButton text @click="onSceneCommand('publish')">Publish scene</NButton>
+            <NButton tag="a" :href="libraryUrl" target="_blank" rel="noopener" text @click="sceneMenuVisible = false"
+              >My scenes</NButton
+            >
           </div>
         </NPopover>
         <NPopover v-model:show="viewMenuVisible" trigger="click" placement="bottom-start" :show-arrow="false" raw>
