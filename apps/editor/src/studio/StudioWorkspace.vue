@@ -27,7 +27,7 @@ const draft = shallowRef<Draft>()
 const listings = ref<Listing[]>([])
 const message = ref('')
 const sharedUrl = ref('')
-const isConnected = ref(false)
+const connectionState = ref<'idle' | 'connecting' | 'connected'>('idle')
 const isRendering = ref(false)
 const isPublishing = ref(false)
 const isSettingsVisible = ref(false)
@@ -49,6 +49,7 @@ let bridge: Window | null = null
 let port: MessagePort | undefined
 let pendingSnapshot: { state: Draft; files: Map<string, Blob> } | undefined
 let timer: number
+let pairingTimeout: number | undefined
 let isActive = true
 
 if (connection) {
@@ -142,7 +143,13 @@ async function applySnapshots() {
 }
 
 function onBridge(event: MessageEvent) {
-  if (!bridge || event.source !== bridge || event.origin !== bridgeOrigin || event.data?.type !== 'luzConnection') {
+  if (
+    connectionState.value !== 'connecting' ||
+    !bridge ||
+    event.source !== bridge ||
+    event.origin !== bridgeOrigin ||
+    event.data?.type !== 'luzConnection'
+  ) {
     return
   }
 
@@ -153,8 +160,10 @@ function onBridge(event: MessageEvent) {
   port = channel.port1
   port.onmessage = ({ data }) => {
     if (data.type === 'paired') {
+      window.clearTimeout(pairingTimeout)
+
       ticket = data.ticket
-      isConnected.value = true
+      connectionState.value = 'connected'
       message.value = 'Loading Blender export…'
     } else if (data.type === 'snapshot') {
       pendingSnapshot = data
@@ -164,7 +173,9 @@ function onBridge(event: MessageEvent) {
       message.value = data.message
 
       if (data.type === 'disconnected') {
-        isConnected.value = false
+        window.clearTimeout(pairingTimeout)
+
+        connectionState.value = 'idle'
       }
     }
   }
@@ -173,16 +184,30 @@ function onBridge(event: MessageEvent) {
 }
 
 function onConnect() {
-  if (!bridgeOrigin) {
-    message.value = 'In Blender, open Scene Properties → luz Export → Open in luz.'
+  if (!bridgeOrigin || connectionState.value !== 'idle') {
+    return
+  }
+
+  port?.close()
+  bridge?.close()
+
+  bridge = window.open(bridgeOrigin + '/', '_blank', 'popup,width=400,height=180')
+
+  if (!bridge) {
+    message.value = 'Your browser blocked the connection window. Allow the pop-up for this site and try again.'
 
     return
   }
 
-  bridge?.close()
+  connectionState.value = 'connecting'
+  message.value = 'Connecting to Blender…'
+  pairingTimeout = window.setTimeout(() => {
+    port?.close()
+    bridge?.close()
 
-  bridge = window.open(bridgeOrigin + '/', '_blank', 'popup,width=400,height=180')
-  message.value = bridge ? 'Connecting to Blender…' : 'Allow the connection window, then try again.'
+    connectionState.value = 'idle'
+    message.value = 'Blender did not respond. Choose Open in luz in Blender to start a new connection.'
+  }, 15000)
 }
 
 async function onPublish() {
@@ -246,9 +271,11 @@ onMounted(async () => {
   window.addEventListener('message', onBridge)
 
   timer = window.setInterval(() => {
-    if (bridge?.closed && isConnected.value) {
-      isConnected.value = false
-      message.value = 'Blender disconnected'
+    if (bridge?.closed && connectionState.value !== 'idle') {
+      window.clearTimeout(pairingTimeout)
+
+      connectionState.value = 'idle'
+      message.value = 'The Blender connection window was closed.'
     }
   }, 1000)
 
@@ -277,6 +304,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('hashchange', refreshRoute)
   window.removeEventListener('message', onBridge)
   window.clearInterval(timer)
+  window.clearTimeout(pairingTimeout)
   port?.close()
   bridge?.close()
   store.dispose()
@@ -301,10 +329,22 @@ onBeforeUnmount(() => {
         </article>
       </section>
       <section v-else-if="!isViewer" class="studio-card" :class="{ 'studio-tools': hasPreview }">
-        <h1>{{ title || 'Preview a Blender scene' }}</h1>
-        <p v-if="!hasPreview">Choose Open in luz in Blender’s scene export panel, then connect this tab.</p>
-        <a v-if="!hasPreview" href="/luz-exporter.zip" download>Download Blender extension</a>
-        <button v-if="!isConnected" @click="onConnect">{{ hasPreview ? 'Reconnect' : 'Connect Blender' }}</button>
+        <h1 v-if="hasPreview">{{ title }}</h1>
+        <template v-else-if="bridgeOrigin">
+          <h1 v-if="connectionState === 'idle'">Connect your Blender scene</h1>
+          <h1 v-else>Blender preview</h1>
+          <p v-if="connectionState === 'idle'">
+            Choose Connect Blender to load your export. Keep the connection window open while you work.
+          </p>
+        </template>
+        <template v-else>
+          <h1>Preview a Blender scene</h1>
+          <p>In Blender, choose Scene Properties → luz Export → Open in luz.</p>
+          <a href="/luz-exporter.zip" download>Download Blender extension</a>
+        </template>
+        <button v-if="bridgeOrigin && connectionState === 'idle'" @click="onConnect">
+          {{ hasPreview ? 'Reconnect' : 'Connect Blender' }}
+        </button>
         <template v-if="hasPreview"
           ><span>{{ formatSize(size) }}</span
           ><button @click="isSettingsVisible = !isSettingsVisible">Render settings</button
