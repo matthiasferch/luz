@@ -4,13 +4,11 @@ import {
   darkTheme,
   NAlert,
   NButton,
-  NCard,
   NCheckbox,
   NConfigProvider,
   NDivider,
   NEmpty,
   NGlobalStyle,
-  NModal,
   NPopover,
   NSpin,
   NTag,
@@ -19,7 +17,7 @@ import {
 import DebugPanel from './components/DebugPanel.vue'
 import DiagnosticsPanel from './components/DiagnosticsPanel.vue'
 import DiagnosticsFrameRate from './components/DiagnosticsFrameRate.vue'
-import DialogCloseButton from './components/DialogCloseButton.vue'
+import StudioDialog from './components/StudioDialog.vue'
 import FloatingPanel from './components/FloatingPanel.vue'
 import RenderSettingsPanel from './components/RenderSettingsPanel.vue'
 import EntitiesPanel from './components/EntitiesPanel.vue'
@@ -27,16 +25,22 @@ import AnimationPanel from './components/AnimationPanel.vue'
 import EnvironmentPanel from './components/EnvironmentPanel.vue'
 import SimulationPanel from './components/SimulationPanel.vue'
 import AnimationControls from './components/AnimationControls.vue'
-import { createPanelLayout, type PanelId } from './panel-layout'
+import { createPanelLayout, useMobileViewport, type PanelId } from './panel-layout'
 import { useEditorStore } from './editor-store'
 import { loadSceneThumbnails, SCENE_THUMBNAIL_UPDATED_EVENT } from './scene-thumbnails'
 import UserScenes from '../studio/UserScenes.vue'
 
 const emit = defineEmits<{ publish: []; connect: []; openPublication: [id: string]; toggleFullscreen: [] }>()
 
-defineProps<{ connectionLabel?: string; canPublish?: boolean; isViewer?: boolean; isFullscreen?: boolean }>()
+const props = defineProps<{
+  connectionLabel?: string
+  canPublish?: boolean
+  isViewer?: boolean
+  isFullscreen?: boolean
+}>()
 
 const store = useEditorStore()
+const isMobile = useMobileViewport()
 const catalogHeading = __EDITOR_STUDIO__ ? 'Demo scenes' : 'Available scenes'
 
 const onSceneCommand = (command: 'publish' | 'connect') => {
@@ -168,6 +172,19 @@ const openSceneDialog = async () => {
     sceneCatalogRefreshing.value = false
   }
 }
+
+const onScenesClick = () => {
+  if (props.canPublish || props.connectionLabel) {
+    sceneMenuVisible.value = true
+  } else {
+    void openSceneDialog()
+  }
+}
+
+const onCloseMenu = () => {
+  sceneMenuVisible.value = false
+  viewMenuVisible.value = false
+}
 const selectedScene = computed(() => store.scenes.value.find(({ id }) => id === selectedSceneId.value))
 const confirmScene = () => {
   if (!selectedScene.value?.isValid || !store.activateScene(selectedScene.value.id)) {
@@ -262,8 +279,27 @@ onBeforeUnmount(() => {
         <span class="brand"
           >luz <small>{{ version }}</small></span
         >
+        <template v-if="isMobile">
+          <NButton
+            v-if="!isViewer"
+            class="toolbar-item touch-trigger"
+            data-toolbar="scenes"
+            aria-haspopup="dialog"
+            quaternary
+            @click="onScenesClick"
+            >Scenes</NButton
+          >
+          <NButton
+            class="toolbar-item touch-trigger"
+            data-toolbar="view"
+            aria-haspopup="dialog"
+            quaternary
+            @click="viewMenuVisible = true"
+            >View</NButton
+          >
+        </template>
         <NPopover
-          v-if="!isViewer"
+          v-if="!isMobile && !isViewer"
           v-model:show="sceneMenuVisible"
           trigger="click"
           placement="bottom-start"
@@ -279,7 +315,14 @@ onBeforeUnmount(() => {
             <NButton v-if="canPublish" text @click="onSceneCommand('publish')">Publish scene</NButton>
           </div>
         </NPopover>
-        <NPopover v-model:show="viewMenuVisible" trigger="click" placement="bottom-start" :show-arrow="false" raw>
+        <NPopover
+          v-if="!isMobile"
+          v-model:show="viewMenuVisible"
+          trigger="click"
+          placement="bottom-start"
+          :show-arrow="false"
+          raw
+        >
           <template #trigger>
             <NButton class="toolbar-item" size="small" quaternary>View</NButton>
           </template>
@@ -471,54 +514,89 @@ onBeforeUnmount(() => {
         {{ store.error.value }}
       </NAlert>
 
-      <NModal v-model:show="sceneDialogVisible" :mask-closable="false">
-        <NCard class="scene-browser" title="Load scene" role="dialog" aria-modal="true" data-editor-interactive>
-          <template #header-extra>
-            <DialogCloseButton label="Close Load scene" @click="sceneDialogVisible = false" />
+      <StudioDialog
+        v-if="isMobile"
+        :is-visible="sceneMenuVisible || viewMenuVisible"
+        is-mobile
+        :title="viewMenuVisible ? 'View' : 'Scenes'"
+        :focus-target="viewMenuVisible ? 'view' : 'scenes'"
+        close-label="Close menu"
+        @update:is-visible="onCloseMenu"
+      >
+        <div v-if="viewMenuVisible" class="sheet-menu view-menu">
+          <NButton text class="view-command" @click="onToggleFullscreen">{{
+            isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'
+          }}</NButton>
+          <template v-if="!isViewer">
+            <NButton text class="view-command" @click="onResetCamera">Reset camera</NButton>
+            <h3>Panels</h3>
+            <NCheckbox
+              v-for="item in panelMenuItems"
+              :key="item.id"
+              :checked="layout.panels[item.id].isVisible"
+              @update:checked="onTogglePanel(item.id, $event)"
+              >{{ item.label }}</NCheckbox
+            >
+            <NDivider />
+            <NButton text class="reset-layout" @click="resetLayout">Reset layout</NButton>
           </template>
-          <div class="scene-catalog">
-            <NSpin :show="sceneCatalogRefreshing">
-              <h3 v-if="store.scenes.value.length" class="catalog-heading">{{ catalogHeading }}</h3>
-              <div v-if="store.scenes.value.length" class="scene-list" role="listbox" aria-label="Available scenes">
-                <button
-                  v-for="scene in store.scenes.value"
-                  :key="scene.id"
-                  class="scene-row"
-                  :class="{ selected: selectedSceneId === scene.id, invalid: !scene.isValid }"
-                  :disabled="!scene.isValid"
-                  :aria-selected="selectedSceneId === scene.id"
-                  role="option"
-                  type="button"
-                  @click="selectScene(scene.id)"
-                >
-                  <span class="scene-preview" aria-hidden="true">
-                    <img v-if="sceneThumbnailUrls[scene.id]" :src="sceneThumbnailUrls[scene.id]" alt="" />
-                    <span v-else class="scene-preview-placeholder">{{ scene.isValid ? 'No preview' : 'Invalid' }}</span>
+        </div>
+        <div v-else class="sheet-menu scene-menu">
+          <NButton text @click="openSceneDialog">Load scene…</NButton>
+          <NButton v-if="canPublish" text @click="onSceneCommand('publish')">Publish scene</NButton>
+          <NButton v-if="connectionLabel" text @click="onSceneCommand('connect')">{{ connectionLabel }}</NButton>
+        </div>
+      </StudioDialog>
+      <StudioDialog
+        v-model:is-visible="sceneDialogVisible"
+        :is-mobile="isMobile"
+        card-class="scene-browser"
+        title="Load scene"
+        close-label="Close Load scene"
+        focus-target="scenes"
+      >
+        <div class="scene-catalog" :class="{ 'mobile-catalog': isMobile }">
+          <NSpin :show="sceneCatalogRefreshing">
+            <h3 v-if="store.scenes.value.length" class="catalog-heading">{{ catalogHeading }}</h3>
+            <div v-if="store.scenes.value.length" class="scene-list" role="listbox" aria-label="Available scenes">
+              <button
+                v-for="scene in store.scenes.value"
+                :key="scene.id"
+                class="scene-row"
+                :class="{ selected: selectedSceneId === scene.id, invalid: !scene.isValid }"
+                :disabled="!scene.isValid"
+                :aria-selected="selectedSceneId === scene.id"
+                role="option"
+                type="button"
+                @click="selectScene(scene.id)"
+              >
+                <span v-if="!isMobile || sceneThumbnailUrls[scene.id]" class="scene-preview" aria-hidden="true">
+                  <img v-if="sceneThumbnailUrls[scene.id]" :src="sceneThumbnailUrls[scene.id]" alt="" />
+                  <span v-else class="scene-preview-placeholder">{{ scene.isValid ? 'No preview' : 'Invalid' }}</span>
+                </span>
+                <span class="scene-details">
+                  <span class="scene-row-heading">
+                    <strong>{{ scene.label }}</strong>
+                    <NTag v-if="store.activeSceneId.value === scene.id" size="small" :bordered="false">Current</NTag>
                   </span>
-                  <span class="scene-details">
-                    <span class="scene-row-heading">
-                      <strong>{{ scene.label }}</strong>
-                      <NTag v-if="store.activeSceneId.value === scene.id" size="small" :bordered="false">Current</NTag>
-                    </span>
-                    <span class="scene-path">{{ scene.id }}</span>
-                    <span v-if="scene.isValid" class="scene-metadata">
-                      {{ formatFileSize(scene.byteLength) }} · {{ formatCount(scene.entities, 'entity', 'entities') }} ·
-                      {{ formatCount(scene.models, 'model') }} · {{ formatCount(scene.lights, 'light') }}
-                    </span>
-                    <span v-else class="scene-error">Invalid JSON: {{ scene.error }}</span>
+                  <span v-if="!isMobile" class="scene-path">{{ scene.id }}</span>
+                  <span v-if="scene.isValid && !isMobile" class="scene-metadata">
+                    {{ formatFileSize(scene.byteLength) }} · {{ formatCount(scene.entities, 'entity', 'entities') }} ·
+                    {{ formatCount(scene.models, 'model') }} · {{ formatCount(scene.lights, 'light') }}
                   </span>
-                </button>
-              </div>
-              <NEmpty v-else description="No scene files found" />
-            </NSpin>
-            <UserScenes
-              v-if="sceneDialogVisible"
-              :active-scene-id="store.activeSceneId.value"
-              @select="onSelectPublication"
-            />
-          </div>
-        </NCard>
-      </NModal>
+                  <span v-if="!scene.isValid" class="scene-error">Invalid JSON: {{ scene.error }}</span>
+                </span>
+              </button>
+            </div>
+            <NEmpty v-else description="No scene files found" />
+          </NSpin>
+          <UserScenes
+            v-if="sceneDialogVisible"
+            :active-scene-id="store.activeSceneId.value"
+            @select="onSelectPublication"
+          />
+        </div>
+      </StudioDialog>
     </main>
   </NConfigProvider>
 </template>
@@ -732,7 +810,7 @@ onBeforeUnmount(() => {
   pointer-events: auto;
 }
 
-.scene-browser {
+:global(.n-card.scene-browser) {
   width: min(640px, calc(100vw - 32px));
   max-height: min(720px, calc(100vh - 32px));
   background: rgb(18 20 25 / 98%);
@@ -768,6 +846,12 @@ onBeforeUnmount(() => {
   background: rgb(255 255 255 / 2.5%);
   cursor: pointer;
   font: inherit;
+}
+
+.mobile-catalog .scene-row {
+  display: flex;
+  min-height: 52px;
+  gap: 10px;
 }
 
 .scene-row:hover:not(:disabled) {
@@ -854,5 +938,58 @@ onBeforeUnmount(() => {
   .scene-preview {
     width: 88px;
   }
+}
+
+.touch-trigger {
+  min-height: 44px;
+}
+
+.sheet-menu {
+  display: grid;
+}
+
+.sheet-menu :deep(.n-button),
+.sheet-menu :deep(.n-checkbox) {
+  justify-content: flex-start;
+  align-items: center;
+  min-height: 48px;
+  width: 100%;
+  padding-inline: 4px;
+  font-size: 16px;
+}
+
+.sheet-menu h3 {
+  margin: 8px 0 0;
+  padding: 12px 4px 2px;
+  color: rgb(255 255 255 / 65%);
+  border-top: 1px solid rgb(255 255 255 / 12%);
+  font-size: 14px;
+}
+
+.mobile-catalog {
+  max-height: none;
+  overflow: visible;
+  padding: 6px 0 0;
+}
+
+.mobile-catalog .scene-preview {
+  width: 54px;
+  flex: none;
+}
+
+.mobile-catalog .scene-details {
+  flex: 1;
+}
+
+.mobile-catalog .scene-row-heading strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.mobile-catalog :deep(.publication-row),
+.mobile-catalog :deep(a) {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
 }
 </style>

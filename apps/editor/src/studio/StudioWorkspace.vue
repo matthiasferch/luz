@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, markRaw, onMounted, onBeforeUnmount, ref, shallowRef } from 'vue'
-import { NButton, NCard, NConfigProvider, NModal, darkTheme } from 'naive-ui'
+import { NButton, NConfigProvider, darkTheme } from 'naive-ui'
 import { Editor, type SceneSource } from '../runtime/editor-runtime'
 import { useEditorStore } from '../editor/editor-store'
 import App from '../editor/App.vue'
 import DialogCloseButton from '../editor/components/DialogCloseButton.vue'
+import StudioDialog from '../editor/components/StudioDialog.vue'
+import { useMobileViewport } from '../editor/panel-layout'
 import {
   loadSceneCatalog,
   selectInitialScene,
@@ -28,6 +30,7 @@ import {
 } from './scenes'
 
 const store = useEditorStore()
+const isMobile = useMobileViewport()
 const connection = /^#connect=(\d{1,5})\.([\w-]{43})$/.exec(location.hash)
 const bridgeOrigin = connection && Number(connection[1]) <= 65535 ? 'http://127.0.0.1:' + connection[1] : ''
 const isViewer = location.hash.startsWith('#/scene/')
@@ -298,6 +301,7 @@ async function applySnapshots() {
 
         draft.value = snapshot.state
         blobs = snapshot.files
+        sharedUrl.value = ''
         message.value = ''
 
         configureCatalog(null)
@@ -395,6 +399,7 @@ async function onPublish() {
   }
 
   isPublishing.value = true
+  message.value = 'Preparing upload…'
 
   try {
     const result = await publishScene(draft.value, blobs, capturePreset(editor), (count) => {
@@ -559,20 +564,17 @@ onBeforeUnmount(() => {
         </button>
       </p>
     </div>
-    <NModal :show="Boolean(dialog)" @update:show="onDialogVisibility">
-      <NCard
-        class="studio-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="studio-dialog-title"
-        data-editor-interactive
-      >
-        <template #header
-          ><span id="studio-dialog-title">{{
-            dialog === 'connect' ? 'Connect your Blender scene' : 'Publish scene'
-          }}</span></template
-        >
-        <template #header-extra><DialogCloseButton label="Close dialog" @click="dialog = null" /></template>
+    <StudioDialog
+      :is-visible="Boolean(dialog)"
+      :is-mobile="isMobile"
+      :title="dialog === 'connect' ? 'Connect your Blender scene' : 'Publish scene'"
+      card-class="studio-dialog"
+      close-label="Close dialog"
+      focus-target="scenes"
+      is-mask-closable
+      @update:is-visible="onDialogVisibility"
+    >
+      <div :class="{ 'mobile-confirmation': isMobile }">
         <template v-if="dialog === 'connect'">
           <p>
             Allow this studio tab to preview the scene you opened in Blender? Keep the connection window open to see
@@ -589,11 +591,18 @@ onBeforeUnmount(() => {
               <strong>{{ title }}</strong> &middot; {{ formatSize(size) }}
             </p>
             <p>Publish this preview with its current camera, render settings, and animation.</p>
+            <p v-if="isMobile && message" role="status">{{ message }}</p>
             <div class="studio-actions">
-              <NButton :disabled="isPublishing || isRendering" @click="onPublish">Publish</NButton>
+              <NButton v-if="sharedUrl && isMobile" type="primary" @click="onCopy(sharedUrl)">Copy link</NButton>
+              <NButton
+                :type="isMobile && !sharedUrl ? 'primary' : 'default'"
+                :disabled="isPublishing || isRendering"
+                @click="onPublish"
+                >Publish</NButton
+              >
               <template v-if="sharedUrl">
                 <a :href="sharedUrl" target="_blank" rel="noopener">View publication</a>
-                <NButton @click="onCopy(sharedUrl)">Copy link</NButton>
+                <NButton v-if="!isMobile" @click="onCopy(sharedUrl)">Copy link</NButton>
               </template>
             </div>
           </template>
@@ -602,8 +611,8 @@ onBeforeUnmount(() => {
             scene to publish it.
           </p>
         </template>
-        <p v-if="message" role="status">{{ message }}</p>
-      </NCard>
-    </NModal>
+        <p v-if="message && !(isMobile && dialog === 'publish' && draft)" role="status">{{ message }}</p>
+      </div>
+    </StudioDialog>
   </NConfigProvider>
 </template>

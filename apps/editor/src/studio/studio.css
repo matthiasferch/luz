@@ -128,3 +128,28 @@
   inset: 0;
   visibility: hidden;
 }
+
+.mobile-confirmation {
+  font-size: 15px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mobile-confirmation .studio-actions {
+  display: grid;
+  gap: 6px;
+  padding-block: 4px;
+}
+
+.mobile-confirmation .n-button,
+.mobile-confirmation .studio-actions a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 48px;
+  width: 100%;
+}
+
+.mobile-confirmation .studio-actions a {
+  color: inherit;
+}

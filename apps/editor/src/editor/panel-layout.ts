@@ -1,4 +1,4 @@
-import { reactive, watch } from 'vue'
+import { onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 
 export type PanelId = 'settings' | 'entities' | 'animations' | 'environment' | 'simulation' | 'debug' | 'diagnostics'
 
@@ -29,6 +29,26 @@ const PANEL_GAP = 8
 
 const isMobileViewport = (viewportWidth = window.innerWidth): boolean =>
   viewportWidth <= MOBILE_VIEWPORT_WIDTH || window.matchMedia('(pointer: coarse)').matches
+
+export function useMobileViewport() {
+  const isMobile = ref(isMobileViewport())
+  const pointer = window.matchMedia('(pointer: coarse)')
+
+  const onViewportChange = () => {
+    isMobile.value = isMobileViewport()
+  }
+
+  onMounted(() => {
+    window.addEventListener('resize', onViewportChange)
+    pointer.addEventListener('change', onViewportChange)
+  })
+  onBeforeUnmount(() => {
+    window.removeEventListener('resize', onViewportChange)
+    pointer.removeEventListener('change', onViewportChange)
+  })
+
+  return isMobile
+}
 
 type PanelRectangle = Pick<PanelState, 'x' | 'y' | 'width' | 'height' | 'isCollapsed'>
 

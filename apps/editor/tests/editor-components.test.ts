@@ -283,7 +283,7 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.floating-panel[aria-label="Simulation"]').exists()).toBe(true)
     expect(wrapper.find('.animation-controls').exists()).toBe(true)
     expect(wrapper.get('.simulation-actions button').text()).toBe('Stop')
-    expect(wrapper.findAllComponents(NPopover)[1].props('show')).toBe(false)
+    expect(wrapper.find('dialog[open]').exists()).toBe(false)
 
     await wrapper.findAll('.toolbar-item')[1].trigger('click')
 
@@ -293,7 +293,7 @@ describe('Vue editor interface', () => {
 
     await nextTick()
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
-    expect(wrapper.findAllComponents(NPopover)[1].props('show')).toBe(false)
+    expect(wrapper.find('dialog[open]').exists()).toBe(false)
 
     await wrapper.get('button[aria-label="Hide Animations"]').trigger('click')
     expect(wrapper.get('button[aria-label="Pause animations"]').attributes('disabled')).toBeUndefined()
@@ -315,6 +315,46 @@ describe('Vue editor interface', () => {
     await nextTick()
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
     wrapper.unmount()
+  })
+  it('opens the mobile picker directly and offers scene actions for a Blender preview', async () => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(390)
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(Response.json([]))
+
+    const store = createEditorStore()
+
+    store.attach(makeRuntime())
+    store.configureScenes(availableScenes, availableScenes[0].id, async () => availableScenes, vi.fn())
+
+    const wrapper = mount(App, provideStore(store))
+
+    try {
+      await wrapper.get('[data-toolbar="scenes"]').trigger('click')
+
+      const picker = wrapper.get('dialog[open]')
+
+      expect(picker.attributes('aria-label')).toBe('Load scene')
+      expect(picker.text()).toContain('Your scenes')
+      expect(picker.text()).toContain('Current')
+      expect(picker.find('.scene-metadata').exists()).toBe(false)
+      expect(picker.find('.scene-path').exists()).toBe(false)
+
+      await picker.trigger('cancel')
+      expect(wrapper.find('dialog[open]').exists()).toBe(false)
+
+      await wrapper.setProps({ canPublish: true, connectionLabel: 'Reconnect Blender' })
+
+      await wrapper.get('[data-toolbar="scenes"]').trigger('click')
+
+      const actions = wrapper.get('dialog[open] .scene-menu').findAll('button')
+
+      expect(actions.map((button) => button.text())).toEqual(['Load scene…', 'Publish scene', 'Reconnect Blender'])
+
+      await actions[1].trigger('click')
+      expect(wrapper.emitted('publish')).toHaveLength(1)
+      expect(wrapper.find('dialog[open]').exists()).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
   })
   it('offers publishing only for a publishable preview and toggles fullscreen from View', async () => {
     const store = createEditorStore()
