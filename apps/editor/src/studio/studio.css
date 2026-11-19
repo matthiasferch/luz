@@ -90,6 +90,12 @@
   font-weight: 600;
 }
 
+@media (width <= 768px), (pointer: coarse), (pointer: none) {
+  .extension-panel {
+    display: none;
+  }
+}
+
 .extension-heading {
   display: flex;
   align-items: center;

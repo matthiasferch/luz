@@ -122,17 +122,18 @@ describe('Vue editor interface', () => {
     const wrapper = mount(App, provideStore(store))
     const labels = wrapper.findAll('.toolbar-item').map((button) => button.text())
 
-    expect(wrapper.findAll('.floating-panel')).toHaveLength(4)
+    expect(wrapper.find('.floating-panel[aria-label="Settings"]').exists()).toBe(false)
+    expect(wrapper.findAll('.floating-panel')).toHaveLength(3)
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
     expect(wrapper.get('.floating-panel[aria-label="Entities"]').classes()).not.toContain('auto-height')
-    expect(wrapper.findAll('.floating-panel.auto-height')).toHaveLength(3)
+    expect(wrapper.findAll('.floating-panel.auto-height')).toHaveLength(2)
     expect(
       wrapper
         .findAll('.floating-panel.auto-height')
         .every((panel) => panel.attributes('style')?.includes('max-height: calc(100vh'))
     ).toBe(true)
-    expect(wrapper.findAll('.panel-resize-handle.bottom')).toHaveLength(4)
-    expect(wrapper.findAll('.panel-resize-handle.corner')).toHaveLength(4)
+    expect(wrapper.findAll('.panel-resize-handle.bottom')).toHaveLength(3)
+    expect(wrapper.findAll('.panel-resize-handle.corner')).toHaveLength(3)
     expect(wrapper.find('.brand').text()).toContain('luz')
     expect(labels).toEqual(['Scene', 'View'])
 
@@ -315,7 +316,7 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
     wrapper.unmount()
   })
-  it('offers publishing in Scene and toggles fullscreen from View', async () => {
+  it('offers publishing only for a publishable preview and toggles fullscreen from View', async () => {
     const store = createEditorStore()
 
     store.attach(makeRuntime())
@@ -328,6 +329,9 @@ describe('Vue editor interface', () => {
       const menu = wrapper.get('.scene-menu')
 
       expect(menu.text()).not.toContain('My scenes')
+      expect(menu.text()).not.toContain('Publish scene')
+
+      await wrapper.setProps({ canPublish: true })
 
       await menu
         .findAll('button')

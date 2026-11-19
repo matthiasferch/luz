@@ -34,7 +34,7 @@ import UserScenes from '../studio/UserScenes.vue'
 
 const emit = defineEmits<{ publish: []; connect: []; openPublication: [id: string]; toggleFullscreen: [] }>()
 
-defineProps<{ connectionLabel?: string; isViewer?: boolean; isFullscreen?: boolean }>()
+defineProps<{ connectionLabel?: string; canPublish?: boolean; isViewer?: boolean; isFullscreen?: boolean }>()
 
 const store = useEditorStore()
 const catalogHeading = __EDITOR_STUDIO__ ? 'Demo scenes' : 'Available scenes'
@@ -276,7 +276,7 @@ onBeforeUnmount(() => {
           <div class="toolbar-menu scene-menu" data-editor-interactive>
             <NButton text @click="openSceneDialog">Load scene…</NButton>
             <NButton v-if="connectionLabel" text @click="onSceneCommand('connect')">{{ connectionLabel }}</NButton>
-            <NButton text @click="onSceneCommand('publish')">Publish scene</NButton>
+            <NButton v-if="canPublish" text @click="onSceneCommand('publish')">Publish scene</NButton>
           </div>
         </NPopover>
         <NPopover v-model:show="viewMenuVisible" trigger="click" placement="bottom-start" :show-arrow="false" raw>

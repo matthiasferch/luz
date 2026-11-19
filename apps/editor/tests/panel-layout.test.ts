@@ -28,13 +28,28 @@ describe('editor panel layout', () => {
       y: panels.environment.y + panels.environment.height + 16,
       isVisible: true
     })
-    expect(panels.settings).toMatchObject({ x: 830, y: 58, isVisible: true })
+    expect(panels.settings).toMatchObject({ x: 830, y: 58, isVisible: false })
     expect(panels.settings.x + panels.settings.width).toBe(1190)
     expect(panels.debug.x + panels.debug.width).toBe(1190)
     expect(panels.diagnostics.x + panels.diagnostics.width).toBe(1190)
     expect(panels.animations).toMatchObject({ isVisible: false, hasAutomaticHeight: false })
     expect(panels.debug.isVisible).toBe(false)
     expect(panels.diagnostics.isVisible).toBe(false)
+  })
+  it('hides the old Settings default and remembers opening it from View', async () => {
+    const saved = createDefaultPanelLayout()
+
+    saved.settings.isVisible = true
+
+    localStorage.setItem('luz.editor.layout', JSON.stringify(saved))
+
+    const layout = createPanelLayout()
+
+    expect(layout.panels.settings.isVisible).toBe(false)
+    layout.setVisible('settings', true)
+
+    await nextTick()
+    expect(createPanelLayout().panels.settings.isVisible).toBe(true)
   })
   it('hides every panel on narrow screens and on wider devices with a coarse pointer', () => {
     expect(Object.values(createDefaultPanelLayout(390, 844)).every((panel) => !panel.isVisible)).toBe(true)

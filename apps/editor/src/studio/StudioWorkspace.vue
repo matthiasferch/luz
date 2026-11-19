@@ -494,6 +494,7 @@ onBeforeUnmount(() => {
     <App
       v-if="isWorkspace || (isViewer && hasPreview)"
       :is-viewer="isViewer"
+      :can-publish="Boolean(draft)"
       :is-fullscreen="isFullscreen"
       :connection-label="
         bridgeOrigin && connectionState === 'idle' ? (draft ? 'Reconnect Blender' : 'Connect Blender') : undefined

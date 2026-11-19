@@ -105,7 +105,7 @@ export const createDefaultPanelLayout = (
       height: Math.max(MINIMUM_HEIGHT, Math.min(720, viewportHeight - 74)),
       hasAutomaticHeight: true,
       isCollapsed: false,
-      isVisible: arePrimaryPanelsVisible,
+      isVisible: false,
       z: 4
     },
     entities: {
@@ -234,6 +234,12 @@ export const parsePanelLayout = (
         )
       ])
     ) as PanelLayout
+
+    // Older desktop layouts saved Settings as visible on first load. Opening it explicitly raises its stacking order.
+    if (!isMobileViewport(viewportWidth) && parsed.settings?.z === defaults.settings.z) {
+      panels.settings.isVisible = false
+    }
+
     const ids = Object.keys(defaults) as PanelId[]
     const occupied = ids.filter((id) => parsed[id] && panels[id].isVisible).map((id) => panels[id])
 
