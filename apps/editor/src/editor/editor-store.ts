@@ -116,6 +116,7 @@ export const createEditorStore = () => {
     entities.value = state.entities
     telemetry.value = api.collectEditorTelemetry()
     animationGroups.value = api.collectAnimationGroups?.() ?? []
+    error.value = null
     status.value = 'ready'
     telemetryTimer = window.setInterval(() => {
       telemetry.value = api.collectEditorTelemetry()
@@ -123,15 +124,15 @@ export const createEditorStore = () => {
     }, 250)
   }
 
+  const startLoading = (stage: string) => {
+    error.value = null
+    loadingProgress.value = { stage }
+    status.value = 'loading'
+  }
+
   const fail = (reason: unknown) => {
-    if (telemetryTimer !== undefined) {
-      window.clearInterval(telemetryTimer)
-
-      telemetryTimer = undefined
-    }
-
     error.value = reason instanceof Error ? reason.message : String(reason)
-    status.value = 'error'
+    status.value = runtime.value ? 'ready' : 'error'
   }
 
   const setLoadingProgress = (progress: LoadingProgress) => {
@@ -477,6 +478,7 @@ export const createEditorStore = () => {
     configureScenes,
     refreshScenes,
     activateScene,
+    startLoading,
     fail,
     setLoadingProgress,
     setSceneReloading,

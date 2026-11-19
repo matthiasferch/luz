@@ -56,15 +56,15 @@ it('offers the pairing action on a Blender launch and recovers from a blocked or
     expect(openWindow).not.toHaveBeenCalled()
 
     await workspace.get('.studio-actions button').trigger('click')
-    expect(workspace.get('[role="status"]').text()).toContain('blocked')
+    expect(workspace.get('[role="dialog"] [role="status"]').text()).toContain('blocked')
 
     await workspace.get('.studio-actions button').trigger('click')
     expect(openWindow).toHaveBeenCalledWith('http://127.0.0.1:54321/', '_blank', expect.any(String))
-    expect(workspace.get('[role="status"]').text()).toBe('Connecting to Blender…')
+    expect(workspace.get('[role="dialog"] [role="status"]').text()).toBe('Connecting to Blender…')
 
     await vi.advanceTimersByTimeAsync(15000)
     expect(closeWindow).toHaveBeenCalled()
-    expect(workspace.get('[role="status"]').text()).toContain('Open in luz')
+    expect(workspace.get('[role="dialog"] [role="status"]').text()).toContain('Open in luz')
     expect(workspace.get('.studio-actions button').text()).toBe('Connect Blender')
   } finally {
     workspace.unmount()

@@ -318,7 +318,7 @@ onBeforeUnmount(() => {
         </div>
       </Transition>
 
-      <div v-if="store.status.value === 'loading'" class="status-card" data-editor-interactive>
+      <div v-if="store.status.value === 'loading'" class="status-card" role="status" data-editor-interactive>
         <NSpin class="loading-spinner" :size="16" />
         <span class="status-copy">
           <strong>Loading scene</strong>

@@ -127,10 +127,10 @@ async function showScene(generation: number, entry: string, source?: SceneSource
       '#' + canvas.id,
       source ? new URL(entry, source.root).href : entry,
       (progress) => {
-        if (!hasPreview.value && generation === sceneGeneration) {
+        if (isActive && generation === sceneGeneration) {
           store.setLoadingProgress(progress)
 
-          if (source) {
+          if (source && !hasPreview.value) {
             message.value = progress.stage + '…'
           }
         }
@@ -188,6 +188,8 @@ function configureCatalog(sceneId: string | null) {
 async function openCatalogScene(scene: SceneDescriptor) {
   const generation = ++sceneGeneration
 
+  store.startLoading(scene.label)
+
   try {
     if (editor && catalogScene) {
       await updateSceneThumbnail(editor, catalogScene, true).catch(() => undefined)
@@ -220,7 +222,7 @@ async function openCatalogScene(scene: SceneDescriptor) {
           try {
             await runtime.reloadScene()
 
-            if (editor === runtime) {
+            if (editor === runtime && store.status.value === 'ready') {
               store.attach(markRaw(runtime))
 
               await updateSceneThumbnail(runtime, scene, true)
@@ -234,9 +236,7 @@ async function openCatalogScene(scene: SceneDescriptor) {
       )
     }
   } catch (error) {
-    if (hasPreview.value) {
-      message.value = describeError(error)
-    } else {
+    if (isActive && generation === sceneGeneration) {
       store.fail(error)
     }
   }
@@ -245,7 +245,9 @@ async function openCatalogScene(scene: SceneDescriptor) {
 async function openPublication(id: string) {
   const generation = ++sceneGeneration
 
-  message.value = 'Loading scene…'
+  message.value = isViewer ? 'Loading scene…' : ''
+
+  store.startLoading('Fetching published scene')
 
   try {
     const scene = await getPublication(id)
@@ -260,7 +262,11 @@ async function openPublication(id: string) {
     }
   } catch (error) {
     if (isActive && generation === sceneGeneration) {
-      message.value = describeError(error)
+      store.fail(error)
+
+      if (isViewer) {
+        message.value = describeError(error)
+      }
     }
   }
 }
@@ -278,11 +284,15 @@ async function applySnapshots() {
 
       pendingSnapshot = undefined
 
+      let generation: number | undefined
+
       try {
         const preset = editor && draft.value?.project === snapshot.state.project ? capturePreset(editor) : undefined
         const source = createDraftSource(snapshot.state, snapshot.files, preset?.settings)
 
-        if (!(await showScene(++sceneGeneration, snapshot.state.entry, source, preset))) {
+        generation = ++sceneGeneration
+
+        if (!(await showScene(generation, snapshot.state.entry, source, preset))) {
           continue
         }
 
@@ -296,7 +306,13 @@ async function applySnapshots() {
           dialog.value = null
         }
       } catch (error) {
-        message.value = describeError(error)
+        if (isActive && (generation === undefined || generation === sceneGeneration)) {
+          if (generation !== undefined && store.status.value === 'loading') {
+            store.fail(error)
+          } else {
+            message.value = describeError(error)
+          }
+        }
       }
     }
   } finally {
