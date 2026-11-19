@@ -4,6 +4,31 @@ The project domain **luzjs.dev** is registered through Cloudflare.
 The production target is **https://demo.luzjs.dev**, using the Cloudflare Worker `luz-demo`.
 The Quality workflow publishes it after a successful push to `main` passes all checks.
 
+## Hosted studio and scene storage
+
+The workspace at **https://studio.luzjs.dev** uses Cloudflare Access for publishers,
+D1 for ownership and published revisions, and a dedicated Workers KV namespace for
+scene files. Blender previews stay on the author's device until they publish.
+
+Keep the studio account on **Workers Free** for zero-overage hosting. When free
+request, database, or KV allowances run out, the affected operations can be
+temporarily unavailable. These allowances are shared across the account. Switching
+to Workers Paid changes that billing behavior.
+See [Workers KV pricing](https://developers.cloudflare.com/kv/platform/pricing/) and
+[D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/).
+
+Each scene can contain up to 250 MiB. The studio reserves up to 900,000,000 bytes
+across all scenes and in-progress uploads. Identical blocks from the same owner
+share storage. A failed or expired upload preserves the published revision.
+Reservations expire after one hour. Scheduled cleanup releases stored bytes once
+KV confirms deletion. Public scene requests use the current revision and its KV
+files.
+
+After the checks pass on `main`, run `npm run build:studio` and `npm run deploy:studio`
+from the repository root. The deploy command applies the D1 schema before deploying
+the Worker. On first use the schema checks that every live scene has its files in KV.
+A failed migration check stops the release and preserves the existing links.
+
 ## Build and preview
 
 From the repository root, after `npm ci`:

@@ -20,6 +20,7 @@
   "d1_databases": [
     { "binding": "DATABASE", "database_name": "luz-studio", "database_id": "9671a6d8-ba61-42ac-9668-119cf7e87b23" }
   ],
-  "r2_buckets": [{ "binding": "FILES", "bucket_name": "luz-studio-files" }],
+  "kv_namespaces": [{ "binding": "SCENE_FILES", "id": "86a5709d481646d1809c4b5b9ddeea68" }],
+  "triggers": { "crons": ["*/15 * * * *"] },
   "routes": [{ "pattern": "studio.luzjs.dev", "custom_domain": true }]
 }

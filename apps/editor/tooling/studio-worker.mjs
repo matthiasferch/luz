@@ -182,6 +182,188 @@ export function validatePublication(publication) {
   return Array.from(blocks, ([digest, length]) => ({ digest, size: length }))
 }
 
+const unusedAsset =
+  'NOT EXISTS (SELECT 1 FROM uploadAssets WHERE asset=assets.storageKey) AND NOT EXISTS (SELECT 1 FROM sceneAssets WHERE asset=assets.storageKey)'
+
+async function expireUploads(database) {
+  await database.batch([
+    database.prepare('DELETE FROM uploads WHERE expires<=unixepoch()'),
+    database.prepare("DELETE FROM assets WHERE state='reserved' AND " + unusedAsset)
+  ])
+}
+
+export async function cleanStorage(bindings) {
+  const database = bindings.DATABASE
+
+  await expireUploads(database)
+
+  await database
+    .prepare(
+      "UPDATE assets SET state='retired' WHERE state IN ('ready','writing') AND writeTime<unixepoch()-600 AND " +
+        unusedAsset
+    )
+    .run()
+
+  const { results } = await database.prepare("SELECT storageKey FROM assets WHERE state='retired' LIMIT 8").all()
+
+  for (const { storageKey } of results) {
+    await bindings.SCENE_FILES.delete(storageKey)
+
+    await database.prepare("DELETE FROM assets WHERE storageKey=? AND state='retired'").bind(storageKey).run()
+  }
+}
+
+async function reserveUpload(request, database, owner, project) {
+  const version = request.headers.get('If-Match')
+
+  if (!/^\d+$/.test(version ?? '') || !Number.isSafeInteger(Number(version))) {
+    rejectRequest(428, 'Expected scene version required')
+  }
+
+  let publication
+
+  try {
+    publication = JSON.parse(new TextDecoder().decode(await readBody(request, 1024 * 1024)))
+  } catch (error) {
+    if (error instanceof Response) {
+      throw error
+    }
+
+    rejectRequest(400, 'Invalid publication')
+  }
+
+  const blocks = JSON.stringify(validatePublication(publication))
+  const id = crypto.randomUUID()
+  const baseVersion = Number(version)
+  const title = publication.entry.split('/').pop().slice(0, -11)
+
+  await expireUploads(database)
+
+  try {
+    const [reservation, , , missing] = await database.batch([
+      database
+        .prepare(
+          `INSERT INTO uploads(id,owner,project,scene,version,title,publication)
+           SELECT ?1,?2,?3,COALESCE(s.id,?4),?5,?6,?7
+           FROM (SELECT 1) LEFT JOIN scenes s ON s.owner=?2 AND s.project=?3
+           WHERE COALESCE(s.version,0)=?5`
+        )
+        .bind(id, owner, project, crypto.randomUUID(), baseVersion, title, JSON.stringify(publication)),
+      database
+        .prepare(
+          `INSERT INTO assets(owner,digest,size)
+           SELECT ?1,item.value->>'$.digest',item.value->>'$.size' FROM json_each(?2) item
+           WHERE EXISTS (SELECT 1 FROM uploads WHERE id=?3) AND NOT EXISTS (
+             SELECT 1 FROM assets a WHERE a.owner=?1 AND a.digest=item.value->>'$.digest' AND a.state<>'retired'
+           )`
+        )
+        .bind(owner, blocks, id),
+      database
+        .prepare(
+          `INSERT INTO uploadAssets(upload,asset)
+           SELECT ?1,CASE WHEN a.size=item.value->>'$.size' THEN a.storageKey END
+           FROM json_each(?2) item JOIN assets a ON a.owner=?3 AND a.digest=item.value->>'$.digest' AND a.state<>'retired'
+           WHERE EXISTS (SELECT 1 FROM uploads WHERE id=?1)`
+        )
+        .bind(id, blocks, owner),
+      database
+        .prepare("SELECT digest FROM uploadAssets JOIN assets ON storageKey=asset WHERE upload=? AND state<>'ready'")
+        .bind(id)
+    ])
+
+    if (!reservation.meta.changes) {
+      rejectRequest(409, 'The published scene changed. Refresh and publish again.')
+    }
+
+    return sendJson({ id, missing: missing.results.map(({ digest }) => digest) })
+  } catch (error) {
+    const detail = String(error) + ' ' + String(error.cause)
+
+    if (detail.includes('uploadAssets.asset')) {
+      rejectRequest(400, 'Conflicting sizes for the same asset')
+    }
+
+    if (detail.includes('freeStorage')) {
+      rejectRequest(507, 'There is not enough free scene storage for this publication.')
+    }
+
+    throw error
+  }
+}
+
+async function writeBlock(request, bindings, owner, id, digest) {
+  const database = bindings.DATABASE
+  const asset = await database
+    .prepare(
+      `SELECT a.storageKey,a.size,a.state FROM uploads u
+       JOIN uploadAssets r ON r.upload=u.id JOIN assets a ON a.storageKey=r.asset
+       WHERE u.owner=? AND u.id=? AND u.expires>unixepoch() AND a.digest=?`
+    )
+    .bind(owner, id, digest)
+    .first()
+
+  if (!asset) {
+    rejectRequest(409, 'This block has no active reservation. Publish the preview again.')
+  }
+
+  if (asset.state === 'ready') {
+    return new Response(null, { status: 204 })
+  }
+
+  const data = await readBody(request, asset.size)
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data))
+
+  if (
+    data.byteLength !== asset.size ||
+    Array.from(hash, (byte) => byte.toString(16).padStart(2, '0')).join('') !== digest
+  ) {
+    rejectRequest(400, 'Asset does not match its reservation')
+  }
+
+  const lease = await database
+    .prepare(
+      "UPDATE assets SET state='writing',writeTime=unixepoch() WHERE storageKey=? AND (state='reserved' OR (state='writing' AND writeTime<unixepoch()-60)) RETURNING storageKey"
+    )
+    .bind(asset.storageKey)
+    .first()
+
+  if (!lease) {
+    rejectRequest(409, 'This block is being uploaded. Retry the publication.')
+  }
+
+  await bindings.SCENE_FILES.put(asset.storageKey, data)
+
+  const ready = await database
+    .prepare("UPDATE assets SET state='ready' WHERE storageKey=? AND state IN ('writing','ready') RETURNING storageKey")
+    .bind(asset.storageKey)
+    .first()
+
+  if (!ready) {
+    await bindings.SCENE_FILES.delete(asset.storageKey)
+    rejectRequest(409, 'Upload expired. Publish the preview again.')
+  }
+
+  return new Response(null, { status: 204 })
+}
+
+async function commitUpload(database, owner, id) {
+  const scene = await database
+    .prepare(
+      `UPDATE uploads SET committed=1 WHERE owner=? AND id=? AND expires>unixepoch()
+       AND version=COALESCE((SELECT version FROM scenes WHERE scenes.owner=uploads.owner AND scenes.project=uploads.project),0)
+       AND NOT EXISTS (SELECT 1 FROM uploadAssets JOIN assets ON storageKey=asset WHERE upload=uploads.id AND state<>'ready')
+       RETURNING scene AS id,version+1 AS version`
+    )
+    .bind(owner, id)
+    .first()
+
+  if (!scene) {
+    rejectRequest(409, 'Upload expired, incomplete, or superseded. Publish the preview again.')
+  }
+
+  return sendJson(scene)
+}
+
 async function manageScenes(request, bindings, owner, path) {
   const database = bindings.DATABASE
   const method = request.method
@@ -201,86 +383,42 @@ async function manageScenes(request, bindings, owner, path) {
     return sendJson(results)
   }
 
-  const [, , , resource, id] = path.split('/')
+  const parts = path.split('/')
+  const [, , api, resource, id] = parts
 
-  if (resource === 'blocks' && digestPattern.test(id) && method === 'PUT') {
-    const data = await readBody(request, maximumBlockSize)
-    const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', data))
-
-    if (Array.from(hash, (byte) => byte.toString(16).padStart(2, '0')).join('') !== id) {
-      rejectRequest(400, 'Asset hash mismatch')
-    }
-
-    const existing = await database
-      .prepare('SELECT size FROM blocks WHERE owner=? AND digest=?')
-      .bind(owner, id)
-      .first()
-
-    if (!existing) {
-      await bindings.FILES.put(owner + '/' + id, data)
-
-      await database.prepare('INSERT OR IGNORE INTO blocks VALUES(?,?,?)').bind(owner, id, data.byteLength).run()
-    }
-
-    return new Response(null, { status: 204 })
+  if (api !== 'api') {
+    rejectRequest(404, 'Unavailable')
   }
 
-  if (resource === 'projects' && idPattern.test(id) && method === 'PUT') {
-    let publication
-
-    try {
-      publication = JSON.parse(new TextDecoder().decode(await readBody(request, 1024 * 1024)))
-    } catch (error) {
-      if (error instanceof Response) {
-        throw error
-      }
-
-      rejectRequest(400, 'Invalid publication')
-    }
-
-    const blocks = validatePublication(publication)
-    const missing = await database
-      .prepare(
-        "SELECT 1 FROM json_each(?) AS item WHERE NOT EXISTS (SELECT 1 FROM blocks WHERE owner=? AND digest=json_extract(item.value,'$.digest') AND size=json_extract(item.value,'$.size')) LIMIT 1"
-      )
-      .bind(JSON.stringify(blocks), owner)
-      .first()
-
-    if (missing) {
-      rejectRequest(409, 'Some scene files are missing')
-    }
-
-    const expectedVersion = request.headers.get('If-Match')
-
-    if (!/^\d+$/.test(expectedVersion ?? '')) {
-      rejectRequest(428, 'Expected scene version required')
-    }
-
-    const serialized = JSON.stringify(publication)
-    const title = publication.entry.split('/').pop().slice(0, -11)
-    const scene =
-      expectedVersion === '0'
-        ? await database
-            .prepare(
-              'INSERT INTO scenes VALUES(?,?,?,?,1,?) ON CONFLICT(owner,project) DO NOTHING RETURNING id,version'
-            )
-            .bind(crypto.randomUUID(), owner, id, title, serialized)
-            .first()
-        : await database
-            .prepare(
-              'UPDATE scenes SET title=?,publication=?,version=version+1 WHERE owner=? AND project=? AND version=? RETURNING id,version'
-            )
-            .bind(title, serialized, owner, id, Number(expectedVersion))
-            .first()
-
-    if (!scene) {
-      rejectRequest(409, 'The published scene changed. Refresh and publish again.')
-    }
-
-    return sendJson(scene)
+  if (
+    parts.length === 6 &&
+    resource === 'projects' &&
+    idPattern.test(id) &&
+    parts[5] === 'uploads' &&
+    method === 'POST'
+  ) {
+    return reserveUpload(request, database, owner, id)
   }
 
-  if (resource === 'projects' && idPattern.test(id) && method === 'DELETE') {
+  if (resource === 'uploads' && idPattern.test(id)) {
+    if (parts.length === 6 && method === 'PUT' && digestPattern.test(parts[5])) {
+      return writeBlock(request, bindings, owner, id, parts[5])
+    }
+
+    if (parts.length === 5 && method === 'POST') {
+      return commitUpload(database, owner, id)
+    }
+
+    if (parts.length === 5 && method === 'DELETE') {
+      await database.prepare('DELETE FROM uploads WHERE id=? AND owner=?').bind(id, owner).run()
+
+      await cleanStorage(bindings)
+
+      return new Response(null, { status: 204 })
+    }
+  }
+
+  if (parts.length === 5 && resource === 'projects' && idPattern.test(id) && method === 'DELETE') {
     const scene = await database
       .prepare(
         'UPDATE scenes SET publication=NULL,version=version+1 WHERE owner=? AND project=? AND version=? RETURNING id'
@@ -317,37 +455,42 @@ export async function routeRequest(request, bindings, authenticate = getOwner) {
       rejectRequest(404, 'Scene unavailable')
     }
 
-    const scene = await bindings.DATABASE.prepare(
-      'SELECT owner,version,publication FROM scenes WHERE id=? AND publication IS NOT NULL'
+    if (version === undefined) {
+      const scene = await bindings.DATABASE.prepare(
+        'SELECT version,publication FROM scenes WHERE id=? AND publication IS NOT NULL'
+      )
+        .bind(id)
+        .first()
+
+      if (!scene) {
+        rejectRequest(404, 'Scene unavailable')
+      }
+
+      return sendJson({ ...JSON.parse(scene.publication), version: scene.version })
+    }
+
+    if (!/^[1-9]\d*$/.test(version) || !digestPattern.test(digest)) {
+      rejectRequest(404, 'Scene unavailable')
+    }
+
+    const asset = await bindings.DATABASE.prepare(
+      `SELECT storageKey FROM scenes s JOIN assets a ON a.owner=s.owner JOIN sceneAssets r ON r.scene=s.id AND r.asset=a.storageKey
+       WHERE s.id=? AND s.version=? AND s.publication IS NOT NULL AND a.digest=? AND a.state='ready'`
     )
-      .bind(id)
+      .bind(id, version, digest)
       .first()
 
-    if (!scene) {
+    if (!asset) {
       rejectRequest(404, 'Scene unavailable')
     }
 
-    const publication = JSON.parse(scene.publication)
-
-    if (version === undefined) {
-      return sendJson({ ...publication, version: scene.version })
-    }
-
-    if (
-      String(scene.version) !== version ||
-      !digestPattern.test(digest) ||
-      !publication.files.some((file) => file.blocks.includes(digest))
-    ) {
-      rejectRequest(404, 'Scene unavailable')
-    }
-
-    const block = await bindings.FILES.get(scene.owner + '/' + digest)
+    const block = await bindings.SCENE_FILES.get(asset.storageKey, 'stream')
 
     if (!block) {
-      rejectRequest(404, 'Scene unavailable')
+      rejectRequest(503, 'Scene files are temporarily unavailable. Try again later.')
     }
 
-    return new Response(block.body, {
+    return new Response(block, {
       headers: {
         'Content-Type': 'application/octet-stream',
         'Cache-Control': 'no-store',
@@ -371,6 +514,10 @@ export async function routeRequest(request, bindings, authenticate = getOwner) {
 }
 
 export default {
+  async scheduled(_event, bindings) {
+    await cleanStorage(bindings)
+  },
+
   async fetch(request, bindings) {
     try {
       return await routeRequest(request, bindings)

@@ -258,9 +258,9 @@ async function openPublication(id: string) {
       sharedUrl.value = ''
       message.value = ''
     }
-  } catch {
+  } catch (error) {
     if (isActive && generation === sceneGeneration) {
-      message.value = 'Scene unavailable'
+      message.value = describeError(error)
     }
   }
 }

@@ -53,6 +53,10 @@ export async function requestStudio(path: string, options?: RequestInit) {
     throw new SignInRequired()
   }
 
+  if (response.status === 429 || (response.status >= 500 && response.status !== 507)) {
+    throw new Error('Scene hosting is temporarily unavailable. Try again later.')
+  }
+
   if (!response.ok) {
     throw new Error((await response.text()).slice(0, 240) || 'Studio request failed')
   }
@@ -183,7 +187,7 @@ export async function publishScene(
   const listings = await getListings()
   const version = listings.find((scene) => scene.project === draft.project)?.version ?? 0
   const files: PublishedFile[] = []
-  const uploaded = new Set<string>()
+  const blocksByDigest = new Map<string, Blob>()
 
   let size = 0
 
@@ -198,30 +202,43 @@ export async function publishScene(
 
     for (let offset = 0; offset < blob.size; offset += blockSize) {
       const block = blob.slice(offset, offset + blockSize)
-      const contents = await block.arrayBuffer()
-      const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', contents))
+      const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', await block.arrayBuffer()))
       const digest = Array.from(hash, (byte) => byte.toString(16).padStart(2, '0')).join('')
 
-      if (!uploaded.has(digest)) {
-        await requestStudio('/scenes/api/blocks/' + digest, { method: 'PUT', body: contents })
-        uploaded.add(digest)
+      blocksByDigest.set(digest, block)
+      blocks.push(digest)
+    }
+
+    files.push({ path: file.path, size: file.size, blocks })
+  }
+
+  const response = await requestStudio('/scenes/api/projects/' + draft.project + '/uploads', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'If-Match': String(version) },
+    body: JSON.stringify({ entry: draft.entry, files, preset })
+  })
+  const reservation: { id: string; missing: string[] } = await response.json()
+  const path = '/scenes/api/uploads/' + encodeURIComponent(reservation.id)
+
+  try {
+    for (const digest of reservation.missing) {
+      const block = blocksByDigest.get(digest)
+
+      if (!block) {
+        throw new Error('The reserved files do not match this preview.')
       }
 
-      blocks.push(digest)
+      await requestStudio(path + '/' + digest, { method: 'PUT', body: block })
 
       size += block.size
 
       onProgress(size)
     }
 
-    files.push({ path: file.path, size: file.size, blocks })
+    return await (await requestStudio(path, { method: 'POST' })).json()
+  } catch (error) {
+    await requestStudio(path, { method: 'DELETE' }).catch(() => undefined)
+
+    throw error
   }
-
-  const result = await requestStudio('/scenes/api/projects/' + draft.project, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json', 'If-Match': String(version) },
-    body: JSON.stringify({ entry: draft.entry, files, preset })
-  })
-
-  return result.json()
 }
