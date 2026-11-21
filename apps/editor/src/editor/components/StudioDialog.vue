@@ -15,6 +15,9 @@ defineProps<{
 
 const emit = defineEmits<{ 'update:isVisible': [isVisible: boolean] }>()
 const sheet = ref<HTMLDialogElement>()
+const TAP_TOLERANCE = 10
+
+let outsidePress: PointerEvent | null = null
 
 watchPostEffect(() => {
   if (sheet.value && !sheet.value.open) {
@@ -22,6 +25,37 @@ watchPostEffect(() => {
   }
 })
 onBeforeUnmount(() => sheet.value?.close())
+
+function isOutsideSheet(event: MouseEvent) {
+  const dialog = sheet.value
+
+  if (!dialog || event.target !== dialog) {
+    return false
+  }
+
+  const { left, right, top, bottom } = dialog.getBoundingClientRect()
+
+  return event.clientX < left || event.clientX >= right || event.clientY < top || event.clientY >= bottom
+}
+
+function onPointerDown(event: PointerEvent) {
+  outsidePress = event.isPrimary && event.button === 0 && isOutsideSheet(event) ? event : null
+}
+
+function onSheetClick(event: MouseEvent) {
+  const press = outsidePress
+
+  outsidePress = null
+
+  if (
+    press &&
+    press.target === event.target &&
+    isOutsideSheet(event) &&
+    Math.hypot(event.clientX - press.clientX, event.clientY - press.clientY) <= TAP_TOLERANCE
+  ) {
+    emit('update:isVisible', false)
+  }
+}
 
 function playSlide(element: Element, isEntering: boolean, finish: () => void) {
   if (!element.animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -42,6 +76,7 @@ function playSlide(element: Element, isEntering: boolean, finish: () => void) {
     {
       id: 'sheetSlide',
       duration: isEntering ? 220 : 180,
+      fill: isEntering ? 'none' : 'forwards',
       easing: isEntering ? 'cubic-bezier(0.2, 0, 0, 1)' : 'cubic-bezier(0.4, 0, 1, 1)'
     }
   )
@@ -54,6 +89,8 @@ function onSheetEnter(element: Element, finish: () => void) {
 }
 
 function onSheetLeave(element: Element, finish: () => void) {
+  outsidePress = null
+
   element.setAttribute('inert', '')
   playSlide(element, false, finish)
 }
@@ -85,6 +122,9 @@ function onSheetClosed(element: Element) {
       :aria-label="title"
       :data-focus-target="focusTarget"
       data-editor-interactive
+      @pointerdown="onPointerDown"
+      @pointercancel="outsidePress = null"
+      @click="onSheetClick"
       @cancel.prevent="emit('update:isVisible', false)"
     >
       <header class="sheet-header">
@@ -113,7 +153,8 @@ function onSheetClosed(element: Element) {
 
 <style scoped>
 .mobile-sheet {
-  --sheet-offset: translateY(100%);
+  --sheet-shadow-clearance: 80px;
+  --sheet-offset: translateY(calc(100% + var(--sheet-shadow-clearance)));
 
   position: fixed;
   inset: auto 0 0;
@@ -125,6 +166,7 @@ function onSheetClosed(element: Element) {
   padding: 0;
   overflow: hidden;
   pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
   color: #f0f0ed;
   color-scheme: dark;
   font-family: Outfit, system-ui, sans-serif;
@@ -139,6 +181,7 @@ function onSheetClosed(element: Element) {
 
 .mobile-sheet::backdrop {
   pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
   background: transparent;
 }
 
@@ -176,7 +219,7 @@ function onSheetClosed(element: Element) {
 
 @media (orientation: landscape) {
   .mobile-sheet {
-    --sheet-offset: translateX(100%);
+    --sheet-offset: translateX(calc(100% + var(--sheet-shadow-clearance)));
 
     inset: 0 0 0 auto;
     width: min(400px, 68vw);

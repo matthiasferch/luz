@@ -362,9 +362,10 @@ describe('Vue editor interface', () => {
 
       const outgoingSheet = wrapper.get<HTMLDialogElement>('dialog[open]').element
       const exit = Promise.withResolvers<void>()
+      const animate = vi.fn(() => ({ finished: exit.promise }))
 
       Object.defineProperties(outgoingSheet, {
-        animate: { value: () => ({ finished: exit.promise }) },
+        animate: { value: animate },
         getAnimations: { value: () => [] }
       })
 
@@ -372,6 +373,7 @@ describe('Vue editor interface', () => {
       expect(outgoingSheet.open).toBe(true)
       expect(outgoingSheet.isConnected).toBe(true)
       expect(outgoingSheet.hasAttribute('inert')).toBe(true)
+      expect(animate).toHaveBeenCalledWith(expect.any(Array), expect.objectContaining({ fill: 'forwards' }))
       expect(outgoingSheet.querySelector('h2')?.textContent).toBe('View')
       expect(outgoingSheet.textContent).toContain('Reset camera')
 
@@ -391,6 +393,45 @@ describe('Vue editor interface', () => {
 
       await vi.waitFor(() => expect(incomingSheet.isConnected).toBe(false))
       expect(incomingSheet.open).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
+  })
+  it('dismisses a mobile sheet only for a tap that starts and ends outside', async () => {
+    const wrapper = mount(StudioDialog, {
+      props: { isMobile: true, isVisible: true, title: 'View', closeLabel: 'Close menu', focusTarget: 'view' }
+    })
+    const dialog = wrapper.get('dialog')
+    const outsidePoint = { clientX: 80, clientY: 100 }
+    const insidePoint = { clientX: 80, clientY: 480 }
+    const press = { isPrimary: true, button: 0 }
+
+    vi.spyOn(dialog.element, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 400, 390, 444))
+
+    try {
+      await dialog.trigger('pointerdown', { ...press, ...insidePoint })
+
+      await dialog.trigger('click', outsidePoint)
+
+      await dialog.trigger('pointerdown', { ...press, ...outsidePoint })
+
+      await dialog.trigger('click', insidePoint)
+
+      await dialog.trigger('pointerdown', { ...press, ...outsidePoint })
+
+      await dialog.trigger('click', { ...outsidePoint, clientX: 160 })
+
+      await dialog.trigger('pointerdown', { ...press, ...outsidePoint })
+
+      await dialog.trigger('pointercancel')
+
+      await dialog.trigger('click', outsidePoint)
+      expect(wrapper.emitted('update:isVisible')).toBeUndefined()
+
+      await dialog.trigger('pointerdown', { ...press, ...outsidePoint })
+
+      await dialog.trigger('click', outsidePoint)
+      expect(wrapper.emitted('update:isVisible')).toEqual([[false]])
     } finally {
       wrapper.unmount()
     }
