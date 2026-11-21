@@ -139,7 +139,7 @@ function onSheetClosed(element: Element) {
 
 .mobile-sheet::backdrop {
   pointer-events: auto;
-  background: rgb(0 0 0 / 22%);
+  background: transparent;
 }
 
 .sheet-header {
@@ -170,6 +170,10 @@ function onSheetClosed(element: Element) {
   scrollbar-width: thin;
 }
 
+.sheet-body:has(> .sheet-menu) {
+  padding-block: 5px max(5px, env(safe-area-inset-bottom));
+}
+
 @media (orientation: landscape) {
   .mobile-sheet {
     --sheet-offset: translateX(100%);
@@ -183,28 +187,6 @@ function onSheetClosed(element: Element) {
 
   .sheet-header {
     padding-top: env(safe-area-inset-top);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .mobile-sheet[open]::backdrop {
-    animation: dim-backdrop 220ms ease both;
-  }
-
-  .mobile-sheet[inert]::backdrop {
-    animation: clear-backdrop 180ms ease both;
-  }
-}
-
-@keyframes dim-backdrop {
-  from {
-    background-color: transparent;
-  }
-}
-
-@keyframes clear-backdrop {
-  to {
-    background-color: transparent;
   }
 }
 </style>

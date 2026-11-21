@@ -272,6 +272,7 @@ onBeforeUnmount(() => {
           <NButton
             v-if="!isViewer"
             class="toolbar-item touch-trigger"
+            size="small"
             data-toolbar="scenes"
             aria-haspopup="dialog"
             quaternary
@@ -280,6 +281,7 @@ onBeforeUnmount(() => {
           >
           <NButton
             class="toolbar-item touch-trigger"
+            size="small"
             data-toolbar="view"
             aria-haspopup="dialog"
             quaternary
@@ -649,7 +651,9 @@ onBeforeUnmount(() => {
 }
 
 .toolbar-menu :deep(.n-checkbox),
-.toolbar-menu :deep(.n-button) {
+.toolbar-menu :deep(.n-button),
+.sheet-menu :deep(.n-button),
+.sheet-menu :deep(.n-checkbox) {
   align-items: center;
   min-height: 28px;
 }
@@ -906,8 +910,10 @@ onBeforeUnmount(() => {
   }
 }
 
-.touch-trigger {
-  min-height: 44px;
+.touch-trigger::after {
+  position: absolute;
+  inset: -8px 0;
+  content: '';
 }
 
 .sheet-menu {
@@ -917,8 +923,6 @@ onBeforeUnmount(() => {
 .sheet-menu :deep(.n-button),
 .sheet-menu :deep(.n-checkbox) {
   justify-content: flex-start;
-  align-items: center;
-  min-height: 48px;
   width: 100%;
   padding-inline: 4px;
   font-size: 16px;
