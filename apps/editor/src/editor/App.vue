@@ -4,9 +4,7 @@ import {
   darkTheme,
   NAlert,
   NButton,
-  NCheckbox,
   NConfigProvider,
-  NDivider,
   NEmpty,
   NGlobalStyle,
   NPopover,
@@ -18,6 +16,7 @@ import DebugPanel from './components/DebugPanel.vue'
 import DiagnosticsPanel from './components/DiagnosticsPanel.vue'
 import DiagnosticsFrameRate from './components/DiagnosticsFrameRate.vue'
 import StudioDialog from './components/StudioDialog.vue'
+import ViewMenu from './components/ViewMenu.vue'
 import FloatingPanel from './components/FloatingPanel.vue'
 import RenderSettingsPanel from './components/RenderSettingsPanel.vue'
 import EntitiesPanel from './components/EntitiesPanel.vue'
@@ -76,16 +75,6 @@ const mixColor = (color: string, target: number, amount: number) => {
 
   return `#${mixed.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`
 }
-
-const panelMenuItems: Array<{ id: PanelId; label: string }> = [
-  { id: 'entities', label: 'Entities' },
-  { id: 'animations', label: 'Animations' },
-  { id: 'environment', label: 'Environment' },
-  { id: 'simulation', label: 'Simulation' },
-  { id: 'settings', label: 'Settings' },
-  { id: 'debug', label: 'Debug' },
-  { id: 'diagnostics', label: 'Diagnostics' }
-]
 
 const themeOverrides: GlobalThemeOverrides = {
   common: {
@@ -326,25 +315,15 @@ onBeforeUnmount(() => {
           <template #trigger>
             <NButton class="toolbar-item" size="small" quaternary>View</NButton>
           </template>
-          <div class="toolbar-menu view-menu" data-editor-interactive>
-            <template v-if="!isViewer">
-              <NCheckbox
-                v-for="item in panelMenuItems"
-                :key="item.id"
-                size="small"
-                :checked="layout.panels[item.id].isVisible"
-                @update:checked="onTogglePanel(item.id, $event)"
-                >{{ item.label }}</NCheckbox
-              >
-              <NDivider />
-              <NButton class="reset-layout" text @click.stop="resetLayout">Reset layout</NButton>
-              <NButton class="view-command" text @click="onResetCamera">Reset camera</NButton>
-              <NDivider />
-            </template>
-            <NButton class="view-command" text :aria-pressed="isFullscreen" @click="onToggleFullscreen"
-              >Toggle fullscreen</NButton
-            >
-          </div>
+          <ViewMenu
+            :panels="layout.panels"
+            :is-viewer="isViewer"
+            :is-fullscreen="isFullscreen"
+            @toggle-panel="onTogglePanel"
+            @reset-layout="resetLayout"
+            @reset-camera="onResetCamera"
+            @toggle-fullscreen="onToggleFullscreen"
+          />
         </NPopover>
       </div>
 
@@ -523,28 +502,21 @@ onBeforeUnmount(() => {
         close-label="Close menu"
         @update:is-visible="onCloseMenu"
       >
-        <div v-if="viewMenuVisible" class="sheet-menu view-menu">
-          <NButton text class="view-command" @click="onToggleFullscreen">{{
-            isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'
-          }}</NButton>
-          <template v-if="!isViewer">
-            <NButton text class="view-command" @click="onResetCamera">Reset camera</NButton>
-            <h3>Panels</h3>
-            <NCheckbox
-              v-for="item in panelMenuItems"
-              :key="item.id"
-              :checked="layout.panels[item.id].isVisible"
-              @update:checked="onTogglePanel(item.id, $event)"
-              >{{ item.label }}</NCheckbox
-            >
-            <NDivider />
-            <NButton text class="reset-layout" @click="resetLayout">Reset layout</NButton>
-          </template>
-        </div>
+        <ViewMenu
+          v-if="viewMenuVisible"
+          is-mobile
+          :panels="layout.panels"
+          :is-viewer="isViewer"
+          :is-fullscreen="isFullscreen"
+          @toggle-panel="onTogglePanel"
+          @reset-layout="resetLayout"
+          @reset-camera="onResetCamera"
+          @toggle-fullscreen="onToggleFullscreen"
+        />
         <div v-else class="sheet-menu scene-menu">
           <NButton text @click="openSceneDialog">Load scene…</NButton>
-          <NButton v-if="canPublish" text @click="onSceneCommand('publish')">Publish scene</NButton>
           <NButton v-if="connectionLabel" text @click="onSceneCommand('connect')">{{ connectionLabel }}</NButton>
+          <NButton v-if="canPublish" text @click="onSceneCommand('publish')">Publish scene</NButton>
         </div>
       </StudioDialog>
       <StudioDialog
@@ -692,12 +664,6 @@ onBeforeUnmount(() => {
 
 .view-menu :deep(.n-checkbox) {
   font-size: var(--luz-checkbox-label-size);
-}
-
-.reset-layout,
-.view-command {
-  justify-content: flex-start;
-  width: 100%;
 }
 
 .scene-reload-status {
@@ -956,14 +922,6 @@ onBeforeUnmount(() => {
   width: 100%;
   padding-inline: 4px;
   font-size: 16px;
-}
-
-.sheet-menu h3 {
-  margin: 8px 0 0;
-  padding: 12px 4px 2px;
-  color: rgb(255 255 255 / 65%);
-  border-top: 1px solid rgb(255 255 255 / 12%);
-  font-size: 14px;
 }
 
 .mobile-catalog {

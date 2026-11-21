@@ -317,6 +317,38 @@ describe('Vue editor interface', () => {
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
     wrapper.unmount()
   })
+  it.each([390, 1100])('keeps View actions in desktop order at %i pixels', async (width) => {
+    vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(width)
+
+    const store = createEditorStore()
+
+    store.attach(makeRuntime())
+
+    const wrapper = mount(App, provideStore(store))
+
+    try {
+      await wrapper.findAll('.toolbar-item')[1].trigger('click')
+
+      const items = wrapper.get('.view-menu').findAll('[role="checkbox"], button, .n-divider')
+
+      expect(items.map((item) => item.text())).toEqual([
+        'Entities',
+        'Animations',
+        'Environment',
+        'Simulation',
+        'Settings',
+        'Debug',
+        'Diagnostics',
+        '',
+        'Reset layout',
+        'Reset camera',
+        '',
+        width === 390 ? 'Enter fullscreen' : 'Toggle fullscreen'
+      ])
+    } finally {
+      wrapper.unmount()
+    }
+  })
   it('keeps the outgoing mobile sheet intact through its exit and can reopen during dismissal', async () => {
     const wrapper = mount(StudioDialog, {
       attachTo: document.body,
@@ -394,9 +426,9 @@ describe('Vue editor interface', () => {
 
       const actions = wrapper.get('dialog[open] .scene-menu').findAll('button')
 
-      expect(actions.map((button) => button.text())).toEqual(['Load scene…', 'Publish scene', 'Reconnect Blender'])
+      expect(actions.map((button) => button.text())).toEqual(['Load scene…', 'Reconnect Blender', 'Publish scene'])
 
-      await actions[1].trigger('click')
+      await actions[2].trigger('click')
       expect(wrapper.emitted('publish')).toHaveLength(1)
       expect(wrapper.find('dialog[open]').exists()).toBe(false)
     } finally {
