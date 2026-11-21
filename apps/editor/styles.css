@@ -21,6 +21,23 @@
   outline-offset: 2px;
 }
 
+.panel-surface {
+  background: rgb(18 20 25 / 92%);
+  border: 1px solid rgb(255 255 255 / 11%);
+  border-radius: 10px;
+  box-shadow: 0 16px 48px rgb(0 0 0 / 38%);
+  backdrop-filter: blur(18px);
+}
+
+.panel-title {
+  flex: 1;
+  margin: 0;
+  color: #f4f6fb;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 html {
   overflow: hidden;
 }

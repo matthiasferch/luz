@@ -12,6 +12,7 @@ import EnvironmentPanel from '../src/editor/components/EnvironmentPanel.vue'
 import SimulationPanel from '../src/editor/components/SimulationPanel.vue'
 import SettingCheckbox from '../src/editor/components/SettingCheckbox.vue'
 import SettingSlider from '../src/editor/components/SettingSlider.vue'
+import StudioDialog from '../src/editor/components/StudioDialog.vue'
 import { createEditorStore, editorStoreKey } from '../src/editor/editor-store'
 import type { AnimationGroup } from '../src/editor/editor-api'
 import type { SceneDescriptor } from '../src/editor/scene-catalog'
@@ -315,6 +316,52 @@ describe('Vue editor interface', () => {
     await nextTick()
     expect(wrapper.find('.animation-controls').exists()).toBe(false)
     wrapper.unmount()
+  })
+  it('keeps the outgoing mobile sheet intact through its exit and can reopen during dismissal', async () => {
+    const wrapper = mount(StudioDialog, {
+      attachTo: document.body,
+      props: { isMobile: true, isVisible: true, title: 'View', closeLabel: 'Close menu', focusTarget: 'view' },
+      slots: { default: 'Reset camera' },
+      global: { stubs: { transition: false } }
+    })
+
+    try {
+      await nextTick()
+
+      const outgoingSheet = wrapper.get<HTMLDialogElement>('dialog[open]').element
+      const exit = Promise.withResolvers<void>()
+
+      Object.defineProperties(outgoingSheet, {
+        animate: { value: () => ({ finished: exit.promise }) },
+        getAnimations: { value: () => [] }
+      })
+
+      await wrapper.setProps({ isVisible: false, title: 'Scenes' })
+      expect(outgoingSheet.open).toBe(true)
+      expect(outgoingSheet.isConnected).toBe(true)
+      expect(outgoingSheet.hasAttribute('inert')).toBe(true)
+      expect(outgoingSheet.querySelector('h2')?.textContent).toBe('View')
+      expect(outgoingSheet.textContent).toContain('Reset camera')
+
+      await wrapper.setProps({ isVisible: true })
+
+      const incomingSheet = wrapper.get<HTMLDialogElement>('dialog[open]').element
+
+      expect(incomingSheet).not.toBe(outgoingSheet)
+      expect(incomingSheet.getAttribute('aria-label')).toBe('Scenes')
+      expect(outgoingSheet.isConnected).toBe(false)
+      exit.resolve()
+
+      await nextTick()
+      expect(incomingSheet.open).toBe(true)
+
+      await wrapper.setProps({ isVisible: false })
+
+      await vi.waitFor(() => expect(incomingSheet.isConnected).toBe(false))
+      expect(incomingSheet.open).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
   })
   it('opens the mobile picker directly and offers scene actions for a Blender preview', async () => {
     vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(390)

@@ -189,7 +189,7 @@ onBeforeUnmount(() => {
 
 <template>
   <section
-    class="floating-panel"
+    class="floating-panel panel-surface"
     :class="{ collapsed: panel.isCollapsed, 'auto-height': panel.hasAutomaticHeight }"
     :style="style"
     :aria-label="title"
@@ -269,11 +269,6 @@ onBeforeUnmount(() => {
   min-height: min(160px, calc(100vh - 66px));
   overflow: hidden;
   pointer-events: auto;
-  background: rgb(18 20 25 / 92%);
-  border: 1px solid rgb(255 255 255 / 11%);
-  border-radius: 10px;
-  box-shadow: 0 16px 48px rgb(0 0 0 / 38%);
-  backdrop-filter: blur(18px);
 }
 
 .floating-panel.collapsed {
@@ -298,14 +293,6 @@ onBeforeUnmount(() => {
 
 .collapsed .panel-header {
   border-bottom-color: transparent;
-}
-
-.panel-title {
-  flex: 1;
-  color: #f4f6fb;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
 }
 
 .panel-actions {
