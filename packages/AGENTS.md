@@ -129,7 +129,7 @@ Do not use a real authored scene as a test output target.
 - `Scene` owns fixed-step simulation state. Physics changes must preserve deterministic
   stepping, sleeping/waking behavior, stable contact identifiers, and per-scene world
   isolation.
-- Ray helpers use `intersectRayWithâ€¦` names and return `RayIntersection` with `point`,
+- Ray helpers use `intersectRayWith…` names and return `RayIntersection` with `point`,
   an outward world-space surface `normal`, and `distance` in world units. Ray-pair
   intersections use the directions' normalized cross product as their normal. Queries
   validate and normalize ray directions, including directions edited after construction.

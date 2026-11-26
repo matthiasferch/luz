@@ -46,7 +46,7 @@ swizzle names such as `x`, `xyz`, and `rgba`.
 - Keep names concise by omitting context already clear from the owning type or
   module. Prefer state predicates such as `isAmbientOcclusionVisualized` and
   `isSubsurfaceLightingEnabled` for flags. Avoid starting variable, parameter,
-  and property names with `should`; prefer `isâ€¦Enabled` or `areâ€¦Enabled` for
+  and property names with `should`; prefer `is…Enabled` or `are…Enabled` for
   feature flags and other direct state predicates where appropriate. Do not add
   words merely to lengthen a name.
 - Enforce Boolean naming for variables, parameters, declared properties, and
@@ -110,11 +110,11 @@ Always use braces around control-flow bodies, including single statements and
 empty bodies after `if`, `else`, `for`, `while`, and `do`. Keep normal `else if`
 chains. Concise arrow-function expressions are not control-flow bodies.
 
-Require an empty line before `if`, `for` (including `forâ€¦in` and `forâ€¦of`),
+Require an empty line before `if`, `for` (including `for…in` and `for…of`),
 `while`, `switch`, `try`, and `return` when another statement precedes it in the
 same block. Do not add padding at the start of a block, between a condition and
 its body, before `else`/`catch`/`finally`, or before the trailing
-`while` in a `doâ€¦while` statement. A comment does not count as an empty line;
+`while` in a `do…while` statement. A comment does not count as an empty line;
 padding may appear before a leading comment attached to the statement.
 
 Require an empty line before each standalone `await` statement when another
@@ -125,7 +125,7 @@ precedence over removing blank lines within a call group. Enforce this with the
 autofixable `luz/await-padding` rule.
 
 Also require an empty line after a complete `if`/`else`, `for`, `while`,
-`doâ€¦while`, `switch`, or `try`/`catch`/`finally` statement when another statement
+`do…while`, `switch`, or `try`/`catch`/`finally` statement when another statement
 follows in the same block. Do not separate the branches of one statement or add
 padding before the enclosing block's closing brace.
 
