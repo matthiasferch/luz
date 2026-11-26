@@ -7,7 +7,7 @@ Export Blender scenes and reusable entities for luz. Requires **Blender 5.0 or l
 These steps work on Windows, macOS, and Linux without a terminal. If you already
 have the extension ZIP, skip to step 2.
 
-1. Download the [luz Blender extension](https://studio.luzjs.dev/luz-exporter.zip). To build the same ZIP from this checkout, run `npm run build:studio`. The ZIP is written to `apps/editor/dist/studio/luz-exporter.zip`.
+1. Download the [luz Blender extension](https://studio.luzjs.dev/luz-exporter.zip). To build the same ZIP from this checkout, run `npm run build:extension`. The ZIP is written to `dist/luz-exporter.zip`.
 2. In Blender, open **Edit > Preferences > Get Extensions**, open the menu, and choose **Install from Disk**.
 3. Select the ZIP file and enable **luz Scene and Entity Exporter**.
 
@@ -15,22 +15,16 @@ Disable any older installation of the exporter before enabling the new one.
 
 ## Hosted studio
 
-Choose **Scene Properties → luz Export → Open in luz**. Choose an export destination the first time, then save the Blender file to remember its destination and publishing identity. In the hosted studio, choose **Connect Blender** and leave the connection window open. **Export Again** updates the private preview. Reopen the studio from Blender to start a new connection after a browser refresh.
+Choose **Scene Properties â†’ luz Export â†’ Open in luz**. Choose an export destination the first time, then save the Blender file to remember its destination and publishing identity. In the hosted studio, choose **Connect Blender** and leave the connection window open. **Export Again** updates the private preview. Reopen the studio from Blender to start a new connection after a browser refresh.
 
-Open **Scene → Load scene** to browse the demo scenes and your published scenes. Choose **Sign in to see your scenes** if prompted. Return to the preview, set the camera, rendering and playback, then choose **Scene → Publish scene** and confirm the upload. Re-exporting stays private until you publish again. Choose **Manage publications** in the scene picker to copy a link or unpublish a scene.
+Open **Scene â†’ Load scene** to browse the demo scenes and your published scenes. Choose **Sign in to see your scenes** if prompted. Return to the preview, set the camera, rendering and playback, then choose **Scene â†’ Publish scene** and confirm the upload. Re-exporting stays private until you publish again. Choose **Manage publications** in the scene picker to copy a link or unpublish a scene.
 
 ## Basic usage
 
 - **Export a scene:** Choose **File > Export > luz Scene (.scene.json)**.
 - **Export an entity:** Select the root object, then choose **File > Export > luz Entity (.entity.json)**.
 
-Choose an output location and export. Keep the generated files together with their
-asset folders. To use a scene in the luz editor, export it into
-`apps/editor/public/assets/scenes/`.
-
-Run `npm run preview:local` from the repository root to view local exports at
-`http://127.0.0.1:4173/`; the active scene reloads automatically after exporting. Stop `preview:demo`
-first if it is running on that port; the demo preview serves the packaged showcase.
+Choose a local directory for the exported scene and keep its generated assets together. Use **Open in luz** to preview it in the hosted studio.
 
 Spot, sun, and point lights are supported; area lights are not yet supported.
 
@@ -52,13 +46,6 @@ After the first successful scene export, the destination and options appear unde
 for **luz Export Again**, to repeat it without opening a file dialog. Right-click
 the command to assign a shortcut. Save the `.blend` file to retain these settings;
 destinations are stored relative to the Blender file where possible.
-
-The same exporter handles the editable demo scenes. Choose **Export animation >
-Action clips** for their platform, spotlight and character animations. The source
-generators save these options and the destination as scene data; they do not embed
-Python scripts. Existing embedded export texts remain compatible through a small
-repository wrapper, but are no longer needed. See the [showcase guide](../../apps/editor/SHOWCASE.md)
-for destination filenames.
 
 **Object Properties > luz Export** controls exclusion, continuous collision detection,
 the startup animation, default looping and the active action's playback override.

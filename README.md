@@ -1,6 +1,6 @@
 <img src="docs/assets/logo.png" style="width: 260px" />
 
-luz (pronounced [ˈluθ] or [ˈlus], Spanish for _light_) is a 3D game engine for the web, written from scratch in Typescript and WebGL 2.0.
+luz (pronounced [ËˆluÎ¸] or [Ëˆlus], Spanish for _light_) is a 3D game engine for the web, written from scratch in Typescript and WebGL 2.0.
 
 It features dynamic lighting and shadows, visibility determination and hierarchical space partitioning, collision detection and response, and rigid-body simulation with continuous collision detection.
 
@@ -30,33 +30,13 @@ Browsers can resolve `luz` through an import map. Bundlers and Node.js use the p
 exports. The `@luz/*` directories are internal workspace packages. Separate
 npm package publishing is not (yet) supported.
 
-## Editor
+## Releases and studio
 
-Use the editor app as the reference for building with the engine. Start with
-its [application entry point](apps/editor/src/main.ts) and
-[rendering lifecycle](apps/editor/src/runtime/editor-runtime.ts).
-See [graphics services](packages/graphics/README.md) for rendering and resource lifetimes.
+Download the versioned engine package and Blender extension from [GitHub Releases](https://github.com/matthiasferch/luz/releases). The engine package contains the runtime, TypeScript declarations, scene schemas, and third-party notices. Install the release tarball with npm and import from `luz`.
 
-To run the editor:
+Run `npm run build:release` to build both artifacts locally in `dist/`. Push a version tag matching the root package version (for example `v0.1.0`) to publish them after the engine and browser checks pass.
 
-```sh
-npm --workspace @luz/editor run serve
-```
-
-Open [luz studio](https://studio.luzjs.dev/) in a WebGL2-capable browser to explore the two showcase scenes or preview your own Blender export. The demo address opens the same workspace.
-
-To run the self-contained showcase locally, run `npm run build:demo` followed by `npm run preview:demo`,
-then open `http://127.0.0.1:4173/`. It opens Skeletal Animation in the full editor;
-Scene → Load scene also offers the rigid body playground.
-See the [showcase guide](apps/editor/SHOWCASE.md) for controls and the
-[deployment guide](apps/editor/DEPLOYMENT.md) for publishing from `main`.
-
-For your own scenes, export into `apps/editor/public/assets/scenes/`
-with dependencies under `apps/editor/public/assets/`. These local assets are excluded from the showcase build.
-Stop the showcase preview, then run `npm run preview:local` to view these exports at
-`http://127.0.0.1:4173/`. This serves the exported files directly; reload the scene
-after exporting from Blender. No demo rebuild is needed. The local and showcase
-previews share port 4173, so run one at a time.
+Open [luz studio](https://studio.luzjs.dev/) to preview a Blender export or explore the curated demo scenes.
 
 ## Development checks
 
@@ -79,7 +59,7 @@ The [Blender extension](integrations/blender/README.md) exports scenes and reusa
 
 ## License and attribution
 
-The engine, editor, supporting project code, generated engine textures and logo are licensed under the [MIT License](LICENSE).
+The engine, supporting project code, generated engine textures and logo are licensed under the [MIT License](LICENSE).
 
 The Blender extension retains its [GPL-3.0-or-later license](integrations/blender/luz_exporter/LICENSE).
 

@@ -35,17 +35,16 @@ jobs:
       - run: npm run validate:shaders
       - run: npm test
       - run: npm run build
-      - run: npm run build:demo
       - run: python integrations/blender/tests/studio_snapshot_test.py
-      - run: npm run build:studio
-      - name: Store the validated demo
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v7
+      - run: npm run build:release
+      - uses: actions/upload-artifact@v7
+        if: startsWith(github.ref, 'refs/tags/v')
         with:
-          name: demo-${{ github.sha }}
-          path: apps/editor/dist/demo/
+          name: engine-release
+          path: |
+            dist/luz-*.tgz
+            dist/luz-exporter.zip
           if-no-files-found: error
-          retention-days: 7
 
   browser:
     runs-on: ubuntu-24.04
@@ -81,12 +80,10 @@ jobs:
           "$BLENDER_PATH" --background --factory-startup --offline-mode --python-exit-code 1 \
             --python integrations/blender/tests/mesh_normals_fixture.py
 
-      - name: Verify Blender export publication and assets
+      - name: Verify Blender export publication
         run: |
-          for fixture in export_pipeline_fixture showcase_export_fixture; do
-            "$BLENDER_PATH" --background --factory-startup --offline-mode --python-exit-code 1 \
-              --python "integrations/blender/tests/${fixture}.py"
-          done
+          "$BLENDER_PATH" --background --factory-startup --offline-mode --python-exit-code 1 \
+            --python integrations/blender/tests/export_pipeline_fixture.py
 
       - run: npm run test:fixture:skeletal
       - name: Compare exported poses against Blender
@@ -96,58 +93,22 @@ jobs:
       - run: npm run test:gpu
       - run: npm run test:distribution:gpu
 
-  deploy:
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
     needs: [quality, browser]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    concurrency:
-      group: demo-production
-      cancel-in-progress: false
-    environment:
-      name: demo
-      url: https://demo.luzjs.dev
-
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
       - uses: actions/download-artifact@v8
         with:
-          name: demo-${{ github.sha }}
-          path: apps/editor/dist/demo/
-      - name: Check that this revision is still main
-        id: revision
-        shell: bash
-        run: |
-          remoteRevision=$(git ls-remote --exit-code origin refs/heads/main | cut -f1)
-          if [ "$remoteRevision" = "$GITHUB_SHA" ]; then
-            echo "isCurrent=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "isCurrent=false" >> "$GITHUB_OUTPUT"
-            echo "A newer main revision supersedes this deployment."
-          fi
-      - name: Publish the validated demo
-        if: steps.revision.outputs.isCurrent == 'true'
-        run: npm run deploy:demo
+          name: engine-release
+          path: release
+      - name: Publish the tested engine and Blender extension
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      - name: Verify HTTPS and scene delivery
-        if: steps.revision.outputs.isCurrent == 'true'
-        shell: bash
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl --fail --silent --show-error --retry 12 --retry-all-errors --retry-delay 5 \
-            https://demo.luzjs.dev/ --output /dev/null
-          curl --fail --silent --show-error \
-            https://demo.luzjs.dev/assets/scenes/rigid-body-playground.scene.json --output /dev/null
-          curl --fail --silent --show-error \
-            https://demo.luzjs.dev/assets/scenes/sala-character.scene.json --output /dev/null
-          for missingPath in __missing_demo_asset__.json assets/scenes/lighting-and-materials.scene.json assets/scenes/light-chamber.scene.json assets/scenes/automated-sorting-line.scene.json assets/scenes/automated-transfer-line.scene.json; do
-            missingStatus=$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' \
-              "https://demo.luzjs.dev/$missingPath")
-            test "$missingStatus" = 404
-          done
+          test -f "release/luz-${GITHUB_REF_NAME#v}.tgz"
+          cd release
+          sha256sum luz-*.tgz luz-exporter.zip > SHA256SUMS
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --verify-tag --title "luz $GITHUB_REF_NAME" --generate-notes luz-*.tgz luz-exporter.zip SHA256SUMS

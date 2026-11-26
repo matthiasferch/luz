@@ -34,3 +34,7 @@ npm-stderr.txt
 # Local Blender source and third-party asset libraries
 apps/editor/local-assets/
 apps/editor/public/assets/
+
+# Local studio files retained from the former workspace
+/apps/editor/
+/integrations/blender/tools/

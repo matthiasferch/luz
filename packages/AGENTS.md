@@ -3,7 +3,7 @@
 ## Scope and workspace layout
 
 This file applies to the TypeScript engine packages. The repository root also contains
-the Blender extension in `integrations/blender/luz_exporter/` and the Vue/WebGL editor in `apps/editor/`.
+the Blender extension in `integrations/blender/luz_exporter/`.
 Changes to serialized components, model or material formats, loaders, rendering
 contracts, or public exports usually require corresponding exporter, schema, asset,
 and editor updates.
@@ -44,24 +44,9 @@ Run commands from the repository root unless noted otherwise:
 
 - `npm run check` runs formatting, lint, type checking, shader validation, tests,
   and builds for the workspace, matching the quality workflow in CI.
-- `npm test` runs the Mocha/ts-node engine suite and the editor's Node and Vue/Vitest
-  suites. Use `npm --workspace @luz/tests test` for the engine suite alone.
-- `npm run build` builds both the engine and editor. `npm run build:engine` removes
-  root `dist/` and builds the engine ES module bundle and declarations with Webpack.
+- `npm test` runs the engine suites. Use `npm run typecheck` to check the engine and its tests.
 - `npm run watch` rebuilds the engine while source files change.
-- `npm run typecheck` checks engine TypeScript and editor Vue/TypeScript.
-- Engine tests also participate in `npm run typecheck`; use typed test doubles
-  and runtime assertions for narrowing instead of file-wide type suppression.
-- `npm run lint` checks engine, tests, tooling, and editor JavaScript/TypeScript/Vue,
-  then runs `npm run lint:python` for Blender Ruff checks and bytecode compilation.
-- `npm run validate:shaders` checks shader naming, layout, and compilation.
-
-For focused editor checks, run these from `apps/editor/` (already included in the
-corresponding root commands):
-
-- `npm test` for the Node integration and Vue/Vitest suites.
-- `npm run typecheck` for Vue and TypeScript checking.
-- `npm run build` for the editor Webpack bundle.
+- `npm run lint` checks engine, tests, tooling and the Blender extension.
 
 `npm run build` uses development mode. `npm run build:engine:production` emits an
 optimized engine bundle with an external source map. Both engine builds prepare
@@ -144,7 +129,7 @@ Do not use a real authored scene as a test output target.
 - `Scene` owns fixed-step simulation state. Physics changes must preserve deterministic
   stepping, sleeping/waking behavior, stable contact identifiers, and per-scene world
   isolation.
-- Ray helpers use `intersectRayWith…` names and return `RayIntersection` with `point`,
+- Ray helpers use `intersectRayWithâ€¦` names and return `RayIntersection` with `point`,
   an outward world-space surface `normal`, and `distance` in world units. Ray-pair
   intersections use the directions' normalized cross product as their normal. Queries
   validate and normalize ray directions, including directions edited after construction.
@@ -252,8 +237,7 @@ them.
 
 Do not commit `dist/`, `node_modules/`, `.tmp/`, Python caches, npm output logs, Blender
 source or backup files, export-status markers, or obsolete generated exports. Never add
-BlendKit or Poliigon content. Runtime editor assets live under `apps/editor/public/assets`;
-preserve active scene references and do not bulk rewrite or delete user-authored assets
+BlendKit or Poliigon content. Preserve active scene references and do not bulk rewrite or delete user-authored assets
 without verifying reachability from the scene catalog.
 
 Track reachability from scenes and reusable entities through models to individual

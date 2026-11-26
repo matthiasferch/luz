@@ -1,4 +1,4 @@
-const { copyFileSync, existsSync, readFileSync, readdirSync, writeFileSync } = require('node:fs')
+const { copyFileSync, cpSync, existsSync, readFileSync, readdirSync, writeFileSync } = require('node:fs')
 const path = require('node:path')
 
 const workspace = path.resolve(__dirname, '..')
@@ -56,19 +56,20 @@ function prepareDeclarations(directory) {
 }
 
 prepareDeclarations(output)
+cpSync(path.join(workspace, 'packages/formats/schemas'), path.join(output, 'schemas'), { recursive: true })
 copyFileSync(path.join(workspace, 'LICENSE'), path.join(output, 'LICENSE'))
 writeFileSync(
   path.join(output, 'package.json'),
   JSON.stringify(
     {
       name: 'luz',
-      version: '0.0.0',
+      version: require('../package.json').version,
       private: true,
       license: 'MIT',
       type: 'module',
       main: './index.mjs',
       types: './index.d.ts',
-      exports: { '.': { types: './index.d.ts', import: './index.mjs' } }
+      exports: { '.': { types: './index.d.ts', default: './index.mjs' }, './package.json': './package.json' }
     },
     null,
     2

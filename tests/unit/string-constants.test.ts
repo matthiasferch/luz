@@ -19,10 +19,8 @@ const collectFiles = (directory: string): string[] =>
   })
 
 describe('String constants', () => {
-  it('requires lower camel case for engine and editor string literal types and registration tags', () => {
-    const sourceFiles = ['packages', 'apps/editor/src'].flatMap((directory) =>
-      collectFiles(resolve(workspaceRoot, directory)).filter((filePath) => filePath.endsWith('.ts'))
-    )
+  it('requires lower camel case for engine string literal types and registration tags', () => {
+    const sourceFiles = collectFiles(resolve(workspaceRoot, 'packages')).filter((filePath) => filePath.endsWith('.ts'))
 
     for (const filePath of sourceFiles) {
       const source = typescript.createSourceFile(

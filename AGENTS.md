@@ -46,7 +46,7 @@ swizzle names such as `x`, `xyz`, and `rgba`.
 - Keep names concise by omitting context already clear from the owning type or
   module. Prefer state predicates such as `isAmbientOcclusionVisualized` and
   `isSubsurfaceLightingEnabled` for flags. Avoid starting variable, parameter,
-  and property names with `should`; prefer `is…Enabled` or `are…Enabled` for
+  and property names with `should`; prefer `isâ€¦Enabled` or `areâ€¦Enabled` for
   feature flags and other direct state predicates where appropriate. Do not add
   words merely to lengthen a name.
 - Enforce Boolean naming for variables, parameters, declared properties, and
@@ -110,11 +110,11 @@ Always use braces around control-flow bodies, including single statements and
 empty bodies after `if`, `else`, `for`, `while`, and `do`. Keep normal `else if`
 chains. Concise arrow-function expressions are not control-flow bodies.
 
-Require an empty line before `if`, `for` (including `for…in` and `for…of`),
+Require an empty line before `if`, `for` (including `forâ€¦in` and `forâ€¦of`),
 `while`, `switch`, `try`, and `return` when another statement precedes it in the
 same block. Do not add padding at the start of a block, between a condition and
 its body, before `else`/`catch`/`finally`, or before the trailing
-`while` in a `do…while` statement. A comment does not count as an empty line;
+`while` in a `doâ€¦while` statement. A comment does not count as an empty line;
 padding may appear before a leading comment attached to the statement.
 
 Require an empty line before each standalone `await` statement when another
@@ -125,7 +125,7 @@ precedence over removing blank lines within a call group. Enforce this with the
 autofixable `luz/await-padding` rule.
 
 Also require an empty line after a complete `if`/`else`, `for`, `while`,
-`do…while`, `switch`, or `try`/`catch`/`finally` statement when another statement
+`doâ€¦while`, `switch`, or `try`/`catch`/`finally` statement when another statement
 follows in the same block. Do not separate the branches of one statement or add
 padding before the enclosing block's closing brace.
 
@@ -169,8 +169,7 @@ Vue script blocks, and GLSL, including math code. The naming and comment
 exceptions above remain unchanged. Python is excluded.
 
 Keep shared engine and editor layout rules in `tooling/eslint/config/layout.cjs`, with custom
-rules in the local `tooling/eslint` plugin. The root `.eslintrc.cjs` and
-`apps/editor/.eslintrc.cjs` configure parsers, scope, and shared rule imports. Run
+rules in the local `tooling/eslint` plugin. The root `.eslintrc.cjs` configures parsers, scope, and shared rule imports. Run
 `npm run lint:fix` to apply the JavaScript/TypeScript/Vue brace and spacing fixes,
 and `npm run validate:shaders` to check shader layout as well as compilation.
 Prettier preserves this spacing; ESLint and shader validation enforce it in CI.
@@ -179,7 +178,7 @@ Python follows the Ruff configuration in `pyproject.toml`. `npm run format` and
 `npm run format:check` include Ruff formatting for `integrations/blender`;
 `npm run lint:python` runs Ruff checks and Python bytecode compilation there.
 
-`npm run lint` also runs Stylelint on CSS and Vue styles, HTML Validate on HTML,
+`npm run lint` also runs HTML Validate on HTML,
 actionlint with ShellCheck on workflows, and PSScriptAnalyzer on PowerShell.
 Keep tool downloads pinned and cached outside tracked source. Coverage regression
 tests verify that all repository JavaScript, TypeScript, and Vue files are included
